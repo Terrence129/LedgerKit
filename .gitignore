@@ -1,0 +1,46 @@
+# Private financial source and runtime data
+*.xlsx
+*.xlsm
+*.xlsb
+*.xls
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.ledgerkit-backup
+backups/
+attachments/
+logs/
+diagnostics/
+outputs/
+
+# Allow explicitly sanitized, reviewed workbook fixtures
+!fixtures/sanitized/**/*.xlsx
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.pfx
+*.key
+
+# Temporary analysis
+.codex_tmp*/
+tmp/
+temp/
+
+# JavaScript / Rust / .NET build outputs
+node_modules/
+dist/
+target/
+bin/
+obj/
+coverage/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
