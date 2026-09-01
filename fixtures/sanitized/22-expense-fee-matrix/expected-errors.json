@@ -1,0 +1,27 @@
+{
+  "fixture_id": "22-expense-fee-matrix",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "EXPENSE_CONTRIBUTION_BUCKET_CARDINALITY",
+          "field": "assigned_bucket_ids",
+          "message_key": "ledgerkit.expense_contribution_bucket_cardinality"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:7af99e6f313850622570ec047cb07f22029d789d1b3198ce23491fc390c7a7f1"
+}

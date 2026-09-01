@@ -1,0 +1,18 @@
+{
+  "fixture_id": "25-category-lifecycle",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": []
+    },
+    {
+      "scenario_id": "boundary",
+      "events": []
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:68df75a5d8f64af28f1ac1b6b572fb4eecdd7edf87e5cacf2c9bf5177a2292b0"
+}

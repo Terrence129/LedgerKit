@@ -1,0 +1,50 @@
+{
+  "fixture_id": "16-cross-portfolio-isolation",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "postings": [
+        {
+          "posting_id": "post-evt-16-normal-01-01",
+          "event_id": "evt-16-normal-01",
+          "posting_kind": "holding-cost",
+          "calculation_version": "ledger-calculation-v1",
+          "portfolio_id": "portfolio-a",
+          "cost_delta": "20.000000000000000000",
+          "currency": "USD"
+        },
+        {
+          "posting_id": "post-evt-16-normal-02-01",
+          "event_id": "evt-16-normal-02",
+          "posting_kind": "holding-cost",
+          "calculation_version": "ledger-calculation-v1",
+          "portfolio_id": "portfolio-b",
+          "cost_delta": "60.000000000000000000",
+          "currency": "USD"
+        }
+      ],
+      "sequence_hash": "sha256:93a60bef014b5184db943ba4aeb71573797cbd00aec72d416d7a0acbd0b6f04c"
+    },
+    {
+      "scenario_id": "boundary",
+      "postings": [
+        {
+          "posting_id": "post-evt-16-boundary-01-01",
+          "event_id": "evt-16-boundary-01",
+          "posting_kind": "holding-cost",
+          "calculation_version": "ledger-calculation-v1",
+          "portfolio_id": "portfolio-a",
+          "cost_delta": "11.000000000000000000",
+          "currency": "USD"
+        }
+      ],
+      "sequence_hash": "sha256:c4b3280b78d156a6db425fedc1c6ea4b8043399022e92954f59b1915d6fa3373"
+    },
+    {
+      "scenario_id": "failure",
+      "postings": [],
+      "sequence_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  ],
+  "canonical_hash": "sha256:f8e816458a4b4bc2139894c6e7c26fe94633721e72d3d59e28afc4d4df7a82f3"
+}

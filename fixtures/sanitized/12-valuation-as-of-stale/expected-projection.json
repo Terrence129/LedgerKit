@@ -1,0 +1,38 @@
+{
+  "fixture_id": "12-valuation-as-of-stale",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 2,
+      "state": {
+        "selected_price_revision_id": "price-old",
+        "selected_fx_revision_id": "fx-asof",
+        "market_value": "20.000000000000000000",
+        "base_value": "140.000000000000000000",
+        "future_values_excluded": true
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 2,
+      "state": {
+        "selected_price_revision_id": "price-stale",
+        "selected_fx_revision_id": "fx-current",
+        "price_age_days": 10,
+        "base_value": "140.000000000000000000"
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "valued_net_assets": "0",
+        "unvalued_items": 1
+      }
+    }
+  ],
+  "canonical_hash": "sha256:f3277264ac8c76295b900f08ac07ad84760f9606304f2f136256cccab7fa12e3"
+}

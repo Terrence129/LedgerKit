@@ -1,0 +1,18 @@
+{
+  "fixture_id": "21-expense-date-validation",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": []
+    },
+    {
+      "scenario_id": "boundary",
+      "events": []
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:0f8f61a89357e3511b1b5cd47ec177585696af8f83a712edbe5a5b3c867328f8"
+}

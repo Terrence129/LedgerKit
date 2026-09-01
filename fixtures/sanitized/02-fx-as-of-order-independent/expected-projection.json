@@ -1,0 +1,32 @@
+{
+  "fixture_id": "02-fx-as-of-order-independent",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 1,
+      "state": {
+        "selected_fx_revision_id": "fx-usd-20260101-r1",
+        "valued_expense": "71.0000"
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 1,
+      "state": {
+        "selected_fx_revision_id": "fx-usd-20260115-r1",
+        "valued_income": "7.2000"
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "unvalued_count": 1
+      }
+    }
+  ],
+  "canonical_hash": "sha256:b8c39eedc95a521bc26439857d2f976cb3ba463ab21e90f9dceb0fda76e40678"
+}

@@ -1,0 +1,57 @@
+{
+  "fixture_id": "20-encrypted-backup",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-20-normal-01",
+          "command_type": "restore_backup",
+          "data": {
+            "package_id": "synthetic-encrypted-backup",
+            "format_version": 1,
+            "kdf": "argon2id-reviewed-placeholder",
+            "authenticated": true,
+            "password_case": "correct"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-20-boundary-01",
+          "command_type": "restore_backup",
+          "data": {
+            "package_id": "synthetic-encrypted-backup",
+            "format_version": 1,
+            "kdf": "argon2id-reviewed-placeholder",
+            "authenticated": false,
+            "password_case": "wrong"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-20-failure-01",
+          "command_type": "restore_backup",
+          "data": {
+            "package_id": "synthetic-encrypted-backup",
+            "format_version": 2,
+            "kdf": "unknown-kdf",
+            "authenticated": false
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:cb269fcd99f413972f96e6132d15079b42377be8a648e37c793e19b2bab00faf"
+}

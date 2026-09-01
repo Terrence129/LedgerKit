@@ -1,0 +1,46 @@
+{
+  "fixture_id": "11-negative-holding-blocked",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": [
+        {
+          "event_id": "evt-11-normal-01",
+          "event_type": "SecuritySell",
+          "effective_date": "2026-02-12",
+          "sequence": 1,
+          "status": "posted",
+          "detail": {
+            "quantity": "1.000000000000",
+            "available_quantity": "2.000000000000",
+            "unit_price": "5.000000000000"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "events": [
+        {
+          "event_id": "evt-11-boundary-01",
+          "event_type": "SecuritySell",
+          "effective_date": "2026-02-12",
+          "sequence": 2,
+          "status": "posted",
+          "detail": {
+            "quantity": "2.000000000000",
+            "available_quantity": "2.000000000000",
+            "unit_price": "5.000000000000"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:6fbe4bca52ed46b44e0e78bc592ef6531ff7e35f93e85ff57e3cc0ba91160176"
+}

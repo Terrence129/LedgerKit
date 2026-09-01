@@ -1,0 +1,27 @@
+{
+  "fixture_id": "27-expense-top10",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "EXPENSE_SORT_NOT_CANONICAL",
+          "field": "top10_strategy",
+          "message_key": "ledgerkit.expense_sort_not_canonical"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:6e6b925963a270ed85cb25ef0345faf24422499c63b9959f72121232c95402d4"
+}

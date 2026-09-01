@@ -1,0 +1,38 @@
+{
+  "fixture_id": "19-backup-safe-failure",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [
+        {
+          "code": "BACKUP_TRUNCATED",
+          "field": "package_hash",
+          "message_key": "ledgerkit.backup_truncated"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "BACKUP_SCHEMA_TOO_NEW",
+          "field": "schema_version",
+          "message_key": "ledgerkit.backup_schema_too_new"
+        },
+        {
+          "code": "RESTORE_SWITCH_FAILED",
+          "field": "atomic_switch",
+          "message_key": "ledgerkit.restore_switch_failed"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:94748a6215bb8775190a735faf469ba19147db89ffb112b73449ee92029a7a9a"
+}

@@ -1,0 +1,27 @@
+{
+  "fixture_id": "31-expense-excel-difference-bridge",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "MIGRATION_RECONCILIATION_UNEXPLAINED",
+          "field": "unexplained_difference",
+          "message_key": "ledgerkit.migration_reconciliation_unexplained"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:35f5ef3db1dfd7568fa7078a411fa2f22584d232f0cdc2c77bcf1102cb7e7220"
+}

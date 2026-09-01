@@ -14,19 +14,19 @@ ADR 记录会改变财务结果、持久化格式、安全模型、技术栈或�
 | 编号 | 主题 | 状态 |
 |---|---|---|
 | ADR-0001 | Tauri 2 或 .NET/Avalonia | Proposed |
-| ADR-0002 | 模块化单体和本地 SQLite 数据位置 | Proposed |
-| ADR-0003 | 类型化业务事件、轻量分录与投影 | Proposed |
-| ADR-0004 | Decimal、币种小数位与舍入规则 | Proposed |
-| ADR-0005 | 证券成本基础与历史重放 | Proposed |
-| ADR-0006 | 已过账事件修订/冲正语义 | Proposed |
+| [ADR-0002](ADR-0002-modular-monolith-local-sqlite.md) | 模块化单体和本地 SQLite 数据位置 | Accepted |
+| [ADR-0003](ADR-0003-typed-events-postings-projections.md) | 类型化业务事件、轻量分录与投影 | Accepted |
+| [ADR-0004](ADR-0004-decimal-rounding-contract.md) | Decimal、币种小数位与舍入规则 | Accepted |
+| [ADR-0005](ADR-0005-moving-weighted-average.md) | 证券成本基础与历史重放 | Accepted |
+| [ADR-0006](ADR-0006-revision-reversal-semantics.md) | 已过账事件修订/冲正语义 | Accepted |
 | ADR-0007 | Excel 解析与导出库 | Proposed |
 | ADR-0008 | 数据库与备份加密 | Proposed |
 | ADR-0009 | WebView2 分发策略 | Proposed |
 | ADR-0010 | 自动更新与签名 | Proposed |
-| ADR-0011 | 完整历史与 cut-over 迁移策略 | Proposed |
-| ADR-0012 | 汇率/价格修订、active 规则与估值 as-of | Proposed |
+| [ADR-0011](ADR-0011-history-cutover-migration.md) | 完整历史与 cut-over 迁移策略 | Accepted |
+| [ADR-0012](ADR-0012-market-data-revisions-as-of.md) | 汇率/价格修订、active 规则与估值 as-of | Accepted |
 | ADR-0013 | 自动备份保留、设备丢失 RPO 与恢复密钥 | Proposed |
-| ADR-0014 | 支出分析口径、系统桶、退款、缺 FX 与查询版本 | Proposed |
+| [ADR-0014](ADR-0014-expense-analysis-contract.md) | 支出分析口径、系统桶、退款、缺 FX 与查询版本 | Accepted |
 
 只有实际创建 ADR 文件后才把主题改为链接。文件名使用 `ADR-NNNN-short-title.md`。
 

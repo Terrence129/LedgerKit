@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ledgerkit.local/schemas/golden-input-v1.json",
+  "title": "LedgerKit golden input v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["fixture_id", "base_currency", "scenarios", "canonical_hash"],
+  "properties": {
+    "fixture_id": { "type": "string" },
+    "base_currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "scenarios": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scenario_id", "kind", "commands"],
+        "properties": {
+          "scenario_id": { "type": "string" },
+          "kind": { "enum": ["normal", "boundary", "failure"] },
+          "commands": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["command_id", "command_type", "data"],
+              "properties": {
+                "command_id": { "type": "string" },
+                "command_type": { "type": "string", "minLength": 1 },
+                "data": { "type": "object" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "canonical_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

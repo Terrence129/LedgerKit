@@ -1,0 +1,103 @@
+{
+  "fixture_id": "01-cny-income-expense",
+  "case_number": 1,
+  "title": "CNY income, expense, Decimal limits and signs",
+  "synthetic_data": true,
+  "related_rules": [
+    "CASH-001",
+    "CASH-002",
+    "DATE-001",
+    "NUM-001",
+    "NUM-002",
+    "NUM-003",
+    "NUM-004",
+    "NUM-005",
+    "NUM-006"
+  ],
+  "related_adrs": [
+    "ADR-0003",
+    "ADR-0004"
+  ],
+  "coverage": {
+    "normal": {
+      "scenario_ids": [
+        "normal"
+      ],
+      "rule_ids": [
+        "CASH-001",
+        "CASH-002",
+        "DATE-001",
+        "NUM-001",
+        "NUM-002",
+        "NUM-003",
+        "NUM-004",
+        "NUM-005",
+        "NUM-006"
+      ]
+    },
+    "boundary": {
+      "scenario_ids": [
+        "boundary"
+      ],
+      "rule_ids": [
+        "CASH-001",
+        "CASH-002",
+        "DATE-001",
+        "NUM-001",
+        "NUM-002",
+        "NUM-003",
+        "NUM-004",
+        "NUM-005",
+        "NUM-006"
+      ]
+    },
+    "failure": {
+      "scenario_ids": [
+        "failure"
+      ],
+      "rule_ids": [
+        "CASH-001",
+        "CASH-002",
+        "DATE-001",
+        "NUM-001",
+        "NUM-002",
+        "NUM-003",
+        "NUM-004",
+        "NUM-005",
+        "NUM-006"
+      ]
+    }
+  },
+  "decimal_contract": {
+    "id": "decimal-contract-v1",
+    "max_significant_digits": 28,
+    "max_scale": {
+      "amount": 8,
+      "quantity": 12,
+      "unit_price": 12,
+      "fx_rate": 15,
+      "internal": 18
+    }
+  },
+  "calculation_version": "ledger-calculation-v1",
+  "policy_versions": {
+    "expense": "expense-policy-v1",
+    "bucket": "expense-bucket-policy-v1",
+    "refund": "refund-policy-v1",
+    "market_data": "market-data-policy-v1"
+  },
+  "rounding_boundaries": [
+    "internal-scale-18-half-up",
+    "display-currency-half-up"
+  ],
+  "tolerances": {
+    "internal": "0",
+    "display": "0.01"
+  },
+  "generation": {
+    "method": "programmatically-generated-synthetic-data",
+    "generator": "tools/generate-m0-fixtures.mjs",
+    "reviewed": true
+  },
+  "canonical_hash": "sha256:0ade12c2e95f91255b77afe3a568df04a3e5515ced408f8a652a7c0fbe9361e2"
+}

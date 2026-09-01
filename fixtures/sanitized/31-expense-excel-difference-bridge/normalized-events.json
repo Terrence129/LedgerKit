@@ -1,0 +1,18 @@
+{
+  "fixture_id": "31-expense-excel-difference-bridge",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": []
+    },
+    {
+      "scenario_id": "boundary",
+      "events": []
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:6589b8858772518ffaed6404436fb07fdecb3e4c80780d5061b4957ea80d7c60"
+}

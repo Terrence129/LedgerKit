@@ -1,0 +1,27 @@
+{
+  "fixture_id": "09-dividend-investment-expense",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "INSTRUMENT_REQUIRED_FOR_FEE_SCOPE",
+          "field": "instrument_id",
+          "message_key": "ledgerkit.instrument_required_for_fee_scope"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:841c76c2d5d7cef203041af2a89d0468ed196a00e525b9077fa9596e361f423f"
+}

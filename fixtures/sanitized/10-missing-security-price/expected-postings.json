@@ -1,0 +1,21 @@
+{
+  "fixture_id": "10-missing-security-price",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "postings": [],
+      "sequence_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "scenario_id": "boundary",
+      "postings": [],
+      "sequence_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "scenario_id": "failure",
+      "postings": [],
+      "sequence_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  ],
+  "canonical_hash": "sha256:39ba7c5c356a7ccea6f3fd15004f0d80a71e0e69ade49c8961652431daee2f55"
+}

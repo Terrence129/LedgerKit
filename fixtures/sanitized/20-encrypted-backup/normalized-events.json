@@ -1,0 +1,18 @@
+{
+  "fixture_id": "20-encrypted-backup",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": []
+    },
+    {
+      "scenario_id": "boundary",
+      "events": []
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:69a49e12f5821bc725f3283a44abac5d9386de91b84f10aaf92a3580de0b715b"
+}

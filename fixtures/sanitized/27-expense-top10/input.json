@@ -1,0 +1,49 @@
+{
+  "fixture_id": "27-expense-top10",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-27-normal-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "positive_category_count": 12
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-27-boundary-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "equal_amount_bucket_ids": [
+              "cat-b",
+              "cat-a"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-27-failure-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "top10_strategy": "database-physical-row-order"
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:1f9c8f7c0f8367c8556391e49783d322e5b236ac15612da52f1ecba581812760"
+}

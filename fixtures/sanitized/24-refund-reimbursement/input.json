@@ -1,0 +1,50 @@
+{
+  "fixture_id": "24-refund-reimbursement",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-24-normal-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "original_expense_date": "2026-01-20",
+            "refund_date": "2026-02-10",
+            "reimbursement_date": "2026-02-12"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-24-boundary-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "refund_without_link": "7.00",
+            "foreign_currency_refund_missing_fx": "1.00"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-24-failure-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "semantic_role": "refund",
+            "implementation_strategy": "net-original-category"
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:f409ca71343bccce6aaaa40ff0d6ad910d5410280c3cd8f5ff70c70b24e867b4"
+}

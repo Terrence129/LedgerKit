@@ -1,0 +1,18 @@
+{
+  "fixture_id": "10-missing-security-price",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": []
+    },
+    {
+      "scenario_id": "boundary",
+      "events": []
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:edde634bf6dce111fb89bbe69becd553cda892f2cf14157e2b21137dbe6de0ed"
+}

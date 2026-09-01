@@ -1,0 +1,68 @@
+{
+  "fixture_id": "23-expense-distinct-counts",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-23-normal-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "synthetic_event_contributions": [
+              {
+                "event_id": "evt-shared",
+                "bucket_id": "cat-food"
+              },
+              {
+                "event_id": "evt-shared",
+                "bucket_id": "system:ordinary-fee"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-23-boundary-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "synthetic_event_contributions": [
+              {
+                "event_id": "evt-shared",
+                "bucket_id": "cat-a"
+              },
+              {
+                "event_id": "evt-shared",
+                "bucket_id": "cat-b"
+              },
+              {
+                "event_id": "evt-second",
+                "bucket_id": "cat-c"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-23-failure-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "count_strategy": "sum-bucket-counts-as-global"
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:159453a2ab2ac766abb87166dcd06321f41a9435d6b81b048fa22f9d6335406d"
+}

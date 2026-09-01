@@ -1,0 +1,21 @@
+{
+  "fixture_id": "27-expense-top10",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "postings": [],
+      "sequence_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "scenario_id": "boundary",
+      "postings": [],
+      "sequence_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "scenario_id": "failure",
+      "postings": [],
+      "sequence_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  ],
+  "canonical_hash": "sha256:275a3c511b8d3d359bbca93be31e8c1df022d36d45b745ffa4a0b8ac4f401542"
+}

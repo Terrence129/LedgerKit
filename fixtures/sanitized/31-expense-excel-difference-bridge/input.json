@@ -1,0 +1,52 @@
+{
+  "fixture_id": "31-expense-excel-difference-bridge",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-31-normal-01",
+          "command_type": "analyze_import",
+          "data": {
+            "reference_period_start": "2026-02-01",
+            "reference_period_end": "2026-02-28",
+            "excel_visible_amount": "24.00",
+            "excel_visible_count": 1
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-31-boundary-01",
+          "command_type": "analyze_import",
+          "data": {
+            "reference_period_start": "2026-02-01",
+            "reference_period_end": "2026-02-28",
+            "foreign_expense_missing_fx": "10.00"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-31-failure-01",
+          "command_type": "commit_import",
+          "data": {
+            "unexplained_difference": "0.01",
+            "user_confirmed": false
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:e836e62cbb3404ccda12810d67d1d0081635ad749ac452cf77ab08802037c03a"
+}

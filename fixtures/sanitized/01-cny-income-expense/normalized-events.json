@@ -1,0 +1,63 @@
+{
+  "fixture_id": "01-cny-income-expense",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": [
+        {
+          "event_id": "evt-01-normal-01",
+          "event_type": "Income",
+          "effective_date": "2026-01-05",
+          "sequence": 1,
+          "status": "posted",
+          "detail": {
+            "account_id": "cash-cny-1",
+            "amount": "100.00",
+            "currency": "CNY",
+            "category_id": "cat-salary"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        },
+        {
+          "event_id": "evt-01-normal-02",
+          "event_type": "Expense",
+          "effective_date": "2026-01-06",
+          "sequence": 1,
+          "status": "posted",
+          "detail": {
+            "account_id": "cash-cny-1",
+            "amount": "25.50",
+            "currency": "CNY",
+            "category_id": "cat-food"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "events": [
+        {
+          "event_id": "evt-01-boundary-01",
+          "event_type": "Expense",
+          "effective_date": "2026-01-31",
+          "sequence": 1,
+          "status": "posted",
+          "detail": {
+            "account_id": "cash-cny-1",
+            "amount": "0.00000001",
+            "currency": "CNY",
+            "category_id": "cat-rounding",
+            "currency_precision_confirmed": true
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:f2f6bf0e0b27e59fc1d3342cd523bb7c01c7196af6e4ae45c0cbd6d85612c84c"
+}

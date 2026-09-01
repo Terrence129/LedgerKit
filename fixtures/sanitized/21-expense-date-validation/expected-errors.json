@@ -1,0 +1,27 @@
+{
+  "fixture_id": "21-expense-date-validation",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "EXPENSE_DATE_RANGE_INVALID",
+          "field": "start_date",
+          "message_key": "ledgerkit.expense_date_range_invalid"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:659ce425d0eed538831aedae5fb1f315e13bb6a20721012471c2471b26173057"
+}

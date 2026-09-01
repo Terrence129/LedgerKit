@@ -1,0 +1,65 @@
+{
+  "fixture_id": "01-cny-income-expense",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-01-normal-01",
+          "command_type": "post_event",
+          "data": {
+            "account_id": "cash-cny-1",
+            "amount": "100.00",
+            "currency": "CNY",
+            "category_id": "cat-salary"
+          }
+        },
+        {
+          "command_id": "cmd-01-normal-02",
+          "command_type": "post_event",
+          "data": {
+            "account_id": "cash-cny-1",
+            "amount": "25.50",
+            "currency": "CNY",
+            "category_id": "cat-food"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-01-boundary-01",
+          "command_type": "post_event",
+          "data": {
+            "account_id": "cash-cny-1",
+            "amount": "0.00000001",
+            "currency": "CNY",
+            "category_id": "cat-rounding",
+            "currency_precision_confirmed": true
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-01-failure-01",
+          "command_type": "post_event",
+          "data": {
+            "account_id": "cash-cny-1",
+            "amount": "1.000000000",
+            "currency": "CNY"
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:512610e3e409731b1bab91ef71ccfebf004c63e44e5018739bb093909f1a7f67"
+}

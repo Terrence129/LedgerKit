@@ -1,0 +1,79 @@
+{
+  "fixture_id": "07-partial-security-sale",
+  "case_number": 7,
+  "title": "Partial sale locks moving-average cost and realized PnL",
+  "synthetic_data": true,
+  "related_rules": [
+    "INV-004",
+    "INV-006",
+    "INV-007"
+  ],
+  "related_adrs": [
+    "ADR-0004",
+    "ADR-0005"
+  ],
+  "coverage": {
+    "normal": {
+      "scenario_ids": [
+        "normal"
+      ],
+      "rule_ids": [
+        "INV-004",
+        "INV-006",
+        "INV-007"
+      ]
+    },
+    "boundary": {
+      "scenario_ids": [
+        "boundary"
+      ],
+      "rule_ids": [
+        "INV-004",
+        "INV-006",
+        "INV-007"
+      ]
+    },
+    "failure": {
+      "scenario_ids": [
+        "failure"
+      ],
+      "rule_ids": [
+        "INV-004",
+        "INV-006",
+        "INV-007"
+      ]
+    }
+  },
+  "decimal_contract": {
+    "id": "decimal-contract-v1",
+    "max_significant_digits": 28,
+    "max_scale": {
+      "amount": 8,
+      "quantity": 12,
+      "unit_price": 12,
+      "fx_rate": 15,
+      "internal": 18
+    }
+  },
+  "calculation_version": "ledger-calculation-v1",
+  "policy_versions": {
+    "expense": "expense-policy-v1",
+    "bucket": "expense-bucket-policy-v1",
+    "refund": "refund-policy-v1",
+    "market_data": "market-data-policy-v1"
+  },
+  "rounding_boundaries": [
+    "internal-scale-18-half-up",
+    "display-currency-half-up"
+  ],
+  "tolerances": {
+    "internal": "0",
+    "display": "0.01"
+  },
+  "generation": {
+    "method": "programmatically-generated-synthetic-data",
+    "generator": "tools/generate-m0-fixtures.mjs",
+    "reviewed": true
+  },
+  "canonical_hash": "sha256:4a646946c00e1262a857262f788755b1e74f1f648674801eeca4cf4f13a88e04"
+}

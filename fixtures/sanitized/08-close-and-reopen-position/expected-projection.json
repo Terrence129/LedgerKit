@@ -1,0 +1,40 @@
+{
+  "fixture_id": "08-close-and-reopen-position",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 3,
+      "state": {
+        "quantity": "1.000000000000",
+        "carrying_cost": "20.000000000000000000",
+        "average_cost": "20.000000000000000000",
+        "historical_realized_pnl": "9.999999999999999998",
+        "closed_state_before_reopen": {
+          "quantity": "0",
+          "carrying_cost": "0",
+          "average_cost": null
+        }
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 1,
+      "state": {
+        "quantity": "0",
+        "carrying_cost": "0",
+        "average_cost": null
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "unchanged": true
+      }
+    }
+  ],
+  "canonical_hash": "sha256:1fd7df41e7cc02838b1b77c515c7fd52bb11781ac6afb22af021392b4bf0c0a4"
+}

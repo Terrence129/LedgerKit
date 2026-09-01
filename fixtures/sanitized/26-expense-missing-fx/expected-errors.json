@@ -1,0 +1,27 @@
+{
+  "fixture_id": "26-expense-missing-fx",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "FX_RATE_MUST_BE_POSITIVE",
+          "field": "rate_to_base",
+          "message_key": "ledgerkit.fx_rate_must_be_positive"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:b26c859de641de8d8df843a69921814a2e758696f76f4ed8922ed2dbb70ef614"
+}

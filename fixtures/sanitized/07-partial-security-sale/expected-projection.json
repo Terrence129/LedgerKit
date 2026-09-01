@@ -1,0 +1,35 @@
+{
+  "fixture_id": "07-partial-security-sale",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 1,
+      "state": {
+        "quantity": "6.000000000000",
+        "carrying_cost": "75.000000000000000000",
+        "average_cost": "12.500000000000000000",
+        "realized_pnl": "9.000000000000000000"
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 1,
+      "state": {
+        "quantity": "6.000000000000",
+        "carrying_cost": "75.000000000000000000",
+        "realized_pnl": "0.000000000002500000"
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "unchanged": true
+      }
+    }
+  ],
+  "canonical_hash": "sha256:25957001e53f067dc2ce58f60bb6e8c8192c77345697a42213cabf2e55cac3ae"
+}

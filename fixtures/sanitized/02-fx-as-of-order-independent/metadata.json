@@ -1,0 +1,83 @@
+{
+  "fixture_id": "02-fx-as-of-order-independent",
+  "case_number": 2,
+  "title": "Foreign-currency as-of selection is row-order independent",
+  "synthetic_data": true,
+  "related_rules": [
+    "DATE-003",
+    "FX-001",
+    "FX-002",
+    "FX-004"
+  ],
+  "related_adrs": [
+    "ADR-0004",
+    "ADR-0012"
+  ],
+  "coverage": {
+    "normal": {
+      "scenario_ids": [
+        "normal"
+      ],
+      "rule_ids": [
+        "DATE-003",
+        "FX-001",
+        "FX-002",
+        "FX-004"
+      ]
+    },
+    "boundary": {
+      "scenario_ids": [
+        "boundary"
+      ],
+      "rule_ids": [
+        "DATE-003",
+        "FX-001",
+        "FX-002",
+        "FX-004"
+      ]
+    },
+    "failure": {
+      "scenario_ids": [
+        "failure"
+      ],
+      "rule_ids": [
+        "DATE-003",
+        "FX-001",
+        "FX-002",
+        "FX-004"
+      ]
+    }
+  },
+  "decimal_contract": {
+    "id": "decimal-contract-v1",
+    "max_significant_digits": 28,
+    "max_scale": {
+      "amount": 8,
+      "quantity": 12,
+      "unit_price": 12,
+      "fx_rate": 15,
+      "internal": 18
+    }
+  },
+  "calculation_version": "ledger-calculation-v1",
+  "policy_versions": {
+    "expense": "expense-policy-v1",
+    "bucket": "expense-bucket-policy-v1",
+    "refund": "refund-policy-v1",
+    "market_data": "market-data-policy-v1"
+  },
+  "rounding_boundaries": [
+    "internal-scale-18-half-up",
+    "display-currency-half-up"
+  ],
+  "tolerances": {
+    "internal": "0",
+    "display": "0.01"
+  },
+  "generation": {
+    "method": "programmatically-generated-synthetic-data",
+    "generator": "tools/generate-m0-fixtures.mjs",
+    "reviewed": true
+  },
+  "canonical_hash": "sha256:930128ab838ea82ff4ba7a889c813b8b4ee0ec828e573b1ffcbf9797e6d89a1c"
+}

@@ -1,0 +1,88 @@
+{
+  "fixture_id": "02-fx-as-of-order-independent",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-02-normal-01",
+          "command_type": "post_event",
+          "data": {
+            "account_id": "cash-usd-1",
+            "amount": "10.00",
+            "currency": "USD",
+            "category_id": "cat-travel",
+            "fx_resolution": {
+              "target_date": "2026-01-10",
+              "selected_revision_id": "fx-usd-20260101-r1",
+              "final_rate": "7.10",
+              "base_value": "71.0000"
+            },
+            "fx_revisions_in_physical_order": [
+              {
+                "revision_id": "fx-usd-20260115-r1",
+                "date": "2026-01-15",
+                "rate_to_base": "7.20",
+                "active": true
+              },
+              {
+                "revision_id": "fx-usd-20260101-r1",
+                "date": "2026-01-01",
+                "rate_to_base": "7.10",
+                "active": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-02-boundary-01",
+          "command_type": "post_event",
+          "data": {
+            "account_id": "cash-usd-1",
+            "amount": "1.00",
+            "currency": "USD",
+            "category_id": "cat-other-income",
+            "fx_resolution": {
+              "target_date": "2026-01-15",
+              "selected_revision_id": "fx-usd-20260115-r1",
+              "final_rate": "7.20",
+              "base_value": "7.2000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-02-failure-01",
+          "command_type": "post_event",
+          "data": {
+            "account_id": "cash-usd-1",
+            "amount": "2.00",
+            "currency": "USD",
+            "effective_date": "2025-12-31",
+            "fx_revisions": [
+              {
+                "date": "2026-01-01",
+                "rate_to_base": "7.10",
+                "active": true
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:4e133dc41e854527371faa480e97dafdee88d3c60f4389c06ed0c75b8c841925"
+}

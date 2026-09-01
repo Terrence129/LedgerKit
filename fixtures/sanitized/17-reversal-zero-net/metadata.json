@@ -1,0 +1,91 @@
+{
+  "fixture_id": "17-reversal-zero-net",
+  "case_number": 17,
+  "title": "Reversal preserves audit and nets exactly to zero",
+  "synthetic_data": true,
+  "related_rules": [
+    "EVT-001",
+    "EVT-002",
+    "EVT-003",
+    "EVT-004",
+    "EVT-005",
+    "EVT-006"
+  ],
+  "related_adrs": [
+    "ADR-0003",
+    "ADR-0006"
+  ],
+  "coverage": {
+    "normal": {
+      "scenario_ids": [
+        "normal"
+      ],
+      "rule_ids": [
+        "EVT-001",
+        "EVT-002",
+        "EVT-003",
+        "EVT-004",
+        "EVT-005",
+        "EVT-006"
+      ]
+    },
+    "boundary": {
+      "scenario_ids": [
+        "boundary"
+      ],
+      "rule_ids": [
+        "EVT-001",
+        "EVT-002",
+        "EVT-003",
+        "EVT-004",
+        "EVT-005",
+        "EVT-006"
+      ]
+    },
+    "failure": {
+      "scenario_ids": [
+        "failure"
+      ],
+      "rule_ids": [
+        "EVT-001",
+        "EVT-002",
+        "EVT-003",
+        "EVT-004",
+        "EVT-005",
+        "EVT-006"
+      ]
+    }
+  },
+  "decimal_contract": {
+    "id": "decimal-contract-v1",
+    "max_significant_digits": 28,
+    "max_scale": {
+      "amount": 8,
+      "quantity": 12,
+      "unit_price": 12,
+      "fx_rate": 15,
+      "internal": 18
+    }
+  },
+  "calculation_version": "ledger-calculation-v1",
+  "policy_versions": {
+    "expense": "expense-policy-v1",
+    "bucket": "expense-bucket-policy-v1",
+    "refund": "refund-policy-v1",
+    "market_data": "market-data-policy-v1"
+  },
+  "rounding_boundaries": [
+    "internal-scale-18-half-up",
+    "display-currency-half-up"
+  ],
+  "tolerances": {
+    "internal": "0",
+    "display": "0.01"
+  },
+  "generation": {
+    "method": "programmatically-generated-synthetic-data",
+    "generator": "tools/generate-m0-fixtures.mjs",
+    "reviewed": true
+  },
+  "canonical_hash": "sha256:86a26787d0f07279388c7a287c49ed0adb8ad8054ca5c94b03af7018737fd8e9"
+}

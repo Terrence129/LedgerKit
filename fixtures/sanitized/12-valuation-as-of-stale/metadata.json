@@ -1,0 +1,90 @@
+{
+  "fixture_id": "12-valuation-as-of-stale",
+  "case_number": 12,
+  "title": "Valuation uses valuation-date as-of and flags stale prices",
+  "synthetic_data": true,
+  "related_rules": [
+    "FX-002",
+    "FX-004",
+    "VAL-001",
+    "VAL-002",
+    "VAL-003",
+    "VAL-004"
+  ],
+  "related_adrs": [
+    "ADR-0012"
+  ],
+  "coverage": {
+    "normal": {
+      "scenario_ids": [
+        "normal"
+      ],
+      "rule_ids": [
+        "FX-002",
+        "FX-004",
+        "VAL-001",
+        "VAL-002",
+        "VAL-003",
+        "VAL-004"
+      ]
+    },
+    "boundary": {
+      "scenario_ids": [
+        "boundary"
+      ],
+      "rule_ids": [
+        "FX-002",
+        "FX-004",
+        "VAL-001",
+        "VAL-002",
+        "VAL-003",
+        "VAL-004"
+      ]
+    },
+    "failure": {
+      "scenario_ids": [
+        "failure"
+      ],
+      "rule_ids": [
+        "FX-002",
+        "FX-004",
+        "VAL-001",
+        "VAL-002",
+        "VAL-003",
+        "VAL-004"
+      ]
+    }
+  },
+  "decimal_contract": {
+    "id": "decimal-contract-v1",
+    "max_significant_digits": 28,
+    "max_scale": {
+      "amount": 8,
+      "quantity": 12,
+      "unit_price": 12,
+      "fx_rate": 15,
+      "internal": 18
+    }
+  },
+  "calculation_version": "ledger-calculation-v1",
+  "policy_versions": {
+    "expense": "expense-policy-v1",
+    "bucket": "expense-bucket-policy-v1",
+    "refund": "refund-policy-v1",
+    "market_data": "market-data-policy-v1"
+  },
+  "rounding_boundaries": [
+    "internal-scale-18-half-up",
+    "display-currency-half-up"
+  ],
+  "tolerances": {
+    "internal": "0",
+    "display": "0.01"
+  },
+  "generation": {
+    "method": "programmatically-generated-synthetic-data",
+    "generator": "tools/generate-m0-fixtures.mjs",
+    "reviewed": true
+  },
+  "canonical_hash": "sha256:b21debaf3f342bed30223255df6bcd3dc522823bf6fde8c3e8e0b1e0d3a6963e"
+}

@@ -1,0 +1,56 @@
+{
+  "fixture_id": "04-same-currency-transfer",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-04-normal-01",
+          "command_type": "post_event",
+          "data": {
+            "from_account_id": "cash-cny-1",
+            "to_account_id": "cash-cny-2",
+            "amount": "50.00",
+            "currency": "CNY"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-04-boundary-01",
+          "command_type": "post_event",
+          "data": {
+            "from_account_id": "cash-cny-1",
+            "to_account_id": "cash-cny-2",
+            "amount": "0.00000001",
+            "currency": "CNY",
+            "currency_precision_confirmed": true
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-04-failure-01",
+          "command_type": "post_event",
+          "data": {
+            "from_account_id": "cash-cny-1",
+            "to_account_id": "cash-usd-1",
+            "amount": "50.00",
+            "currency": "CNY"
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:5f38c59464c96899fdfeaef305e19be255c3e9498eb39c89ba5f3a681426bbff"
+}

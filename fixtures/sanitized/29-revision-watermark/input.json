@@ -1,0 +1,60 @@
+{
+  "fixture_id": "29-revision-watermark",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-29-normal-01",
+          "command_type": "revise_event",
+          "data": {
+            "event_id": "evt-29-normal-01",
+            "replacement_amount": "12.00",
+            "reason": "Synthetic corrected receipt"
+          }
+        },
+        {
+          "command_id": "cmd-29-normal-02",
+          "command_type": "post_event",
+          "data": {
+            "amount": "5.00",
+            "semantic_role": "refund"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-29-boundary-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "event_watermark": 1,
+            "calculation_version": "ledger-calculation-v1",
+            "expense_policy_version": "expense-policy-v1"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-29-failure-01",
+          "command_type": "revise_event",
+          "data": {
+            "event_id": "evt-29-normal-01",
+            "replacement_amount": "12.00",
+            "reason": ""
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:4c9bc3e2da36ebc4ce48ddc2bae2e44229b50da4a397a86b78de867f708464a3"
+}

@@ -1,0 +1,61 @@
+{
+  "fixture_id": "19-backup-safe-failure",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-19-normal-01",
+          "command_type": "restore_backup",
+          "data": {
+            "package_id": "synthetic-backup-valid",
+            "package_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+            "schema_version": 1
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-19-boundary-01",
+          "command_type": "restore_backup",
+          "data": {
+            "package_id": "synthetic-backup-truncated",
+            "package_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "schema_version": 1
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-19-failure-01",
+          "command_type": "restore_backup",
+          "data": {
+            "package_id": "synthetic-backup-future",
+            "schema_version": 999,
+            "package_hash": "1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        },
+        {
+          "command_id": "cmd-19-failure-02",
+          "command_type": "restore_backup",
+          "data": {
+            "package_id": "synthetic-backup-switch-failure",
+            "schema_version": 1,
+            "simulate_atomic_switch_failure": true
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:d787d8763e922485d137d0e3c61bd484b66111fca15cf4bd698dfcb93132445f"
+}

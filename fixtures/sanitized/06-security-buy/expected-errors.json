@@ -1,0 +1,27 @@
+{
+  "fixture_id": "06-security-buy",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "TRADE_CURRENCY_MISMATCH",
+          "field": "settlement_account_id",
+          "message_key": "ledgerkit.trade_currency_mismatch"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:557e615130807511ce545137ec1000f8d3295a35bfeb3b372a02cfc19b4a5b26"
+}

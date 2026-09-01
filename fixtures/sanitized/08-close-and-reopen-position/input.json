@@ -1,0 +1,88 @@
+{
+  "fixture_id": "08-close-and-reopen-position",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-08-normal-01",
+          "command_type": "post_event",
+          "data": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "quantity": "2.000000000000",
+            "unit_price": "13.000000000000",
+            "trade_fee": "0",
+            "pre_quantity": "3.000000000000",
+            "pre_carrying_cost": "30.000000000000000001"
+          }
+        },
+        {
+          "command_id": "cmd-08-normal-02",
+          "command_type": "post_event",
+          "data": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "quantity": "1.000000000000",
+            "unit_price": "14.000000000000",
+            "trade_fee": "0",
+            "pre_quantity": "1.000000000000",
+            "pre_carrying_cost": "10.000000000000000001"
+          }
+        },
+        {
+          "command_id": "cmd-08-normal-03",
+          "command_type": "post_event",
+          "data": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "quantity": "1.000000000000",
+            "unit_price": "20.000000000000",
+            "trade_fee": "0"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-08-boundary-01",
+          "command_type": "post_event",
+          "data": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-beta",
+            "quantity": "0.000000000001",
+            "unit_price": "1.000000000000",
+            "trade_fee": "0",
+            "pre_quantity": "0.000000000001",
+            "pre_carrying_cost": "0.000000000000000001"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-08-failure-01",
+          "command_type": "post_event",
+          "data": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "quantity": "1.000000000001",
+            "unit_price": "14.000000000000",
+            "trade_fee": "0",
+            "pre_quantity": "1.000000000000",
+            "pre_carrying_cost": "10.000000000000000001"
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:d84f07cae81a67e35a2410b4b37417aab77a305f624384f91d6cb423ca480f9f"
+}

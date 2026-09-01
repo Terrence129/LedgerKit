@@ -1,0 +1,31 @@
+{
+  "fixture_id": "11-negative-holding-blocked",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 1,
+      "state": {
+        "quantity": "1.000000000000"
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 1,
+      "state": {
+        "quantity": "0",
+        "carrying_cost": "0"
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "quantity": "2.000000000000"
+      }
+    }
+  ],
+  "canonical_hash": "sha256:46382c4d931e00688e5e97266e57af56ea2c9e921c910d316452f9f77dc2f4a2"
+}

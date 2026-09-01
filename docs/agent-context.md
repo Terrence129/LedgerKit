@@ -1,6 +1,6 @@
 # Agent Context
 
-> 状态：Ready for M0
+> 状态：M0 完成，Ready for M1
 >
 > 最后验证：2026-09-02
 >
@@ -25,14 +25,14 @@ LedgerKit 是单用户、本地优先、隐私友好的多币种现金、投资�
 - Excel 是一次性初始迁移源和标准化导出格式，不是运行时计算引擎或持续双向同步源。
 - 真实财务数据不得进入公开仓库、日志、遥测、截图或 fixture。
 - P0 支出分析沿用 v1.3.0 的产品意图，但使用动态分类、明确缺 FX 和稳定语义修正规则缺口。
+- M0 已接受模块化单体/本地 SQLite、类型化事件/确定性 posting/可重建投影、`decimal-contract-v1`、逐笔移动加权平均、修订/冲正、逐账户/组合迁移策略、冻结交易 FX/动态估值和 `expense-analysis-query/v1`；权威内容见 [`docs/adr/README.md`](adr/README.md)。
+- M0 黄金基线包含开发计划书 14.2 的 31 组技术栈无关合成 fixture、六类 JSON Schema、规范序列化/哈希和跨栈消费说明；验证入口为 [`tools/check-m0-fixtures.ps1`](../tools/check-m0-fixtures.ps1)。
 
 ## 暂定方案（尚未 Accepted）
 
 - 技术栈首选 Tauri 2 + React/TypeScript + Rust Core + SQLite；M1 与 .NET/Avalonia 风险样机比较后接受 ADR-0001。
-- 证券成本基础默认逐笔移动加权平均；Excel 累计平均只用于迁移差异桥。
 - P0 支持密码加密的便携备份；是否引入 SQLCipher 由威胁模型和 M1 PoC 决定。
 - 本位币出现依赖记录后不可原地修改；需要新账本和显式迁移。
-- 汇率/价格修订、交易 FX 冻结与显式重算语义仍需 ADR-0012 完整定义。
 
 不得把本节的暂定方案描述成最终结论。
 
@@ -40,8 +40,7 @@ LedgerKit 是单用户、本地优先、隐私友好的多币种现金、投资�
 
 ### M0
 
-- 早于账户期初日期的证券交易没有安全默认迁移方式。必须逐账户/组合决定“完整历史重建”或“明确 cut-over”，并证明现金、数量、成本与历史业绩闭环。
-- 需要确认 Decimal/舍入、证券成本、修订/冲正、支出分析和汇率/价格修订口径，并形成对应 ADR 与黄金样例。
+- 无。原 blocker 已由 ADR-0004、0005、0006、0011、0012、0014 和对应黄金 fixture 关闭；迁移实施仍必须逐账户/组合显式选择策略并完成闭环对账。
 
 ### M1
 
@@ -51,16 +50,16 @@ LedgerKit 是单用户、本地优先、隐私友好的多币种现金、投资�
 ## 当前工作区
 
 - 已有完整开发计划书和 agent 工作区规范。
-- 已有 [`implementation-prompts/README.md`](implementation-prompts/README.md) 索引的 14 阶段串行实现提示词包，覆盖 M0 决策、M1 双栈门禁、M2–M6 实现和 Beta 候选审计；提示词尚未执行，不代表任何里程碑已完成。
+- 已有 [`implementation-prompts/README.md`](implementation-prompts/README.md) 索引的 14 阶段串行实现提示词包，覆盖 M0 决策、M1 双栈门禁、M2–M6 实现和 Beta 候选审计；任务 01 已完成，任务 02–14 尚未执行。
 - GitHub 公开仓库为 `Terrence129/LedgerKit`，默认分支为 `main`。
-- 尚未创建应用骨架、数据库 schema、测试代码或正式黄金 fixture。
-- 尚未建立统一的 `check/test/build` 命令；在建立前，agent 必须报告实际运行的检查。
+- 已创建八份 M0 Accepted ADR、31 组正式合成黄金 fixture、JSON Schema、确定性生成器和 M0 检查命令；尚未创建应用骨架或数据库 schema。
+- 尚未建立全项目统一的 `check/test/build` 命令；M0 fixture 使用 `pwsh -NoProfile -File tools/check-m0-fixtures.ps1`，后续阶段仍必须报告实际运行的其他检查。
 
 ## 下一步建议
 
-1. 严格按 [`implementation-prompts/README.md`](implementation-prompts/README.md) 的共享目录串行规则执行任务 01。
-2. 生成并审阅 M0 Accepted ADR 与脱敏黄金 fixture，完成后再进入 M1。
-3. M1 必须完成双栈同夹具实测和条件门禁，不提前批量开发 UI。
+1. 严格按 [`implementation-prompts/README.md`](implementation-prompts/README.md) 的共享目录串行规则执行任务 02 和任务 03 的双栈样机。
+2. 两个候选栈必须消费同一 M0 fixture 并报告逐字段与 canonical hash 结果，不得维护候选栈私有预期。
+3. M1 Gate 必须完成双栈同口径报告和条件门禁，不提前批量开发 UI。
 
 ## 更新规则
 

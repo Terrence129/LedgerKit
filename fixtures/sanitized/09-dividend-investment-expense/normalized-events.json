@@ -1,0 +1,69 @@
+{
+  "fixture_id": "09-dividend-investment-expense",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": [
+        {
+          "event_id": "evt-09-normal-01",
+          "event_type": "Dividend",
+          "effective_date": "2026-02-10",
+          "sequence": 1,
+          "status": "posted",
+          "detail": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "settlement_account_id": "cash-usd-1",
+            "gross_cash_amount": "10.00",
+            "withholding_tax": "1.50",
+            "fee_amount": "0.50",
+            "currency": "USD"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        },
+        {
+          "event_id": "evt-09-normal-02",
+          "event_type": "InvestmentExpense",
+          "effective_date": "2026-02-10",
+          "sequence": 2,
+          "status": "posted",
+          "detail": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "settlement_account_id": "cash-usd-1",
+            "fee_scope": "instrument",
+            "amount": "2.00",
+            "currency": "USD"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "events": [
+        {
+          "event_id": "evt-09-boundary-01",
+          "event_type": "InvestmentExpense",
+          "effective_date": "2026-02-10",
+          "sequence": 3,
+          "status": "posted",
+          "detail": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": null,
+            "settlement_account_id": "cash-usd-1",
+            "fee_scope": "portfolio",
+            "amount": "0.01",
+            "currency": "USD"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:c20169f765d86cdb72ab864b717f3c8d1805ca9a50fe257da4e2c50d857db704"
+}

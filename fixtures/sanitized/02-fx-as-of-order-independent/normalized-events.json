@@ -1,0 +1,60 @@
+{
+  "fixture_id": "02-fx-as-of-order-independent",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": [
+        {
+          "event_id": "evt-02-normal-01",
+          "event_type": "Expense",
+          "effective_date": "2026-01-10",
+          "sequence": 1,
+          "status": "posted",
+          "detail": {
+            "account_id": "cash-usd-1",
+            "amount": "10.00",
+            "currency": "USD",
+            "category_id": "cat-travel",
+            "fx_resolution": {
+              "target_date": "2026-01-10",
+              "selected_revision_id": "fx-usd-20260101-r1",
+              "final_rate": "7.10",
+              "base_value": "71.0000"
+            }
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "events": [
+        {
+          "event_id": "evt-02-boundary-01",
+          "event_type": "Income",
+          "effective_date": "2026-01-15",
+          "sequence": 1,
+          "status": "posted",
+          "detail": {
+            "account_id": "cash-usd-1",
+            "amount": "1.00",
+            "currency": "USD",
+            "category_id": "cat-other-income",
+            "fx_resolution": {
+              "target_date": "2026-01-15",
+              "selected_revision_id": "fx-usd-20260115-r1",
+              "final_rate": "7.20",
+              "base_value": "7.2000"
+            }
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:414f7e78d54d181775c2899436ac1b55c5cff626501b7e7788799990dfec9011"
+}

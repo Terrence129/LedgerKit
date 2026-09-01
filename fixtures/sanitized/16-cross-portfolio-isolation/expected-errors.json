@@ -1,0 +1,27 @@
+{
+  "fixture_id": "16-cross-portfolio-isolation",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "SETTLEMENT_OVERRIDE_REASON_REQUIRED",
+          "field": "settlement_account_override_reason",
+          "message_key": "ledgerkit.settlement_override_reason_required"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:61678e26cfb778bb3383f4db7327298457e7206f2d26c4b8bd08bf0c138865da"
+}

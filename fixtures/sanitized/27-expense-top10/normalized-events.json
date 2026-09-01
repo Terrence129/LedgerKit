@@ -1,0 +1,18 @@
+{
+  "fixture_id": "27-expense-top10",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": []
+    },
+    {
+      "scenario_id": "boundary",
+      "events": []
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:7765fd2d64daff80629bd17128791db18f39a3c1239163ccb3279ffc54931e62"
+}

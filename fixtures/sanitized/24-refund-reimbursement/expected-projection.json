@@ -1,0 +1,214 @@
+{
+  "fixture_id": "24-refund-reimbursement",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 3,
+      "state": {
+        "expense_analysis_query_result": {
+          "contract": "expense-analysis-query-result/v1",
+          "query": {
+            "start_date": "2026-02-01",
+            "end_date": "2026-02-28",
+            "base_currency": "CNY"
+          },
+          "summary": {
+            "label": "Total expense",
+            "total_expense": "100",
+            "valued_subtotal": "100",
+            "global_distinct_event_count": 1,
+            "largest_category": {
+              "bucket_id": "cat-food",
+              "amount": "100.00"
+            }
+          },
+          "buckets": [
+            {
+              "bucket_id": "cat-food",
+              "bucket_kind": "category",
+              "label": "Food",
+              "archived": false,
+              "amount": "100.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 3,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-food",
+                "valuation_state": "valued"
+              }
+            }
+          ],
+          "top10": {
+            "items": [
+              {
+                "bucket_id": "cat-food",
+                "label": "Food",
+                "amount": "100.00",
+                "distinct_event_count": 1,
+                "drilldown_context": {
+                  "start_date": "2026-02-01",
+                  "end_date": "2026-02-28",
+                  "event_watermark": 3,
+                  "calculation_version": "ledger-calculation-v1",
+                  "expense_policy_version": "expense-policy-v1",
+                  "bucket_id": "cat-food",
+                  "valuation_state": "valued"
+                }
+              }
+            ],
+            "other": null
+          },
+          "refunds": {
+            "refund": {
+              "amount": "20.00",
+              "distinct_event_count": 1,
+              "unvalued_count": 0,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 3,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "semantic_role": "refund",
+                "valuation_state": "all"
+              }
+            },
+            "reimbursement": {
+              "amount": "5.00",
+              "distinct_event_count": 1,
+              "unvalued_count": 0,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 3,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "semantic_role": "reimbursement",
+                "valuation_state": "all"
+              }
+            }
+          },
+          "unvalued": {
+            "expense_count": 0,
+            "drilldown_context": {
+              "start_date": "2026-02-01",
+              "end_date": "2026-02-28",
+              "event_watermark": 3,
+              "calculation_version": "ledger-calculation-v1",
+              "expense_policy_version": "expense-policy-v1",
+              "semantic_role": "expense",
+              "valuation_state": "unvalued"
+            }
+          },
+          "watermarks": {
+            "event": 3,
+            "master_data": 1
+          },
+          "versions": {
+            "calculation": "ledger-calculation-v1",
+            "expense_policy": "expense-policy-v1",
+            "bucket_policy": "expense-bucket-policy-v1",
+            "refund_policy": "refund-policy-v1"
+          },
+          "canonicalization": "ledgerkit-canonical-json-v1",
+          "canonical_hash": "sha256:6dc65bf5307030ea3ed419b98c529b09c4cb7ec3288333f6be964dc3032de535"
+        },
+        "original_category_gross_expense": "100.00"
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 4,
+      "state": {
+        "expense_analysis_query_result": {
+          "contract": "expense-analysis-query-result/v1",
+          "query": {
+            "start_date": "2026-03-01",
+            "end_date": "2026-03-31",
+            "base_currency": "CNY"
+          },
+          "summary": {
+            "label": "Total expense",
+            "total_expense": "0",
+            "valued_subtotal": "0",
+            "global_distinct_event_count": 0,
+            "largest_category": null
+          },
+          "buckets": [],
+          "top10": {
+            "items": [],
+            "other": null
+          },
+          "refunds": {
+            "refund": {
+              "amount": "7.00",
+              "distinct_event_count": 1,
+              "unvalued_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-03-01",
+                "end_date": "2026-03-31",
+                "event_watermark": 4,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "semantic_role": "refund",
+                "valuation_state": "all"
+              }
+            },
+            "reimbursement": {
+              "amount": "0",
+              "distinct_event_count": 0,
+              "unvalued_count": 0,
+              "drilldown_context": {
+                "start_date": "2026-03-01",
+                "end_date": "2026-03-31",
+                "event_watermark": 4,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "semantic_role": "reimbursement",
+                "valuation_state": "all"
+              }
+            }
+          },
+          "unvalued": {
+            "expense_count": 0,
+            "drilldown_context": {
+              "start_date": "2026-03-01",
+              "end_date": "2026-03-31",
+              "event_watermark": 4,
+              "calculation_version": "ledger-calculation-v1",
+              "expense_policy_version": "expense-policy-v1",
+              "semantic_role": "expense",
+              "valuation_state": "unvalued"
+            }
+          },
+          "watermarks": {
+            "event": 4,
+            "master_data": 1
+          },
+          "versions": {
+            "calculation": "ledger-calculation-v1",
+            "expense_policy": "expense-policy-v1",
+            "bucket_policy": "expense-bucket-policy-v1",
+            "refund_policy": "refund-policy-v1"
+          },
+          "canonicalization": "ledgerkit-canonical-json-v1",
+          "canonical_hash": "sha256:d2868f282760603b02fa2ff163a7eb628e70bffc76629ba0831e7988c52a1335"
+        }
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "result_emitted": false
+      }
+    }
+  ],
+  "canonical_hash": "sha256:7a52c7fcfba7593822883a59089da6bdf9675a7acd2f60ae01d5d9c063a367ed"
+}

@@ -1,0 +1,56 @@
+{
+  "fixture_id": "01-cny-income-expense",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "postings": [
+        {
+          "posting_id": "post-evt-01-normal-01-01",
+          "event_id": "evt-01-normal-01",
+          "posting_kind": "cash",
+          "calculation_version": "ledger-calculation-v1",
+          "account_id": "cash-cny-1",
+          "quantity_delta": "100.00",
+          "currency": "CNY",
+          "base_value": "100.00",
+          "base_currency": "CNY"
+        },
+        {
+          "posting_id": "post-evt-01-normal-02-01",
+          "event_id": "evt-01-normal-02",
+          "posting_kind": "cash",
+          "calculation_version": "ledger-calculation-v1",
+          "account_id": "cash-cny-1",
+          "quantity_delta": "-25.50",
+          "currency": "CNY",
+          "base_value": "-25.50",
+          "base_currency": "CNY"
+        }
+      ],
+      "sequence_hash": "sha256:ec8b3e18aaedd6f64618e8667b619d7e61de27f68e41e499e325b86cd43936f2"
+    },
+    {
+      "scenario_id": "boundary",
+      "postings": [
+        {
+          "posting_id": "post-evt-01-boundary-01-01",
+          "event_id": "evt-01-boundary-01",
+          "posting_kind": "cash",
+          "calculation_version": "ledger-calculation-v1",
+          "account_id": "cash-cny-1",
+          "quantity_delta": "-0.00000001",
+          "currency": "CNY",
+          "base_value": "-0.00000001",
+          "base_currency": "CNY"
+        }
+      ],
+      "sequence_hash": "sha256:820d180ac6e78858c677712e3603a863a830366566de415bce2a818d1ce2f582"
+    },
+    {
+      "scenario_id": "failure",
+      "postings": [],
+      "sequence_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  ],
+  "canonical_hash": "sha256:c0fd3bc0aaff85ae0ee53a3061da85444a3e10fbe4c94dd0adff0ec53b0c272c"
+}

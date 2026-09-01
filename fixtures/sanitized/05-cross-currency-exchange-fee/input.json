@@ -1,0 +1,65 @@
+{
+  "fixture_id": "05-cross-currency-exchange-fee",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-05-normal-01",
+          "command_type": "post_event",
+          "data": {
+            "from_account_id": "cash-cny-1",
+            "to_account_id": "cash-usd-1",
+            "from_amount": "710.00",
+            "to_amount": "100.00",
+            "fee_account_id": "cash-cny-1",
+            "fee_amount": "2.00",
+            "from_currency": "CNY",
+            "to_currency": "USD"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-05-boundary-01",
+          "command_type": "post_event",
+          "data": {
+            "from_account_id": "cash-usd-1",
+            "to_account_id": "cash-cny-1",
+            "from_amount": "1.00000000",
+            "to_amount": "7.10000000",
+            "fee_account_id": null,
+            "fee_amount": "0",
+            "from_currency": "USD",
+            "to_currency": "CNY"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-05-failure-01",
+          "command_type": "post_event",
+          "data": {
+            "from_account_id": "cash-cny-1",
+            "to_account_id": "cash-cny-2",
+            "from_amount": "10.00",
+            "to_amount": "10.00",
+            "from_currency": "CNY",
+            "to_currency": "CNY"
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:ada006cea69633324cf0b7cd616e7c5f625a72268425a66bdf5ae760a02daeee"
+}

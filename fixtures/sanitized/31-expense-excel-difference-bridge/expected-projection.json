@@ -1,0 +1,346 @@
+{
+  "fixture_id": "31-expense-excel-difference-bridge",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 5,
+      "state": {
+        "expense_analysis_query_result": {
+          "contract": "expense-analysis-query-result/v1",
+          "query": {
+            "start_date": "2026-02-01",
+            "end_date": "2026-02-28",
+            "base_currency": "CNY"
+          },
+          "summary": {
+            "label": "Total expense",
+            "total_expense": "30",
+            "valued_subtotal": "30",
+            "global_distinct_event_count": 4,
+            "largest_category": {
+              "bucket_id": "cat-visible",
+              "amount": "20.00"
+            }
+          },
+          "buckets": [
+            {
+              "bucket_id": "cat-visible",
+              "bucket_kind": "category",
+              "label": "Visible category",
+              "archived": false,
+              "amount": "20.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 5,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-visible",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-archived",
+              "bucket_kind": "category",
+              "label": "Archived category",
+              "archived": true,
+              "amount": "5.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 5,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-archived",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "system:uncategorized",
+              "bucket_kind": "system",
+              "label": "Uncategorized",
+              "archived": false,
+              "amount": "3.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 5,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "system:uncategorized",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "system:fx-fee",
+              "bucket_kind": "system",
+              "label": "FX fees",
+              "archived": false,
+              "amount": "2.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 5,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "system:fx-fee",
+                "valuation_state": "valued"
+              }
+            }
+          ],
+          "top10": {
+            "items": [
+              {
+                "bucket_id": "cat-visible",
+                "label": "Visible category",
+                "amount": "20.00",
+                "distinct_event_count": 1,
+                "drilldown_context": {
+                  "start_date": "2026-02-01",
+                  "end_date": "2026-02-28",
+                  "event_watermark": 5,
+                  "calculation_version": "ledger-calculation-v1",
+                  "expense_policy_version": "expense-policy-v1",
+                  "bucket_id": "cat-visible",
+                  "valuation_state": "valued"
+                }
+              },
+              {
+                "bucket_id": "cat-archived",
+                "label": "Archived category",
+                "amount": "5.00",
+                "distinct_event_count": 1,
+                "drilldown_context": {
+                  "start_date": "2026-02-01",
+                  "end_date": "2026-02-28",
+                  "event_watermark": 5,
+                  "calculation_version": "ledger-calculation-v1",
+                  "expense_policy_version": "expense-policy-v1",
+                  "bucket_id": "cat-archived",
+                  "valuation_state": "valued"
+                }
+              },
+              {
+                "bucket_id": "system:uncategorized",
+                "label": "Uncategorized",
+                "amount": "3.00",
+                "distinct_event_count": 1,
+                "drilldown_context": {
+                  "start_date": "2026-02-01",
+                  "end_date": "2026-02-28",
+                  "event_watermark": 5,
+                  "calculation_version": "ledger-calculation-v1",
+                  "expense_policy_version": "expense-policy-v1",
+                  "bucket_id": "system:uncategorized",
+                  "valuation_state": "valued"
+                }
+              },
+              {
+                "bucket_id": "system:fx-fee",
+                "label": "FX fees",
+                "amount": "2.00",
+                "distinct_event_count": 1,
+                "drilldown_context": {
+                  "start_date": "2026-02-01",
+                  "end_date": "2026-02-28",
+                  "event_watermark": 5,
+                  "calculation_version": "ledger-calculation-v1",
+                  "expense_policy_version": "expense-policy-v1",
+                  "bucket_id": "system:fx-fee",
+                  "valuation_state": "valued"
+                }
+              }
+            ],
+            "other": null
+          },
+          "refunds": {
+            "refund": {
+              "amount": "4.00",
+              "distinct_event_count": 1,
+              "unvalued_count": 0,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 5,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "semantic_role": "refund",
+                "valuation_state": "all"
+              }
+            },
+            "reimbursement": {
+              "amount": "0",
+              "distinct_event_count": 0,
+              "unvalued_count": 0,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 5,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "semantic_role": "reimbursement",
+                "valuation_state": "all"
+              }
+            }
+          },
+          "unvalued": {
+            "expense_count": 0,
+            "drilldown_context": {
+              "start_date": "2026-02-01",
+              "end_date": "2026-02-28",
+              "event_watermark": 5,
+              "calculation_version": "ledger-calculation-v1",
+              "expense_policy_version": "expense-policy-v1",
+              "semantic_role": "expense",
+              "valuation_state": "unvalued"
+            }
+          },
+          "watermarks": {
+            "event": 5,
+            "master_data": 3
+          },
+          "versions": {
+            "calculation": "ledger-calculation-v1",
+            "expense_policy": "expense-policy-v1",
+            "bucket_policy": "expense-bucket-policy-v1",
+            "refund_policy": "refund-policy-v1"
+          },
+          "canonicalization": "ledgerkit-canonical-json-v1",
+          "canonical_hash": "sha256:3583dc5d8f8aae1a62faac76c32515f95862fd861f66a1d66ddc10bb72f54c11"
+        },
+        "difference_bridge": [
+          {
+            "synthetic_event_key": "bridge-archived",
+            "excel_amount": "0",
+            "application_amount": "5.00",
+            "reason_code": "ARCHIVED_CATEGORY_INCLUDED"
+          },
+          {
+            "synthetic_event_key": "bridge-uncategorized",
+            "excel_amount": "0",
+            "application_amount": "3.00",
+            "reason_code": "UNCATEGORIZED_DYNAMIC_BUCKET"
+          },
+          {
+            "synthetic_event_key": "bridge-fx-fee",
+            "excel_amount": "2.00",
+            "application_amount": "2.00",
+            "reason_code": "AMOUNT_INCLUDED_COUNT_FIXED"
+          },
+          {
+            "synthetic_event_key": "bridge-refund",
+            "excel_amount": "2.00",
+            "application_amount": "4.00",
+            "reason_code": "SEMANTIC_ROLE_NOT_NAME"
+          }
+        ],
+        "application_amount": "30.00",
+        "unexplained_difference": "0"
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 1,
+      "state": {
+        "expense_analysis_query_result": {
+          "contract": "expense-analysis-query-result/v1",
+          "query": {
+            "start_date": "2026-02-01",
+            "end_date": "2026-02-28",
+            "base_currency": "CNY"
+          },
+          "summary": {
+            "label": "Valued expense subtotal",
+            "total_expense": null,
+            "valued_subtotal": "0",
+            "global_distinct_event_count": 0,
+            "largest_category": null
+          },
+          "buckets": [],
+          "top10": {
+            "items": [],
+            "other": null
+          },
+          "refunds": {
+            "refund": {
+              "amount": "0",
+              "distinct_event_count": 0,
+              "unvalued_count": 0,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 1,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "semantic_role": "refund",
+                "valuation_state": "all"
+              }
+            },
+            "reimbursement": {
+              "amount": "0",
+              "distinct_event_count": 0,
+              "unvalued_count": 0,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 1,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "semantic_role": "reimbursement",
+                "valuation_state": "all"
+              }
+            }
+          },
+          "unvalued": {
+            "expense_count": 1,
+            "drilldown_context": {
+              "start_date": "2026-02-01",
+              "end_date": "2026-02-28",
+              "event_watermark": 1,
+              "calculation_version": "ledger-calculation-v1",
+              "expense_policy_version": "expense-policy-v1",
+              "semantic_role": "expense",
+              "valuation_state": "unvalued"
+            }
+          },
+          "watermarks": {
+            "event": 1,
+            "master_data": 1
+          },
+          "versions": {
+            "calculation": "ledger-calculation-v1",
+            "expense_policy": "expense-policy-v1",
+            "bucket_policy": "expense-bucket-policy-v1",
+            "refund_policy": "refund-policy-v1"
+          },
+          "canonicalization": "ledgerkit-canonical-json-v1",
+          "canonical_hash": "sha256:17cd82fa308088283cd911501dc7e77831d1bfb5b992b476a0b1c6b7d004e910"
+        },
+        "difference_bridge": [
+          {
+            "synthetic_event_key": "bridge-unvalued",
+            "excel_amount": "0",
+            "application_amount": "0",
+            "reason_code": "UNVALUED_EXPLICIT"
+          }
+        ],
+        "unexplained_difference": "0"
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "committed": false
+      }
+    }
+  ],
+  "canonical_hash": "sha256:c89e3575832ae71300bbccb7a6f6b966f8ea147dc66ed9c9af704a28e668e7d0"
+}

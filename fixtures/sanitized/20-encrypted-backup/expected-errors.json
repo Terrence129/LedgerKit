@@ -1,0 +1,33 @@
+{
+  "fixture_id": "20-encrypted-backup",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [
+        {
+          "code": "BACKUP_AUTHENTICATION_FAILED",
+          "field": "password",
+          "message_key": "ledgerkit.backup_authentication_failed"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "BACKUP_KDF_OR_VERSION_UNSUPPORTED",
+          "field": "kdf",
+          "message_key": "ledgerkit.backup_kdf_or_version_unsupported"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:a8c22bd8f703d584203f9da2ffb261edd5051602e71684a40ced0d5ee4bd3be5"
+}

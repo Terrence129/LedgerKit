@@ -1,0 +1,79 @@
+{
+  "fixture_id": "06-security-buy",
+  "case_number": 6,
+  "title": "Security buy reduces settlement cash and capitalizes fee",
+  "synthetic_data": true,
+  "related_rules": [
+    "INV-002",
+    "INV-003",
+    "INV-004"
+  ],
+  "related_adrs": [
+    "ADR-0004",
+    "ADR-0005"
+  ],
+  "coverage": {
+    "normal": {
+      "scenario_ids": [
+        "normal"
+      ],
+      "rule_ids": [
+        "INV-002",
+        "INV-003",
+        "INV-004"
+      ]
+    },
+    "boundary": {
+      "scenario_ids": [
+        "boundary"
+      ],
+      "rule_ids": [
+        "INV-002",
+        "INV-003",
+        "INV-004"
+      ]
+    },
+    "failure": {
+      "scenario_ids": [
+        "failure"
+      ],
+      "rule_ids": [
+        "INV-002",
+        "INV-003",
+        "INV-004"
+      ]
+    }
+  },
+  "decimal_contract": {
+    "id": "decimal-contract-v1",
+    "max_significant_digits": 28,
+    "max_scale": {
+      "amount": 8,
+      "quantity": 12,
+      "unit_price": 12,
+      "fx_rate": 15,
+      "internal": 18
+    }
+  },
+  "calculation_version": "ledger-calculation-v1",
+  "policy_versions": {
+    "expense": "expense-policy-v1",
+    "bucket": "expense-bucket-policy-v1",
+    "refund": "refund-policy-v1",
+    "market_data": "market-data-policy-v1"
+  },
+  "rounding_boundaries": [
+    "internal-scale-18-half-up",
+    "display-currency-half-up"
+  ],
+  "tolerances": {
+    "internal": "0",
+    "display": "0.01"
+  },
+  "generation": {
+    "method": "programmatically-generated-synthetic-data",
+    "generator": "tools/generate-m0-fixtures.mjs",
+    "reviewed": true
+  },
+  "canonical_hash": "sha256:729ac7d704815c1f3c92a587f0d0e51ea87e37cc112374e7788c8a7cca8e2c1a"
+}

@@ -1,0 +1,27 @@
+{
+  "fixture_id": "28-expense-excel-range-gap",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "EXPENSE_FIXED_RANGE_FORBIDDEN",
+          "field": "category_scan",
+          "message_key": "ledgerkit.expense_fixed_range_forbidden"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:51727c21190e12b58c44de1a24ce836122cd6ffb24031f0db394efdd898465b9"
+}

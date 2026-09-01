@@ -1,0 +1,18 @@
+{
+  "fixture_id": "30-canonical-row-order",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": []
+    },
+    {
+      "scenario_id": "boundary",
+      "events": []
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:295c3edf35232f25506b2597ca58098e33718876d579c4be513179d74a9b423b"
+}

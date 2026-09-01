@@ -1,0 +1,27 @@
+{
+  "fixture_id": "23-expense-distinct-counts",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "EXPENSE_GLOBAL_COUNT_NOT_DISTINCT",
+          "field": "count_strategy",
+          "message_key": "ledgerkit.expense_global_count_not_distinct"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:00722a857189d3c1624a194f6b9ad2596a27d3c0503c900d7808dd8be2396e4c"
+}

@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ledgerkit.local/schemas/golden-expected-errors-v1.json",
+  "title": "LedgerKit expected errors v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["fixture_id", "scenarios", "canonical_hash"],
+  "properties": {
+    "fixture_id": { "type": "string" },
+    "scenarios": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scenario_id", "errors", "warnings"],
+        "properties": {
+          "scenario_id": { "type": "string" },
+          "errors": { "type": "array", "items": { "$ref": "#/definitions/diagnostic" } },
+          "warnings": { "type": "array", "items": { "$ref": "#/definitions/diagnostic" } }
+        }
+      }
+    },
+    "canonical_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  },
+  "definitions": {
+    "diagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "field", "message_key"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" },
+        "field": { "type": "string" },
+        "message_key": { "type": "string", "pattern": "^[a-z0-9_.-]+$" }
+      }
+    }
+  }
+}

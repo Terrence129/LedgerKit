@@ -1,0 +1,57 @@
+{
+  "fixture_id": "29-revision-watermark",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": [
+        {
+          "event_id": "evt-29-normal-01",
+          "event_type": "Expense",
+          "effective_date": "2026-02-10",
+          "sequence": 1,
+          "status": "posted",
+          "detail": {
+            "amount": "10.00",
+            "category_id": "cat-food"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        },
+        {
+          "event_id": "evt-29-normal-02",
+          "event_type": "Expense",
+          "effective_date": "2026-02-10",
+          "sequence": 2,
+          "status": "posted",
+          "detail": {
+            "amount": "12.00",
+            "category_id": "cat-food",
+            "reason": "Synthetic corrected receipt"
+          },
+          "calculation_version": "ledger-calculation-v1",
+          "supersedes_event_id": "evt-29-normal-01"
+        },
+        {
+          "event_id": "evt-29-normal-03",
+          "event_type": "Income",
+          "effective_date": "2026-03-01",
+          "sequence": 1,
+          "status": "posted",
+          "detail": {
+            "amount": "5.00",
+            "semantic_role": "refund"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "events": []
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:4429e721479290fda2576bf867c6a980bc59539470a43ec165dbd3f1eb4db343"
+}

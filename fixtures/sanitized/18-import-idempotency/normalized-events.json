@@ -1,0 +1,33 @@
+{
+  "fixture_id": "18-import-idempotency",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": [
+        {
+          "event_id": "evt-18-normal-01",
+          "event_type": "Expense",
+          "effective_date": "2026-02-18",
+          "sequence": 1,
+          "status": "evidence-only",
+          "detail": {
+            "account_id": "cash-cny-1",
+            "amount": "5.00",
+            "currency": "CNY",
+            "import_key": "synthetic-key-a"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "events": []
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:0bf089dac4dea12efc1c8995edf7e306cbcde60bd3f600823817b1d32df21ec0"
+}

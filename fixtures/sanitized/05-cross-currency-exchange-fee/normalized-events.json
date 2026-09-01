@@ -1,0 +1,56 @@
+{
+  "fixture_id": "05-cross-currency-exchange-fee",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": [
+        {
+          "event_id": "evt-05-normal-01",
+          "event_type": "CurrencyExchange",
+          "effective_date": "2026-02-03",
+          "sequence": 1,
+          "status": "posted",
+          "detail": {
+            "from_account_id": "cash-cny-1",
+            "to_account_id": "cash-usd-1",
+            "from_amount": "710.00",
+            "to_amount": "100.00",
+            "fee_account_id": "cash-cny-1",
+            "fee_amount": "2.00",
+            "from_currency": "CNY",
+            "to_currency": "USD"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "events": [
+        {
+          "event_id": "evt-05-boundary-01",
+          "event_type": "CurrencyExchange",
+          "effective_date": "2026-02-03",
+          "sequence": 2,
+          "status": "posted",
+          "detail": {
+            "from_account_id": "cash-usd-1",
+            "to_account_id": "cash-cny-1",
+            "from_amount": "1.00000000",
+            "to_amount": "7.10000000",
+            "fee_account_id": null,
+            "fee_amount": "0",
+            "from_currency": "USD",
+            "to_currency": "CNY"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:3eb889987dadd85648edbb959e517d644840d4bfe6861465bb8570308913df71"
+}

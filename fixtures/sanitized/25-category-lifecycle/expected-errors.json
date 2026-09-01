@@ -1,0 +1,27 @@
+{
+  "fixture_id": "25-category-lifecycle",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "CATEGORY_WITH_HISTORY_CANNOT_BE_DELETED",
+          "field": "category_id",
+          "message_key": "ledgerkit.category_with_history_cannot_be_deleted"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:c5ad9fb3f38c7d0908c443d30cf77f7909fffab4f3e24c09cfeb3effc6349749"
+}

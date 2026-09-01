@@ -1,0 +1,54 @@
+{
+  "fixture_id": "06-security-buy",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": [
+        {
+          "event_id": "evt-06-normal-01",
+          "event_type": "SecurityBuy",
+          "effective_date": "2026-02-04",
+          "sequence": 1,
+          "status": "posted",
+          "detail": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "settlement_account_id": "cash-usd-1",
+            "quantity": "10.000000000000",
+            "unit_price": "12.340000000000",
+            "trade_fee": "1.60",
+            "currency": "USD"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "events": [
+        {
+          "event_id": "evt-06-boundary-01",
+          "event_type": "SecurityBuy",
+          "effective_date": "2026-02-04",
+          "sequence": 2,
+          "status": "posted",
+          "detail": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "settlement_account_id": "cash-usd-1",
+            "quantity": "0.000000000001",
+            "unit_price": "1000000.000000000000",
+            "trade_fee": "0",
+            "currency": "USD"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:f3e1bade35761c0def403089cd1be53c2723a999f5c22af593e40ca8081c1110"
+}

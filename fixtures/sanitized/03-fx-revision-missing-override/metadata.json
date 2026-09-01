@@ -1,0 +1,79 @@
+{
+  "fixture_id": "03-fx-revision-missing-override",
+  "case_number": 3,
+  "title": "Active FX revisions, missing FX and audited override",
+  "synthetic_data": true,
+  "related_rules": [
+    "FX-002",
+    "FX-003",
+    "FX-005"
+  ],
+  "related_adrs": [
+    "ADR-0004",
+    "ADR-0012"
+  ],
+  "coverage": {
+    "normal": {
+      "scenario_ids": [
+        "normal"
+      ],
+      "rule_ids": [
+        "FX-002",
+        "FX-003",
+        "FX-005"
+      ]
+    },
+    "boundary": {
+      "scenario_ids": [
+        "boundary"
+      ],
+      "rule_ids": [
+        "FX-002",
+        "FX-003",
+        "FX-005"
+      ]
+    },
+    "failure": {
+      "scenario_ids": [
+        "failure"
+      ],
+      "rule_ids": [
+        "FX-002",
+        "FX-003",
+        "FX-005"
+      ]
+    }
+  },
+  "decimal_contract": {
+    "id": "decimal-contract-v1",
+    "max_significant_digits": 28,
+    "max_scale": {
+      "amount": 8,
+      "quantity": 12,
+      "unit_price": 12,
+      "fx_rate": 15,
+      "internal": 18
+    }
+  },
+  "calculation_version": "ledger-calculation-v1",
+  "policy_versions": {
+    "expense": "expense-policy-v1",
+    "bucket": "expense-bucket-policy-v1",
+    "refund": "refund-policy-v1",
+    "market_data": "market-data-policy-v1"
+  },
+  "rounding_boundaries": [
+    "internal-scale-18-half-up",
+    "display-currency-half-up"
+  ],
+  "tolerances": {
+    "internal": "0",
+    "display": "0.01"
+  },
+  "generation": {
+    "method": "programmatically-generated-synthetic-data",
+    "generator": "tools/generate-m0-fixtures.mjs",
+    "reviewed": true
+  },
+  "canonical_hash": "sha256:9ef9b6333adeedf30faf6c41ac34a2d482dc03dded6601197c11ed8314fc9119"
+}

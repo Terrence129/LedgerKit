@@ -1,0 +1,40 @@
+{
+  "fixture_id": "13-history-and-cutover",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 2,
+      "state": {
+        "cash_balance": "900.00",
+        "quantity": "10.000000000000",
+        "carrying_cost": "100.000000000000000000",
+        "reconciliation_difference": "0"
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 3,
+      "state": {
+        "cash_balance": "900.00",
+        "quantity": "0",
+        "carrying_cost": "0",
+        "realized_pnl": "25.00",
+        "net_dividend": "5.00",
+        "independent_expense": "2.00",
+        "zero_position_history_preserved": true,
+        "reconciliation_difference": "0"
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "committed": false
+      }
+    }
+  ],
+  "canonical_hash": "sha256:a161aebffe4eb3df4287f3c3321ca746c4f099f884200075f601ccc1d9ba9b32"
+}

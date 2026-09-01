@@ -1,0 +1,21 @@
+{
+  "fixture_id": "24-refund-reimbursement",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "postings": [],
+      "sequence_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "scenario_id": "boundary",
+      "postings": [],
+      "sequence_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "scenario_id": "failure",
+      "postings": [],
+      "sequence_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  ],
+  "canonical_hash": "sha256:103a2c68325ac27789d15caf8a1b2c76e62edb342ba3fc9ab30a92e5d8b7a18a"
+}

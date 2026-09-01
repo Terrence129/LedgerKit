@@ -1,0 +1,35 @@
+{
+  "fixture_id": "18-import-idempotency",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "staged_rows": 1,
+        "duplicate_rows": 0,
+        "proposed_event_count": 1,
+        "identical_result_hash": true
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "staged_rows": 0,
+        "proposed_event_count": 0,
+        "empty_workbook_accepted_for_analysis": true
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "committed": false
+      }
+    }
+  ],
+  "canonical_hash": "sha256:54d7ab2db3b962630aa20ada6a6676f6cbadec5b1101da063528c850b23b2144"
+}

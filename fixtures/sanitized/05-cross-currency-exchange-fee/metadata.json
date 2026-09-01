@@ -1,0 +1,88 @@
+{
+  "fixture_id": "05-cross-currency-exchange-fee",
+  "case_number": 5,
+  "title": "Cross-currency exchange excludes principal and buckets fee",
+  "synthetic_data": true,
+  "related_rules": [
+    "CASH-004",
+    "EXP-001",
+    "EXP-002",
+    "EXP-010",
+    "FX-004"
+  ],
+  "related_adrs": [
+    "ADR-0003",
+    "ADR-0004",
+    "ADR-0014"
+  ],
+  "coverage": {
+    "normal": {
+      "scenario_ids": [
+        "normal"
+      ],
+      "rule_ids": [
+        "CASH-004",
+        "EXP-001",
+        "EXP-002",
+        "EXP-010",
+        "FX-004"
+      ]
+    },
+    "boundary": {
+      "scenario_ids": [
+        "boundary"
+      ],
+      "rule_ids": [
+        "CASH-004",
+        "EXP-001",
+        "EXP-002",
+        "EXP-010",
+        "FX-004"
+      ]
+    },
+    "failure": {
+      "scenario_ids": [
+        "failure"
+      ],
+      "rule_ids": [
+        "CASH-004",
+        "EXP-001",
+        "EXP-002",
+        "EXP-010",
+        "FX-004"
+      ]
+    }
+  },
+  "decimal_contract": {
+    "id": "decimal-contract-v1",
+    "max_significant_digits": 28,
+    "max_scale": {
+      "amount": 8,
+      "quantity": 12,
+      "unit_price": 12,
+      "fx_rate": 15,
+      "internal": 18
+    }
+  },
+  "calculation_version": "ledger-calculation-v1",
+  "policy_versions": {
+    "expense": "expense-policy-v1",
+    "bucket": "expense-bucket-policy-v1",
+    "refund": "refund-policy-v1",
+    "market_data": "market-data-policy-v1"
+  },
+  "rounding_boundaries": [
+    "internal-scale-18-half-up",
+    "display-currency-half-up"
+  ],
+  "tolerances": {
+    "internal": "0",
+    "display": "0.01"
+  },
+  "generation": {
+    "method": "programmatically-generated-synthetic-data",
+    "generator": "tools/generate-m0-fixtures.mjs",
+    "reviewed": true
+  },
+  "canonical_hash": "sha256:3125b74c130b4d292a5cfb5c749271a58f98b9e01fa13ac62988433bc48d5950"
+}

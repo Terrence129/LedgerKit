@@ -1,0 +1,88 @@
+{
+  "fixture_id": "13-history-and-cutover",
+  "case_number": 13,
+  "title": "Full-history and explicit cut-over migration both close",
+  "synthetic_data": true,
+  "related_rules": [
+    "CASH-005",
+    "MIG-004",
+    "MIG-005",
+    "MIG-006",
+    "MIG-007"
+  ],
+  "related_adrs": [
+    "ADR-0003",
+    "ADR-0005",
+    "ADR-0011"
+  ],
+  "coverage": {
+    "normal": {
+      "scenario_ids": [
+        "normal"
+      ],
+      "rule_ids": [
+        "CASH-005",
+        "MIG-004",
+        "MIG-005",
+        "MIG-006",
+        "MIG-007"
+      ]
+    },
+    "boundary": {
+      "scenario_ids": [
+        "boundary"
+      ],
+      "rule_ids": [
+        "CASH-005",
+        "MIG-004",
+        "MIG-005",
+        "MIG-006",
+        "MIG-007"
+      ]
+    },
+    "failure": {
+      "scenario_ids": [
+        "failure"
+      ],
+      "rule_ids": [
+        "CASH-005",
+        "MIG-004",
+        "MIG-005",
+        "MIG-006",
+        "MIG-007"
+      ]
+    }
+  },
+  "decimal_contract": {
+    "id": "decimal-contract-v1",
+    "max_significant_digits": 28,
+    "max_scale": {
+      "amount": 8,
+      "quantity": 12,
+      "unit_price": 12,
+      "fx_rate": 15,
+      "internal": 18
+    }
+  },
+  "calculation_version": "ledger-calculation-v1",
+  "policy_versions": {
+    "expense": "expense-policy-v1",
+    "bucket": "expense-bucket-policy-v1",
+    "refund": "refund-policy-v1",
+    "market_data": "market-data-policy-v1"
+  },
+  "rounding_boundaries": [
+    "internal-scale-18-half-up",
+    "display-currency-half-up"
+  ],
+  "tolerances": {
+    "internal": "0",
+    "display": "0.01"
+  },
+  "generation": {
+    "method": "programmatically-generated-synthetic-data",
+    "generator": "tools/generate-m0-fixtures.mjs",
+    "reviewed": true
+  },
+  "canonical_hash": "sha256:0eb44c60e048ceab8d6f885ce146e6511adf55fffcdddb55d70f6d658bfe1d9b"
+}

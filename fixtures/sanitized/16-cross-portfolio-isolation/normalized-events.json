@@ -1,0 +1,69 @@
+{
+  "fixture_id": "16-cross-portfolio-isolation",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": [
+        {
+          "event_id": "evt-16-normal-01",
+          "event_type": "SecurityBuy",
+          "effective_date": "2026-02-16",
+          "sequence": 1,
+          "status": "posted",
+          "detail": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "settlement_account_id": "cash-usd-a",
+            "quantity": "2.000000000000",
+            "unit_price": "10.000000000000",
+            "trade_fee": "0"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        },
+        {
+          "event_id": "evt-16-normal-02",
+          "event_type": "SecurityBuy",
+          "effective_date": "2026-02-16",
+          "sequence": 2,
+          "status": "posted",
+          "detail": {
+            "portfolio_id": "portfolio-b",
+            "instrument_id": "instrument-alpha",
+            "settlement_account_id": "cash-usd-b",
+            "quantity": "3.000000000000",
+            "unit_price": "20.000000000000",
+            "trade_fee": "0"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "events": [
+        {
+          "event_id": "evt-16-boundary-01",
+          "event_type": "SecurityBuy",
+          "effective_date": "2026-02-16",
+          "sequence": 3,
+          "status": "posted",
+          "detail": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "settlement_account_id": "cash-usd-alternate",
+            "settlement_account_override_reason": "Synthetic segregated cash account",
+            "quantity": "1.000000000000",
+            "unit_price": "11.000000000000",
+            "trade_fee": "0"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:5c365f3f8e19f96997e3d4f417f269b96c4679e77b20ce02e280464556f45bf4"
+}

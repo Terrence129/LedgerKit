@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ledgerkit.local/schemas/golden-expected-postings-v1.json",
+  "title": "LedgerKit expected postings v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["fixture_id", "scenarios", "canonical_hash"],
+  "properties": {
+    "fixture_id": { "type": "string" },
+    "scenarios": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scenario_id", "postings", "sequence_hash"],
+        "properties": {
+          "scenario_id": { "type": "string" },
+          "postings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["posting_id", "event_id", "posting_kind", "calculation_version"],
+              "properties": {
+                "posting_id": { "type": "string" },
+                "event_id": { "type": "string" },
+                "posting_kind": { "type": "string" },
+                "calculation_version": { "const": "ledger-calculation-v1" }
+              }
+            }
+          },
+          "sequence_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "canonical_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

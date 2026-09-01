@@ -1,0 +1,62 @@
+{
+  "fixture_id": "03-fx-revision-missing-override",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": [
+        {
+          "event_id": "evt-03-normal-01",
+          "event_type": "Expense",
+          "effective_date": "2026-02-01",
+          "sequence": 1,
+          "status": "posted",
+          "detail": {
+            "account_id": "cash-usd-1",
+            "amount": "5.00",
+            "currency": "USD",
+            "fx_resolution": {
+              "target_date": "2026-02-01",
+              "automatic_candidate_revision_id": "fx-usd-r2",
+              "override_value": null,
+              "override_reason": null,
+              "final_rate": "7.25",
+              "calculation_version": "ledger-calculation-v1"
+            }
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "events": [
+        {
+          "event_id": "evt-03-boundary-01",
+          "event_type": "Expense",
+          "effective_date": "2026-02-01",
+          "sequence": 2,
+          "status": "posted",
+          "detail": {
+            "account_id": "cash-usd-1",
+            "amount": "5.00",
+            "currency": "USD",
+            "fx_resolution": {
+              "target_date": "2026-02-01",
+              "automatic_candidate_revision_id": "fx-usd-r2",
+              "override_value": "7.30",
+              "override_reason": "Synthetic bank receipt rate",
+              "final_rate": "7.30",
+              "calculation_version": "ledger-calculation-v1"
+            }
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:c370bb91f968e87ff34c89c74354bea6f19fa96b155711cecca5b111186f80cd"
+}

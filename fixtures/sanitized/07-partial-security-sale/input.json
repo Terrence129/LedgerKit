@@ -1,0 +1,67 @@
+{
+  "fixture_id": "07-partial-security-sale",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-07-normal-01",
+          "command_type": "post_event",
+          "data": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "quantity": "4.000000000000",
+            "unit_price": "15.000000000000",
+            "trade_fee": "1.00",
+            "currency": "USD",
+            "pre_quantity": "10.000000000000",
+            "pre_carrying_cost": "125.00"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-07-boundary-01",
+          "command_type": "post_event",
+          "data": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "quantity": "0.000000000001",
+            "unit_price": "15.000000000000",
+            "trade_fee": "0",
+            "currency": "USD",
+            "pre_quantity": "6.000000000001",
+            "pre_carrying_cost": "75.000000000012500000"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-07-failure-01",
+          "command_type": "post_event",
+          "data": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "quantity": "10.000000000001",
+            "unit_price": "15.000000000000",
+            "trade_fee": "1.00",
+            "currency": "USD",
+            "pre_quantity": "10.000000000000",
+            "pre_carrying_cost": "125.00"
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:dbb03c98944ffbc0ffa772a4c13460e8e1dbedb2324bb508e1bac48ed10d714e"
+}

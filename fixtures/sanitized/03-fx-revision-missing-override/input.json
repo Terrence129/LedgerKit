@@ -1,0 +1,83 @@
+{
+  "fixture_id": "03-fx-revision-missing-override",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-03-normal-01",
+          "command_type": "post_event",
+          "data": {
+            "account_id": "cash-usd-1",
+            "amount": "5.00",
+            "currency": "USD",
+            "fx_resolution": {
+              "target_date": "2026-02-01",
+              "automatic_candidate_revision_id": "fx-usd-r2",
+              "override_value": null,
+              "override_reason": null,
+              "final_rate": "7.25",
+              "calculation_version": "ledger-calculation-v1"
+            },
+            "same_day_revisions": [
+              {
+                "revision_id": "fx-usd-r1",
+                "rate_to_base": "7.20",
+                "active": false
+              },
+              {
+                "revision_id": "fx-usd-r2",
+                "rate_to_base": "7.25",
+                "active": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-03-boundary-01",
+          "command_type": "post_event",
+          "data": {
+            "account_id": "cash-usd-1",
+            "amount": "5.00",
+            "currency": "USD",
+            "fx_resolution": {
+              "target_date": "2026-02-01",
+              "automatic_candidate_revision_id": "fx-usd-r2",
+              "override_value": "7.30",
+              "override_reason": "Synthetic bank receipt rate",
+              "final_rate": "7.30",
+              "calculation_version": "ledger-calculation-v1"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-03-failure-01",
+          "command_type": "post_event",
+          "data": {
+            "account_id": "cash-eur-1",
+            "amount": "5.00",
+            "currency": "EUR",
+            "effective_date": "2026-02-01",
+            "override_value": "7.80",
+            "override_reason": ""
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:bc1cdf1aa67a9706ea201f386099fa7aeb133f6f66120c6b3db7cf53d44b408b"
+}

@@ -1,0 +1,18 @@
+{
+  "fixture_id": "24-refund-reimbursement",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": []
+    },
+    {
+      "scenario_id": "boundary",
+      "events": []
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:2282254881c9b547881a21a1bb31af0f39e7036080b73f17ae1d2538a0ee408e"
+}

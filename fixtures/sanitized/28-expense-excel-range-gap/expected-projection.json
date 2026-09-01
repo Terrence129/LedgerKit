@@ -1,0 +1,830 @@
+{
+  "fixture_id": "28-expense-excel-range-gap",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 24,
+      "state": {
+        "expense_analysis_query_result": {
+          "contract": "expense-analysis-query-result/v1",
+          "query": {
+            "start_date": "2026-02-01",
+            "end_date": "2026-02-28",
+            "base_currency": "CNY"
+          },
+          "summary": {
+            "label": "Total expense",
+            "total_expense": "27",
+            "valued_subtotal": "27",
+            "global_distinct_event_count": 24,
+            "largest_category": {
+              "bucket_id": "cat-dynamic-01",
+              "amount": "1.00"
+            }
+          },
+          "buckets": [
+            {
+              "bucket_id": "system:fx-fee",
+              "bucket_kind": "system",
+              "label": "FX fees",
+              "archived": false,
+              "amount": "3.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "system:fx-fee",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "system:uncategorized",
+              "bucket_kind": "system",
+              "label": "Uncategorized",
+              "archived": false,
+              "amount": "2.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "system:uncategorized",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-01",
+              "bucket_kind": "category",
+              "label": "Synthetic category 01",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-01",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-02",
+              "bucket_kind": "category",
+              "label": "Synthetic category 02",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-02",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-03",
+              "bucket_kind": "category",
+              "label": "Synthetic category 03",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-03",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-04",
+              "bucket_kind": "category",
+              "label": "Synthetic category 04",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-04",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-05",
+              "bucket_kind": "category",
+              "label": "Synthetic category 05",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-05",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-06",
+              "bucket_kind": "category",
+              "label": "Synthetic category 06",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-06",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-07",
+              "bucket_kind": "category",
+              "label": "Synthetic category 07",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-07",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-08",
+              "bucket_kind": "category",
+              "label": "Synthetic category 08",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-08",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-09",
+              "bucket_kind": "category",
+              "label": "Synthetic category 09",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-09",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-10",
+              "bucket_kind": "category",
+              "label": "Synthetic category 10",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-10",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-11",
+              "bucket_kind": "category",
+              "label": "Synthetic category 11",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-11",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-12",
+              "bucket_kind": "category",
+              "label": "Synthetic category 12",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-12",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-13",
+              "bucket_kind": "category",
+              "label": "Synthetic category 13",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-13",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-14",
+              "bucket_kind": "category",
+              "label": "Synthetic category 14",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-14",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-15",
+              "bucket_kind": "category",
+              "label": "Synthetic category 15",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-15",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-16",
+              "bucket_kind": "category",
+              "label": "Synthetic category 16",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-16",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-17",
+              "bucket_kind": "category",
+              "label": "Synthetic category 17",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-17",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-18",
+              "bucket_kind": "category",
+              "label": "Synthetic category 18",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-18",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-19",
+              "bucket_kind": "category",
+              "label": "Synthetic category 19",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-19",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-20",
+              "bucket_kind": "category",
+              "label": "Synthetic category 20",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-20",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-21",
+              "bucket_kind": "category",
+              "label": "Synthetic category 21",
+              "archived": false,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-21",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-22",
+              "bucket_kind": "category",
+              "label": "Synthetic category 22",
+              "archived": true,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-22",
+                "valuation_state": "valued"
+              }
+            }
+          ],
+          "top10": {
+            "items": [
+              {
+                "bucket_id": "system:fx-fee",
+                "label": "FX fees",
+                "amount": "3.00",
+                "distinct_event_count": 1,
+                "drilldown_context": {
+                  "start_date": "2026-02-01",
+                  "end_date": "2026-02-28",
+                  "event_watermark": 24,
+                  "calculation_version": "ledger-calculation-v1",
+                  "expense_policy_version": "expense-policy-v1",
+                  "bucket_id": "system:fx-fee",
+                  "valuation_state": "valued"
+                }
+              },
+              {
+                "bucket_id": "system:uncategorized",
+                "label": "Uncategorized",
+                "amount": "2.00",
+                "distinct_event_count": 1,
+                "drilldown_context": {
+                  "start_date": "2026-02-01",
+                  "end_date": "2026-02-28",
+                  "event_watermark": 24,
+                  "calculation_version": "ledger-calculation-v1",
+                  "expense_policy_version": "expense-policy-v1",
+                  "bucket_id": "system:uncategorized",
+                  "valuation_state": "valued"
+                }
+              },
+              {
+                "bucket_id": "cat-dynamic-01",
+                "label": "Synthetic category 01",
+                "amount": "1.00",
+                "distinct_event_count": 1,
+                "drilldown_context": {
+                  "start_date": "2026-02-01",
+                  "end_date": "2026-02-28",
+                  "event_watermark": 24,
+                  "calculation_version": "ledger-calculation-v1",
+                  "expense_policy_version": "expense-policy-v1",
+                  "bucket_id": "cat-dynamic-01",
+                  "valuation_state": "valued"
+                }
+              },
+              {
+                "bucket_id": "cat-dynamic-02",
+                "label": "Synthetic category 02",
+                "amount": "1.00",
+                "distinct_event_count": 1,
+                "drilldown_context": {
+                  "start_date": "2026-02-01",
+                  "end_date": "2026-02-28",
+                  "event_watermark": 24,
+                  "calculation_version": "ledger-calculation-v1",
+                  "expense_policy_version": "expense-policy-v1",
+                  "bucket_id": "cat-dynamic-02",
+                  "valuation_state": "valued"
+                }
+              },
+              {
+                "bucket_id": "cat-dynamic-03",
+                "label": "Synthetic category 03",
+                "amount": "1.00",
+                "distinct_event_count": 1,
+                "drilldown_context": {
+                  "start_date": "2026-02-01",
+                  "end_date": "2026-02-28",
+                  "event_watermark": 24,
+                  "calculation_version": "ledger-calculation-v1",
+                  "expense_policy_version": "expense-policy-v1",
+                  "bucket_id": "cat-dynamic-03",
+                  "valuation_state": "valued"
+                }
+              },
+              {
+                "bucket_id": "cat-dynamic-04",
+                "label": "Synthetic category 04",
+                "amount": "1.00",
+                "distinct_event_count": 1,
+                "drilldown_context": {
+                  "start_date": "2026-02-01",
+                  "end_date": "2026-02-28",
+                  "event_watermark": 24,
+                  "calculation_version": "ledger-calculation-v1",
+                  "expense_policy_version": "expense-policy-v1",
+                  "bucket_id": "cat-dynamic-04",
+                  "valuation_state": "valued"
+                }
+              },
+              {
+                "bucket_id": "cat-dynamic-05",
+                "label": "Synthetic category 05",
+                "amount": "1.00",
+                "distinct_event_count": 1,
+                "drilldown_context": {
+                  "start_date": "2026-02-01",
+                  "end_date": "2026-02-28",
+                  "event_watermark": 24,
+                  "calculation_version": "ledger-calculation-v1",
+                  "expense_policy_version": "expense-policy-v1",
+                  "bucket_id": "cat-dynamic-05",
+                  "valuation_state": "valued"
+                }
+              },
+              {
+                "bucket_id": "cat-dynamic-06",
+                "label": "Synthetic category 06",
+                "amount": "1.00",
+                "distinct_event_count": 1,
+                "drilldown_context": {
+                  "start_date": "2026-02-01",
+                  "end_date": "2026-02-28",
+                  "event_watermark": 24,
+                  "calculation_version": "ledger-calculation-v1",
+                  "expense_policy_version": "expense-policy-v1",
+                  "bucket_id": "cat-dynamic-06",
+                  "valuation_state": "valued"
+                }
+              },
+              {
+                "bucket_id": "cat-dynamic-07",
+                "label": "Synthetic category 07",
+                "amount": "1.00",
+                "distinct_event_count": 1,
+                "drilldown_context": {
+                  "start_date": "2026-02-01",
+                  "end_date": "2026-02-28",
+                  "event_watermark": 24,
+                  "calculation_version": "ledger-calculation-v1",
+                  "expense_policy_version": "expense-policy-v1",
+                  "bucket_id": "cat-dynamic-07",
+                  "valuation_state": "valued"
+                }
+              },
+              {
+                "bucket_id": "cat-dynamic-08",
+                "label": "Synthetic category 08",
+                "amount": "1.00",
+                "distinct_event_count": 1,
+                "drilldown_context": {
+                  "start_date": "2026-02-01",
+                  "end_date": "2026-02-28",
+                  "event_watermark": 24,
+                  "calculation_version": "ledger-calculation-v1",
+                  "expense_policy_version": "expense-policy-v1",
+                  "bucket_id": "cat-dynamic-08",
+                  "valuation_state": "valued"
+                }
+              }
+            ],
+            "other": {
+              "bucket_id": "system:top10-other",
+              "label": "Other categories",
+              "amount": "14",
+              "distinct_event_count": 14,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "system:top10-other",
+                "member_rank_gt": 10,
+                "valuation_state": "valued"
+              }
+            }
+          },
+          "refunds": {
+            "refund": {
+              "amount": "0",
+              "distinct_event_count": 0,
+              "unvalued_count": 0,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "semantic_role": "refund",
+                "valuation_state": "all"
+              }
+            },
+            "reimbursement": {
+              "amount": "0",
+              "distinct_event_count": 0,
+              "unvalued_count": 0,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 24,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "semantic_role": "reimbursement",
+                "valuation_state": "all"
+              }
+            }
+          },
+          "unvalued": {
+            "expense_count": 0,
+            "drilldown_context": {
+              "start_date": "2026-02-01",
+              "end_date": "2026-02-28",
+              "event_watermark": 24,
+              "calculation_version": "ledger-calculation-v1",
+              "expense_policy_version": "expense-policy-v1",
+              "semantic_role": "expense",
+              "valuation_state": "unvalued"
+            }
+          },
+          "watermarks": {
+            "event": 24,
+            "master_data": 22
+          },
+          "versions": {
+            "calculation": "ledger-calculation-v1",
+            "expense_policy": "expense-policy-v1",
+            "bucket_policy": "expense-bucket-policy-v1",
+            "refund_policy": "refund-policy-v1"
+          },
+          "canonicalization": "ledgerkit-canonical-json-v1",
+          "canonical_hash": "sha256:84e095c52952628e3c9ff6bcf64674a3193cb7ca2dcfe64e410790ebffb7610f"
+        },
+        "excel_visible_amount": "27.00",
+        "excel_visible_count": 21,
+        "application_amount": "27.00",
+        "application_count": 24,
+        "difference_event_count": 3
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 2,
+      "state": {
+        "expense_analysis_query_result": {
+          "contract": "expense-analysis-query-result/v1",
+          "query": {
+            "start_date": "2026-02-01",
+            "end_date": "2026-02-28",
+            "base_currency": "CNY"
+          },
+          "summary": {
+            "label": "Total expense",
+            "total_expense": "4",
+            "valued_subtotal": "4",
+            "global_distinct_event_count": 2,
+            "largest_category": {
+              "bucket_id": "cat-dynamic-22",
+              "amount": "1.00"
+            }
+          },
+          "buckets": [
+            {
+              "bucket_id": "system:fx-fee",
+              "bucket_kind": "system",
+              "label": "FX fees",
+              "archived": false,
+              "amount": "3.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 2,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "system:fx-fee",
+                "valuation_state": "valued"
+              }
+            },
+            {
+              "bucket_id": "cat-dynamic-22",
+              "bucket_kind": "category",
+              "label": "Synthetic archived category",
+              "archived": true,
+              "amount": "1.00",
+              "distinct_event_count": 1,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 2,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "cat-dynamic-22",
+                "valuation_state": "valued"
+              }
+            }
+          ],
+          "top10": {
+            "items": [
+              {
+                "bucket_id": "system:fx-fee",
+                "label": "FX fees",
+                "amount": "3.00",
+                "distinct_event_count": 1,
+                "drilldown_context": {
+                  "start_date": "2026-02-01",
+                  "end_date": "2026-02-28",
+                  "event_watermark": 2,
+                  "calculation_version": "ledger-calculation-v1",
+                  "expense_policy_version": "expense-policy-v1",
+                  "bucket_id": "system:fx-fee",
+                  "valuation_state": "valued"
+                }
+              },
+              {
+                "bucket_id": "cat-dynamic-22",
+                "label": "Synthetic archived category",
+                "amount": "1.00",
+                "distinct_event_count": 1,
+                "drilldown_context": {
+                  "start_date": "2026-02-01",
+                  "end_date": "2026-02-28",
+                  "event_watermark": 2,
+                  "calculation_version": "ledger-calculation-v1",
+                  "expense_policy_version": "expense-policy-v1",
+                  "bucket_id": "cat-dynamic-22",
+                  "valuation_state": "valued"
+                }
+              }
+            ],
+            "other": null
+          },
+          "refunds": {
+            "refund": {
+              "amount": "0",
+              "distinct_event_count": 0,
+              "unvalued_count": 0,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 2,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "semantic_role": "refund",
+                "valuation_state": "all"
+              }
+            },
+            "reimbursement": {
+              "amount": "0",
+              "distinct_event_count": 0,
+              "unvalued_count": 0,
+              "drilldown_context": {
+                "start_date": "2026-02-01",
+                "end_date": "2026-02-28",
+                "event_watermark": 2,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "semantic_role": "reimbursement",
+                "valuation_state": "all"
+              }
+            }
+          },
+          "unvalued": {
+            "expense_count": 0,
+            "drilldown_context": {
+              "start_date": "2026-02-01",
+              "end_date": "2026-02-28",
+              "event_watermark": 2,
+              "calculation_version": "ledger-calculation-v1",
+              "expense_policy_version": "expense-policy-v1",
+              "semantic_role": "expense",
+              "valuation_state": "unvalued"
+            }
+          },
+          "watermarks": {
+            "event": 2,
+            "master_data": 1
+          },
+          "versions": {
+            "calculation": "ledger-calculation-v1",
+            "expense_policy": "expense-policy-v1",
+            "bucket_policy": "expense-bucket-policy-v1",
+            "refund_policy": "refund-policy-v1"
+          },
+          "canonicalization": "ledgerkit-canonical-json-v1",
+          "canonical_hash": "sha256:fb12ab7288ae5026505799be6679ce42d906e9fe5bd70c2945930665099447d9"
+        },
+        "excel_visible_count": 0,
+        "application_count": 2
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "result_emitted": false
+      }
+    }
+  ],
+  "canonical_hash": "sha256:d6d71607bfbe7117231cdec360e8ecf9a4c573328502e8116935b2163869d426"
+}

@@ -1,0 +1,38 @@
+{
+  "fixture_id": "10-missing-security-price",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 1,
+      "state": {
+        "valued_net_assets": "0",
+        "unvalued_items": [
+          {
+            "instrument_id": "instrument-no-price",
+            "reason": "PRICE_MISSING_AS_OF",
+            "quantity": "3.000000000000"
+          }
+        ]
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 1,
+      "state": {
+        "valued_net_assets": "30.000000000000000000",
+        "unvalued_items": []
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "unchanged": true
+      }
+    }
+  ],
+  "canonical_hash": "sha256:850aa14b0b3e7e994376a404788a808699c97c13bebd3a56c39e0728d8ca922f"
+}

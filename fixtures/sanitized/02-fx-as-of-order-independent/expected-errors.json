@@ -1,0 +1,27 @@
+{
+  "fixture_id": "02-fx-as-of-order-independent",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "FX_MISSING_AS_OF",
+          "field": "fx_resolution",
+          "message_key": "ledgerkit.fx_missing_as_of"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:f9f7e633e12209828006c91873d13f2b78547f92fdaa9db9a02171e838128836"
+}

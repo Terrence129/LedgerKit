@@ -1,0 +1,75 @@
+{
+  "fixture_id": "16-cross-portfolio-isolation",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-16-normal-01",
+          "command_type": "post_event",
+          "data": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "settlement_account_id": "cash-usd-a",
+            "quantity": "2.000000000000",
+            "unit_price": "10.000000000000",
+            "trade_fee": "0"
+          }
+        },
+        {
+          "command_id": "cmd-16-normal-02",
+          "command_type": "post_event",
+          "data": {
+            "portfolio_id": "portfolio-b",
+            "instrument_id": "instrument-alpha",
+            "settlement_account_id": "cash-usd-b",
+            "quantity": "3.000000000000",
+            "unit_price": "20.000000000000",
+            "trade_fee": "0"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-16-boundary-01",
+          "command_type": "post_event",
+          "data": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "settlement_account_id": "cash-usd-alternate",
+            "settlement_account_override_reason": "Synthetic segregated cash account",
+            "quantity": "1.000000000000",
+            "unit_price": "11.000000000000",
+            "trade_fee": "0"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-16-failure-01",
+          "command_type": "post_event",
+          "data": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "settlement_account_id": "cash-usd-alternate",
+            "settlement_account_override_reason": "",
+            "quantity": "1.000000000000",
+            "unit_price": "11.000000000000",
+            "trade_fee": "0"
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:3cfbb0b9f0af43da1cab8624e5446621beafae70e51e52a27c7ee54d2a9cd346"
+}

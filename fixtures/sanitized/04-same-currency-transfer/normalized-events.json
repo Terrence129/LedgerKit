@@ -1,0 +1,49 @@
+{
+  "fixture_id": "04-same-currency-transfer",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": [
+        {
+          "event_id": "evt-04-normal-01",
+          "event_type": "Transfer",
+          "effective_date": "2026-02-02",
+          "sequence": 1,
+          "status": "posted",
+          "detail": {
+            "from_account_id": "cash-cny-1",
+            "to_account_id": "cash-cny-2",
+            "amount": "50.00",
+            "currency": "CNY"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "events": [
+        {
+          "event_id": "evt-04-boundary-01",
+          "event_type": "Transfer",
+          "effective_date": "2026-02-02",
+          "sequence": 2,
+          "status": "posted",
+          "detail": {
+            "from_account_id": "cash-cny-1",
+            "to_account_id": "cash-cny-2",
+            "amount": "0.00000001",
+            "currency": "CNY",
+            "currency_precision_confirmed": true
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:59bccdb1b92d53556bd0d5bbe0b38c5acdc41a08ed25acebd2354382257c206d"
+}

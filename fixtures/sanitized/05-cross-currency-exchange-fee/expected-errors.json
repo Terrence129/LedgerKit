@@ -1,0 +1,27 @@
+{
+  "fixture_id": "05-cross-currency-exchange-fee",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "EXCHANGE_REQUIRES_DIFFERENT_CURRENCIES",
+          "field": "to_account_id",
+          "message_key": "ledgerkit.exchange_requires_different_currencies"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:1445930680da175298ee47a7684920630fb214c4687712c6b7cf077294913ac2"
+}

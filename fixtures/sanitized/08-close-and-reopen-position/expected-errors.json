@@ -1,0 +1,27 @@
+{
+  "fixture_id": "08-close-and-reopen-position",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "NEGATIVE_HOLDING_NOT_ALLOWED",
+          "field": "quantity",
+          "message_key": "ledgerkit.negative_holding_not_allowed"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:395364acad672fc43983e1a5e479dde2945d712e534c8f0ba7648c51540b9c39"
+}

@@ -1,0 +1,87 @@
+{
+  "fixture_id": "26-expense-missing-fx",
+  "case_number": 26,
+  "title": "Missing FX reports valued subtotal and deterministically completes later",
+  "synthetic_data": true,
+  "related_rules": [
+    "EXP-003",
+    "EXP-004",
+    "EXP-008",
+    "EXP-012",
+    "FX-005"
+  ],
+  "related_adrs": [
+    "ADR-0012",
+    "ADR-0014"
+  ],
+  "coverage": {
+    "normal": {
+      "scenario_ids": [
+        "normal"
+      ],
+      "rule_ids": [
+        "EXP-003",
+        "EXP-004",
+        "EXP-008",
+        "EXP-012",
+        "FX-005"
+      ]
+    },
+    "boundary": {
+      "scenario_ids": [
+        "boundary"
+      ],
+      "rule_ids": [
+        "EXP-003",
+        "EXP-004",
+        "EXP-008",
+        "EXP-012",
+        "FX-005"
+      ]
+    },
+    "failure": {
+      "scenario_ids": [
+        "failure"
+      ],
+      "rule_ids": [
+        "EXP-003",
+        "EXP-004",
+        "EXP-008",
+        "EXP-012",
+        "FX-005"
+      ]
+    }
+  },
+  "decimal_contract": {
+    "id": "decimal-contract-v1",
+    "max_significant_digits": 28,
+    "max_scale": {
+      "amount": 8,
+      "quantity": 12,
+      "unit_price": 12,
+      "fx_rate": 15,
+      "internal": 18
+    }
+  },
+  "calculation_version": "ledger-calculation-v1",
+  "policy_versions": {
+    "expense": "expense-policy-v1",
+    "bucket": "expense-bucket-policy-v1",
+    "refund": "refund-policy-v1",
+    "market_data": "market-data-policy-v1"
+  },
+  "rounding_boundaries": [
+    "internal-scale-18-half-up",
+    "display-currency-half-up"
+  ],
+  "tolerances": {
+    "internal": "0",
+    "display": "0.01"
+  },
+  "generation": {
+    "method": "programmatically-generated-synthetic-data",
+    "generator": "tools/generate-m0-fixtures.mjs",
+    "reviewed": true
+  },
+  "canonical_hash": "sha256:b35f0cb8fabb97cda569554c1d136b12c8f823c53401d72f7b4716dba2492740"
+}

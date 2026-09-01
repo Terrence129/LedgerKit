@@ -1,0 +1,27 @@
+{
+  "fixture_id": "07-partial-security-sale",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "NEGATIVE_HOLDING_NOT_ALLOWED",
+          "field": "quantity",
+          "message_key": "ledgerkit.negative_holding_not_allowed"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:0bd234249108066c8c9cb4f1f7e8f8791912e3c77daacc561667875830620a1b"
+}

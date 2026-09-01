@@ -1,0 +1,42 @@
+{
+  "fixture_id": "16-cross-portfolio-isolation",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 2,
+      "state": {
+        "holdings": [
+          {
+            "portfolio_id": "portfolio-a",
+            "quantity": "2.000000000000",
+            "carrying_cost": "20.000000000000000000"
+          },
+          {
+            "portfolio_id": "portfolio-b",
+            "quantity": "3.000000000000",
+            "carrying_cost": "60.000000000000000000"
+          }
+        ]
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 1,
+      "state": {
+        "override_audit_reason": "Synthetic segregated cash account",
+        "portfolio_a_cost": "11.000000000000000000"
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "unchanged": true
+      }
+    }
+  ],
+  "canonical_hash": "sha256:40a23904fe25e0f27e01d58611a7f7bacc84f0e1cbcda43fd679aa4ac55645e1"
+}

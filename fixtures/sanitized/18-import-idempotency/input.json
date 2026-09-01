@@ -1,0 +1,84 @@
+{
+  "fixture_id": "18-import-idempotency",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-18-normal-01",
+          "command_type": "analyze_import",
+          "data": {
+            "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "importer_version": "importer-v1",
+            "schema_version": 1,
+            "import_key": "synthetic-key-a",
+            "rerun_count": 2,
+            "synthetic_rows": [
+              {
+                "sheet": "Synthetic expenses",
+                "row": 2,
+                "amount": "5.00",
+                "currency": "CNY"
+              }
+            ]
+          }
+        },
+        {
+          "command_id": "cmd-18-normal-02",
+          "command_type": "analyze_import",
+          "data": {
+            "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "importer_version": "importer-v1",
+            "schema_version": 1,
+            "import_key": "synthetic-key-a",
+            "rerun_count": 2,
+            "synthetic_rows": [
+              {
+                "sheet": "Synthetic expenses",
+                "row": 2,
+                "amount": "5.00",
+                "currency": "CNY"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-18-boundary-01",
+          "command_type": "analyze_import",
+          "data": {
+            "source_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "importer_version": "importer-v1",
+            "schema_version": 1,
+            "import_key": "synthetic-key-b",
+            "rerun_count": 1,
+            "synthetic_rows": []
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-18-failure-01",
+          "command_type": "commit_import",
+          "data": {
+            "existing_ledger_import_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "candidate_source_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "mode": "incremental-merge"
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:4aea698437cd968aac7b51fd6957184835e2136204da7ccef109cce0eb2f03d4"
+}

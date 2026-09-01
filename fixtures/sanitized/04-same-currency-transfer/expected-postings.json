@@ -1,0 +1,67 @@
+{
+  "fixture_id": "04-same-currency-transfer",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "postings": [
+        {
+          "posting_id": "post-evt-04-normal-01-01",
+          "event_id": "evt-04-normal-01",
+          "posting_kind": "transfer-out",
+          "calculation_version": "ledger-calculation-v1",
+          "account_id": "cash-cny-1",
+          "quantity_delta": "-50.00",
+          "currency": "CNY",
+          "base_value": "-50.00",
+          "base_currency": "CNY"
+        },
+        {
+          "posting_id": "post-evt-04-normal-01-02",
+          "event_id": "evt-04-normal-01",
+          "posting_kind": "transfer-in",
+          "calculation_version": "ledger-calculation-v1",
+          "account_id": "cash-cny-2",
+          "quantity_delta": "50.00",
+          "currency": "CNY",
+          "base_value": "50.00",
+          "base_currency": "CNY"
+        }
+      ],
+      "sequence_hash": "sha256:0abd20192e7248030d6de9cd741e176a0a9f8aed292384212034e1f6393037a8"
+    },
+    {
+      "scenario_id": "boundary",
+      "postings": [
+        {
+          "posting_id": "post-evt-04-boundary-01-01",
+          "event_id": "evt-04-boundary-01",
+          "posting_kind": "transfer-out",
+          "calculation_version": "ledger-calculation-v1",
+          "account_id": "cash-cny-1",
+          "quantity_delta": "-0.00000001",
+          "currency": "CNY",
+          "base_value": "-0.00000001",
+          "base_currency": "CNY"
+        },
+        {
+          "posting_id": "post-evt-04-boundary-01-02",
+          "event_id": "evt-04-boundary-01",
+          "posting_kind": "transfer-in",
+          "calculation_version": "ledger-calculation-v1",
+          "account_id": "cash-cny-2",
+          "quantity_delta": "0.00000001",
+          "currency": "CNY",
+          "base_value": "0.00000001",
+          "base_currency": "CNY"
+        }
+      ],
+      "sequence_hash": "sha256:6c198d630b126020ed6f7662e6dac32ce93d84befdee4e278d274fe3916e264f"
+    },
+    {
+      "scenario_id": "failure",
+      "postings": [],
+      "sequence_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  ],
+  "canonical_hash": "sha256:5e96279bb8be355af0375893b060d5ba97315230cd72bdee89933901b080722a"
+}

@@ -1,0 +1,74 @@
+{
+  "fixture_id": "09-dividend-investment-expense",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-09-normal-01",
+          "command_type": "post_event",
+          "data": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "settlement_account_id": "cash-usd-1",
+            "gross_cash_amount": "10.00",
+            "withholding_tax": "1.50",
+            "fee_amount": "0.50",
+            "currency": "USD"
+          }
+        },
+        {
+          "command_id": "cmd-09-normal-02",
+          "command_type": "post_event",
+          "data": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "settlement_account_id": "cash-usd-1",
+            "fee_scope": "instrument",
+            "amount": "2.00",
+            "currency": "USD"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-09-boundary-01",
+          "command_type": "post_event",
+          "data": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": null,
+            "settlement_account_id": "cash-usd-1",
+            "fee_scope": "portfolio",
+            "amount": "0.01",
+            "currency": "USD"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-09-failure-01",
+          "command_type": "post_event",
+          "data": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": null,
+            "settlement_account_id": "cash-usd-1",
+            "fee_scope": "instrument",
+            "amount": "2.00",
+            "currency": "USD"
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:3b0e9a60ea8e9a77ec970ab95309a70e541c9aac90e89113cc9f4b8897bfb451"
+}

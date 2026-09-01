@@ -1,0 +1,76 @@
+{
+  "fixture_id": "05-cross-currency-exchange-fee",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "postings": [
+        {
+          "posting_id": "post-evt-05-normal-01-01",
+          "event_id": "evt-05-normal-01",
+          "posting_kind": "exchange-out",
+          "calculation_version": "ledger-calculation-v1",
+          "account_id": "cash-cny-1",
+          "quantity_delta": "-710.00",
+          "currency": "CNY",
+          "base_value": "-710.00",
+          "base_currency": "CNY"
+        },
+        {
+          "posting_id": "post-evt-05-normal-01-02",
+          "event_id": "evt-05-normal-01",
+          "posting_kind": "exchange-in",
+          "calculation_version": "ledger-calculation-v1",
+          "account_id": "cash-usd-1",
+          "quantity_delta": "100.00",
+          "currency": "USD",
+          "base_value": "710.00",
+          "base_currency": "CNY"
+        },
+        {
+          "posting_id": "post-evt-05-normal-01-03",
+          "event_id": "evt-05-normal-01",
+          "posting_kind": "fx-fee",
+          "calculation_version": "ledger-calculation-v1",
+          "account_id": "cash-cny-1",
+          "quantity_delta": "-2.00",
+          "currency": "CNY",
+          "base_value": "-2.00",
+          "base_currency": "CNY"
+        }
+      ],
+      "sequence_hash": "sha256:958eba9a2ece61b21009bbfefe25ae51335359f688f781ee0ac1c05f260ac95a"
+    },
+    {
+      "scenario_id": "boundary",
+      "postings": [
+        {
+          "posting_id": "post-evt-05-boundary-01-01",
+          "event_id": "evt-05-boundary-01",
+          "posting_kind": "exchange-out",
+          "calculation_version": "ledger-calculation-v1",
+          "quantity_delta": "-1.00000000",
+          "currency": "USD",
+          "base_value": "-7.10000000",
+          "base_currency": "CNY"
+        },
+        {
+          "posting_id": "post-evt-05-boundary-01-02",
+          "event_id": "evt-05-boundary-01",
+          "posting_kind": "exchange-in",
+          "calculation_version": "ledger-calculation-v1",
+          "quantity_delta": "7.10000000",
+          "currency": "CNY",
+          "base_value": "7.10000000",
+          "base_currency": "CNY"
+        }
+      ],
+      "sequence_hash": "sha256:50f309ffd4d4e4ca7680a613eee651bef4772f7032eb64e1726f460b09d4951e"
+    },
+    {
+      "scenario_id": "failure",
+      "postings": [],
+      "sequence_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  ],
+  "canonical_hash": "sha256:1932684bbbc7d99d06215c9a8f03a3e26e45196135fe18db956f98de77f5ad3a"
+}

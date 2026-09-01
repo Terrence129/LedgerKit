@@ -1,0 +1,27 @@
+{
+  "fixture_id": "13-history-and-cutover",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "MIGRATION_POLICY_REQUIRED",
+          "field": "migration_policy",
+          "message_key": "ledgerkit.migration_policy_required"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:2a02b33cfbcd295fd7f43018d91122671ad3e4eec6bbc91f969f199aebe9cc1f"
+}

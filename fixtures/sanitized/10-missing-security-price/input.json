@@ -1,0 +1,56 @@
+{
+  "fixture_id": "10-missing-security-price",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-10-normal-01",
+          "command_type": "get_overview",
+          "data": {
+            "valuation_date": "2026-02-11",
+            "instrument_id": "instrument-no-price",
+            "quantity": "3.000000000000"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-10-boundary-01",
+          "command_type": "get_overview",
+          "data": {
+            "valuation_date": "2026-02-11",
+            "instrument_id": "instrument-alpha",
+            "quantity": "3.000000000000",
+            "price_revision": {
+              "date": "2026-02-11",
+              "price": "10.000000000000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-10-failure-01",
+          "command_type": "save_price_revision",
+          "data": {
+            "instrument_id": "instrument-alpha",
+            "date": "2026-02-11",
+            "price": "0"
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:d608df8086d4138c6686c57321ae19cdfc60ea663ea3cb588d14d8861d836026"
+}

@@ -1,0 +1,66 @@
+{
+  "fixture_id": "17-reversal-zero-net",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-17-normal-01",
+          "command_type": "post_event",
+          "data": {
+            "amount": "25.00",
+            "currency": "CNY",
+            "category_id": "cat-food"
+          }
+        },
+        {
+          "command_id": "cmd-17-normal-02",
+          "command_type": "reverse_event",
+          "data": {
+            "event_id": "evt-17-normal-01",
+            "reason": "Synthetic duplicate entry"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-17-boundary-01",
+          "command_type": "post_event",
+          "data": {
+            "amount": "0.00000001",
+            "currency": "CNY"
+          }
+        },
+        {
+          "command_id": "cmd-17-boundary-02",
+          "command_type": "reverse_event",
+          "data": {
+            "event_id": "evt-17-boundary-01",
+            "reason": "Synthetic precision boundary reversal"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-17-failure-01",
+          "command_type": "reverse_event",
+          "data": {
+            "event_id": "evt-17-normal-01",
+            "reason": ""
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:64084f4f70c50d2168620989ee4fd51fd245a1df595022a29af07628c77142cd"
+}

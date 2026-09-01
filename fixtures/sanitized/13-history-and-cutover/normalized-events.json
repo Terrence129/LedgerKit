@@ -1,0 +1,98 @@
+{
+  "fixture_id": "13-history-and-cutover",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": [
+        {
+          "event_id": "evt-13-normal-01",
+          "event_type": "OpeningBalance",
+          "effective_date": "2025-01-01",
+          "sequence": 1,
+          "status": "posted",
+          "detail": {
+            "account_id": "cash-cny-history",
+            "balance_amount": "1000.00",
+            "cutover_date": "2025-01-01",
+            "migration_policy": "full_history"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        },
+        {
+          "event_id": "evt-13-normal-02",
+          "event_type": "SecurityBuy",
+          "effective_date": "2025-01-02",
+          "sequence": 1,
+          "status": "posted",
+          "detail": {
+            "portfolio_id": "portfolio-history",
+            "instrument_id": "instrument-alpha",
+            "quantity": "10.000000000000",
+            "unit_price": "10.000000000000",
+            "trade_fee": "0",
+            "migration_policy": "full_history"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "events": [
+        {
+          "event_id": "evt-13-boundary-01",
+          "event_type": "OpeningBalance",
+          "effective_date": "2026-01-01",
+          "sequence": 1,
+          "status": "posted",
+          "detail": {
+            "account_id": "cash-cny-cutover",
+            "balance_amount": "900.00",
+            "cutover_date": "2026-01-01",
+            "migration_policy": "explicit_cutover"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        },
+        {
+          "event_id": "evt-13-boundary-02",
+          "event_type": "OpeningPosition",
+          "effective_date": "2026-01-01",
+          "sequence": 2,
+          "status": "posted",
+          "detail": {
+            "portfolio_id": "portfolio-cutover",
+            "instrument_id": "instrument-closed",
+            "quantity": "0",
+            "carrying_cost": "0",
+            "cost_currency": "CNY",
+            "cutover_date": "2026-01-01",
+            "migration_policy": "explicit_cutover"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        },
+        {
+          "event_id": "evt-13-boundary-03",
+          "event_type": "OpeningPerformance",
+          "effective_date": "2026-01-01",
+          "sequence": 3,
+          "status": "posted",
+          "detail": {
+            "portfolio_id": "portfolio-cutover",
+            "instrument_id": "instrument-closed",
+            "realized_pnl": "25.00",
+            "net_dividend": "5.00",
+            "independent_expense": "2.00",
+            "currency": "CNY",
+            "cutover_date": "2026-01-01"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:1d861ca6b4415422d09970b7816213e2b4d624dc21717015eea841e8c4a580bf"
+}

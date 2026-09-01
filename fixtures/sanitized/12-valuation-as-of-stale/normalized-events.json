@@ -1,0 +1,18 @@
+{
+  "fixture_id": "12-valuation-as-of-stale",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": []
+    },
+    {
+      "scenario_id": "boundary",
+      "events": []
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:98544182a3369185ac3e585d03513a1a27512b63ac3de707dd2c1da82e80d635"
+}

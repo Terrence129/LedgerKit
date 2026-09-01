@@ -1,0 +1,35 @@
+{
+  "fixture_id": "14-valuation-date-mtd",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 3,
+      "state": {
+        "resolved_start_date": "2026-03-01",
+        "resolved_end_date": "2026-03-15",
+        "mtd_expense": "30.00",
+        "excluded_future_expense": "30.00"
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 1,
+      "state": {
+        "resolved_start_date": "2026-03-01",
+        "resolved_end_date": "2026-03-01",
+        "mtd_expense": "10.00"
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "previous_result_cleared": true
+      }
+    }
+  ],
+  "canonical_hash": "sha256:afca973dd9170612092eceb881b45a9969dab9e3a089baa35d2945b3d45a9422"
+}

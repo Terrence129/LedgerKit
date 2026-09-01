@@ -1,0 +1,18 @@
+{
+  "fixture_id": "22-expense-fee-matrix",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": []
+    },
+    {
+      "scenario_id": "boundary",
+      "events": []
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:61794837eff64a8038718e6712717a9df8e9dd3d236de7b1f4f2735ea68b93b8"
+}

@@ -1,0 +1,27 @@
+{
+  "fixture_id": "14-valuation-date-mtd",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "INVALID_LOCAL_DATE",
+          "field": "valuation_date",
+          "message_key": "ledgerkit.invalid_local_date"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:e1d6b376f3f50d5d773c5c800f4a452c0bbe55a85e2f4f5f169c43be10e904f1"
+}

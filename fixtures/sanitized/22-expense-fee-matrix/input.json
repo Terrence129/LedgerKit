@@ -1,0 +1,65 @@
+{
+  "fixture_id": "22-expense-fee-matrix",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-22-normal-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "included": [
+              "ordinary-expense",
+              "ordinary-fee",
+              "fx-fee"
+            ],
+            "excluded": [
+              "income",
+              "adjustment",
+              "transfer-principal",
+              "exchange-principal",
+              "security-principal",
+              "trade-fee",
+              "dividend-fee",
+              "withholding-tax",
+              "investment-expense"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-22-boundary-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "uncategorized_expense_amount": "0.01"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-22-failure-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "contribution_id": "synthetic-contribution-1",
+            "assigned_bucket_ids": [
+              "cat-food",
+              "system:ordinary-fee"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:c0d6b2957ab6e844ee287835642883f5d60bc560d357360a3e97b5042e56ef87"
+}

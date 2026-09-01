@@ -1,0 +1,91 @@
+{
+  "fixture_id": "12-valuation-as-of-stale",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-12-normal-01",
+          "command_type": "get_overview",
+          "data": {
+            "valuation_date": "2026-02-15",
+            "quantity": "2.000000000000",
+            "price_revisions": [
+              {
+                "id": "price-old",
+                "date": "2026-02-10",
+                "price": "10.000000000000",
+                "active": true
+              },
+              {
+                "id": "price-future",
+                "date": "2026-02-16",
+                "price": "99.000000000000",
+                "active": true
+              }
+            ],
+            "fx_revisions": [
+              {
+                "id": "fx-asof",
+                "date": "2026-02-14",
+                "rate_to_base": "7.00",
+                "active": true
+              },
+              {
+                "id": "fx-future",
+                "date": "2026-02-16",
+                "rate_to_base": "8.00",
+                "active": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-12-boundary-01",
+          "command_type": "get_overview",
+          "data": {
+            "valuation_date": "2026-02-20",
+            "quantity": "2.000000000000",
+            "price_revision": {
+              "id": "price-stale",
+              "date": "2026-02-10",
+              "price": "10.000000000000",
+              "active": true
+            },
+            "fx_revision": {
+              "id": "fx-current",
+              "date": "2026-02-20",
+              "rate_to_base": "7.00",
+              "active": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-12-failure-01",
+          "command_type": "get_overview",
+          "data": {
+            "valuation_date": "2026-02-01",
+            "quantity": "2.000000000000",
+            "first_price_date": "2026-02-02",
+            "first_fx_date": "2026-02-02"
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:37a67a05cc0533998752423e75760322fbb0b0cfc13df15ec5cd4ee908907e7f"
+}

@@ -1,0 +1,52 @@
+{
+  "fixture_id": "13-history-and-cutover",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-13-normal-01",
+          "command_type": "commit_import",
+          "data": {
+            "account_policy": "full_history",
+            "portfolio_policy": "full_history",
+            "source_evidence_complete": true
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-13-boundary-01",
+          "command_type": "commit_import",
+          "data": {
+            "account_policy": "explicit_cutover",
+            "portfolio_policy": "explicit_cutover",
+            "cutover_date": "2026-01-01",
+            "pre_cutover_rows": "evidence-only"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-13-failure-01",
+          "command_type": "commit_import",
+          "data": {
+            "account_policy": null,
+            "portfolio_policy": null
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:8a7510bfb7a1cdbe40164a1b98bff21da868568dd2da3c7951ec27d326211e82"
+}

@@ -1,0 +1,83 @@
+{
+  "fixture_id": "09-dividend-investment-expense",
+  "case_number": 9,
+  "title": "Dividend, withholding and independent investment expense",
+  "synthetic_data": true,
+  "related_rules": [
+    "EXP-002",
+    "INV-002",
+    "INV-005",
+    "INV-008"
+  ],
+  "related_adrs": [
+    "ADR-0005",
+    "ADR-0014"
+  ],
+  "coverage": {
+    "normal": {
+      "scenario_ids": [
+        "normal"
+      ],
+      "rule_ids": [
+        "EXP-002",
+        "INV-002",
+        "INV-005",
+        "INV-008"
+      ]
+    },
+    "boundary": {
+      "scenario_ids": [
+        "boundary"
+      ],
+      "rule_ids": [
+        "EXP-002",
+        "INV-002",
+        "INV-005",
+        "INV-008"
+      ]
+    },
+    "failure": {
+      "scenario_ids": [
+        "failure"
+      ],
+      "rule_ids": [
+        "EXP-002",
+        "INV-002",
+        "INV-005",
+        "INV-008"
+      ]
+    }
+  },
+  "decimal_contract": {
+    "id": "decimal-contract-v1",
+    "max_significant_digits": 28,
+    "max_scale": {
+      "amount": 8,
+      "quantity": 12,
+      "unit_price": 12,
+      "fx_rate": 15,
+      "internal": 18
+    }
+  },
+  "calculation_version": "ledger-calculation-v1",
+  "policy_versions": {
+    "expense": "expense-policy-v1",
+    "bucket": "expense-bucket-policy-v1",
+    "refund": "refund-policy-v1",
+    "market_data": "market-data-policy-v1"
+  },
+  "rounding_boundaries": [
+    "internal-scale-18-half-up",
+    "display-currency-half-up"
+  ],
+  "tolerances": {
+    "internal": "0",
+    "display": "0.01"
+  },
+  "generation": {
+    "method": "programmatically-generated-synthetic-data",
+    "generator": "tools/generate-m0-fixtures.mjs",
+    "reviewed": true
+  },
+  "canonical_hash": "sha256:363dc00f059cd67859153ee97f4235884aaf7456e9ebe3a605170deef67fdd9a"
+}

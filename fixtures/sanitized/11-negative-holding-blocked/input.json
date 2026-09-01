@@ -1,0 +1,52 @@
+{
+  "fixture_id": "11-negative-holding-blocked",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-11-normal-01",
+          "command_type": "post_event",
+          "data": {
+            "quantity": "1.000000000000",
+            "available_quantity": "2.000000000000",
+            "unit_price": "5.000000000000"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-11-boundary-01",
+          "command_type": "post_event",
+          "data": {
+            "quantity": "2.000000000000",
+            "available_quantity": "2.000000000000",
+            "unit_price": "5.000000000000"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-11-failure-01",
+          "command_type": "post_event",
+          "data": {
+            "quantity": "2.000000000001",
+            "available_quantity": "2.000000000000",
+            "unit_price": "5.000000000000"
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:be03e5eae2e8f4330da5fefeb31f215a3507bcddd2943e3bf13002a659efef08"
+}

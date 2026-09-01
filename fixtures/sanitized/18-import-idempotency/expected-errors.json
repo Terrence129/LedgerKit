@@ -1,0 +1,27 @@
+{
+  "fixture_id": "18-import-idempotency",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "MODIFIED_WORKBOOK_INCREMENTAL_MERGE_FORBIDDEN",
+          "field": "source_sha256",
+          "message_key": "ledgerkit.modified_workbook_incremental_merge_forbidden"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:43adfa53358293cccdc8a5e4f3a0d27322922c5c5469fdba8131001057b68605"
+}

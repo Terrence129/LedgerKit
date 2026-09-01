@@ -1,0 +1,78 @@
+{
+  "fixture_id": "06-security-buy",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "postings": [
+        {
+          "posting_id": "post-evt-06-normal-01-01",
+          "event_id": "evt-06-normal-01",
+          "posting_kind": "settlement-cash",
+          "calculation_version": "ledger-calculation-v1",
+          "account_id": "cash-usd-1",
+          "quantity_delta": "-125.00",
+          "currency": "USD",
+          "base_value": "-887.5000",
+          "base_currency": "CNY"
+        },
+        {
+          "posting_id": "post-evt-06-normal-01-02",
+          "event_id": "evt-06-normal-01",
+          "posting_kind": "security-quantity",
+          "calculation_version": "ledger-calculation-v1",
+          "portfolio_id": "portfolio-a",
+          "instrument_id": "instrument-alpha",
+          "quantity_delta": "10.000000000000"
+        },
+        {
+          "posting_id": "post-evt-06-normal-01-03",
+          "event_id": "evt-06-normal-01",
+          "posting_kind": "holding-cost",
+          "calculation_version": "ledger-calculation-v1",
+          "portfolio_id": "portfolio-a",
+          "instrument_id": "instrument-alpha",
+          "cost_delta": "125.00",
+          "currency": "USD"
+        }
+      ],
+      "sequence_hash": "sha256:d1dccfb72fb4b2eb8feac50e7498c9d6968fc12239f4a4531f487b3c351f7cc1"
+    },
+    {
+      "scenario_id": "boundary",
+      "postings": [
+        {
+          "posting_id": "post-evt-06-boundary-01-01",
+          "event_id": "evt-06-boundary-01",
+          "posting_kind": "settlement-cash",
+          "calculation_version": "ledger-calculation-v1",
+          "quantity_delta": "-0.000001000000000000",
+          "currency": "USD",
+          "base_value": "-0.000007100000000000",
+          "base_currency": "CNY"
+        },
+        {
+          "posting_id": "post-evt-06-boundary-01-02",
+          "event_id": "evt-06-boundary-01",
+          "posting_kind": "security-quantity",
+          "calculation_version": "ledger-calculation-v1",
+          "quantity_delta": "0.000000000001"
+        },
+        {
+          "posting_id": "post-evt-06-boundary-01-03",
+          "event_id": "evt-06-boundary-01",
+          "posting_kind": "holding-cost",
+          "calculation_version": "ledger-calculation-v1",
+          "cost_delta": "0.000001000000000000",
+          "currency": "USD"
+        }
+      ],
+      "sequence_hash": "sha256:c167f3e987b86e03520db14651f418d26806cf6ed9abf2da70893396f8bf9643"
+    },
+    {
+      "scenario_id": "failure",
+      "postings": [],
+      "sequence_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  ],
+  "canonical_hash": "sha256:992156d527b40e94cb1c15721fd788b4c03c3b5975c0d0ba802761a74b74713c"
+}

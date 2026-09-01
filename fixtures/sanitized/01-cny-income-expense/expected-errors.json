@@ -1,0 +1,33 @@
+{
+  "fixture_id": "01-cny-income-expense",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": [
+        {
+          "code": "CURRENCY_PRECISION_CONFIRMATION_REQUIRED",
+          "field": "amount",
+          "message_key": "ledgerkit.currency_precision_confirmation_required"
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "DECIMAL_SCALE_EXCEEDED",
+          "field": "amount",
+          "message_key": "ledgerkit.decimal_scale_exceeded"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:22b85f6415e9f4c2192b4d66ad5398bcd5f8e6b963157fc4857ba36cccc1a6ee"
+}

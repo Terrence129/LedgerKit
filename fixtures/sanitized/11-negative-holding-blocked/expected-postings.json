@@ -1,0 +1,37 @@
+{
+  "fixture_id": "11-negative-holding-blocked",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "postings": [
+        {
+          "posting_id": "post-evt-11-normal-01-01",
+          "event_id": "evt-11-normal-01",
+          "posting_kind": "security-quantity",
+          "calculation_version": "ledger-calculation-v1",
+          "quantity_delta": "-1.000000000000"
+        }
+      ],
+      "sequence_hash": "sha256:9492fd0da711b089f4321cf1020e4c0829b637e2e8c6370bc1405bb0a234e8ef"
+    },
+    {
+      "scenario_id": "boundary",
+      "postings": [
+        {
+          "posting_id": "post-evt-11-boundary-01-01",
+          "event_id": "evt-11-boundary-01",
+          "posting_kind": "security-quantity",
+          "calculation_version": "ledger-calculation-v1",
+          "quantity_delta": "-2.000000000000"
+        }
+      ],
+      "sequence_hash": "sha256:52dcca3c6f4678df555e878828dbcb095e7ad460e891ef1f86ee501b01564354"
+    },
+    {
+      "scenario_id": "failure",
+      "postings": [],
+      "sequence_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  ],
+  "canonical_hash": "sha256:ea188b5cc22d7d1090bc3bd417e36be078a7d6e8f85f6cf3d07b6c88f565b356"
+}

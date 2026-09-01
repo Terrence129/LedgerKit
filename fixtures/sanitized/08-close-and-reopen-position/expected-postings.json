@@ -1,0 +1,78 @@
+{
+  "fixture_id": "08-close-and-reopen-position",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "postings": [
+        {
+          "posting_id": "post-evt-08-normal-01-01",
+          "event_id": "evt-08-normal-01",
+          "posting_kind": "holding-cost",
+          "calculation_version": "ledger-calculation-v1",
+          "cost_delta": "-20.000000000000000000",
+          "currency": "USD"
+        },
+        {
+          "posting_id": "post-evt-08-normal-01-02",
+          "event_id": "evt-08-normal-01",
+          "posting_kind": "realized-pnl",
+          "calculation_version": "ledger-calculation-v1",
+          "realized_pnl": "5.999999999999999999",
+          "currency": "USD"
+        },
+        {
+          "posting_id": "post-evt-08-normal-02-01",
+          "event_id": "evt-08-normal-02",
+          "posting_kind": "holding-cost",
+          "calculation_version": "ledger-calculation-v1",
+          "cost_delta": "-10.000000000000000001",
+          "currency": "USD"
+        },
+        {
+          "posting_id": "post-evt-08-normal-02-02",
+          "event_id": "evt-08-normal-02",
+          "posting_kind": "realized-pnl",
+          "calculation_version": "ledger-calculation-v1",
+          "realized_pnl": "3.999999999999999999",
+          "currency": "USD"
+        },
+        {
+          "posting_id": "post-evt-08-normal-03-01",
+          "event_id": "evt-08-normal-03",
+          "posting_kind": "holding-cost",
+          "calculation_version": "ledger-calculation-v1",
+          "cost_delta": "20.000000000000000000",
+          "currency": "USD"
+        }
+      ],
+      "sequence_hash": "sha256:20261f8ebd1aa28b2cbdb9980139b12b3cfe34b37aa8bcb1422cbe709a2b1919"
+    },
+    {
+      "scenario_id": "boundary",
+      "postings": [
+        {
+          "posting_id": "post-evt-08-boundary-01-01",
+          "event_id": "evt-08-boundary-01",
+          "posting_kind": "holding-cost",
+          "calculation_version": "ledger-calculation-v1",
+          "cost_delta": "-0.000000000000000001",
+          "currency": "USD"
+        },
+        {
+          "posting_id": "post-evt-08-boundary-01-02",
+          "event_id": "evt-08-boundary-01",
+          "posting_kind": "security-quantity",
+          "calculation_version": "ledger-calculation-v1",
+          "quantity_delta": "-0.000000000001"
+        }
+      ],
+      "sequence_hash": "sha256:aa6290abb362cfb01108d57a5edfdffb53da8d1672d04c72da6f3dd147cbea03"
+    },
+    {
+      "scenario_id": "failure",
+      "postings": [],
+      "sequence_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  ],
+  "canonical_hash": "sha256:2562b8eea33306f4ac4ca93af6a183d8e07921f1e67eff806cde04e194cd9cb7"
+}

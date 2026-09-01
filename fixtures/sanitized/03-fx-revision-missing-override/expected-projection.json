@@ -1,0 +1,33 @@
+{
+  "fixture_id": "03-fx-revision-missing-override",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 1,
+      "state": {
+        "selected_revision_id": "fx-usd-r2",
+        "valued_expense": "36.2500"
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 1,
+      "state": {
+        "automatic_candidate_rate": "7.25",
+        "final_rate": "7.30",
+        "valued_expense": "36.5000"
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "unvalued_count": 1
+      }
+    }
+  ],
+  "canonical_hash": "sha256:a8423e50d475a78ea95eadc4b2daa7639e23b0bd123483d13a47b7c3356c9917"
+}

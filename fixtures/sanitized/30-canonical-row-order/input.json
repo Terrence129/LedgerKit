@@ -1,0 +1,71 @@
+{
+  "fixture_id": "30-canonical-row-order",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-30-normal-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "physical_row_order": [
+              3,
+              1,
+              2
+            ],
+            "import_batch_order": [
+              2,
+              1
+            ]
+          }
+        },
+        {
+          "command_id": "cmd-30-normal-02",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "physical_row_order": [
+              1,
+              2,
+              3
+            ],
+            "import_batch_order": [
+              1,
+              2
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-30-boundary-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "event_watermark": 4,
+            "previous_event_watermark": 3
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-30-failure-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "serialization": "locale-dependent",
+            "physical_row_order_used_as_tiebreaker": true
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:8f43902740030b390e76d004d455753d89697cf6f5febd20334781f114b6c52b"
+}

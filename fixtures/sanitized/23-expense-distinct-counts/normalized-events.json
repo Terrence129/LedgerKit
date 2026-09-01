@@ -1,0 +1,18 @@
+{
+  "fixture_id": "23-expense-distinct-counts",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": []
+    },
+    {
+      "scenario_id": "boundary",
+      "events": []
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:6bc5ecbb1aa70aa99845bfc008d0657d1a289d12fb5b20dca0bd4551e2edc2cc"
+}

@@ -1,0 +1,32 @@
+{
+  "fixture_id": "04-same-currency-transfer",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 1,
+      "state": {
+        "net_cash_change": "0",
+        "expense": "0",
+        "income": "0"
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 1,
+      "state": {
+        "net_cash_change": "0"
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "unchanged": true
+      }
+    }
+  ],
+  "canonical_hash": "sha256:991224163dca0abda51d1921b498457ef41eed17578e0bf3dff59252e042767a"
+}

@@ -1,0 +1,45 @@
+{
+  "fixture_id": "02-fx-as-of-order-independent",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "postings": [
+        {
+          "posting_id": "post-evt-02-normal-01-01",
+          "event_id": "evt-02-normal-01",
+          "posting_kind": "cash",
+          "calculation_version": "ledger-calculation-v1",
+          "account_id": "cash-usd-1",
+          "quantity_delta": "-10.00",
+          "currency": "USD",
+          "base_value": "-71.0000",
+          "base_currency": "CNY"
+        }
+      ],
+      "sequence_hash": "sha256:b7c0da7542956140c038d33ff765fb0f0669040166d84df70e5085d613d35d08"
+    },
+    {
+      "scenario_id": "boundary",
+      "postings": [
+        {
+          "posting_id": "post-evt-02-boundary-01-01",
+          "event_id": "evt-02-boundary-01",
+          "posting_kind": "cash",
+          "calculation_version": "ledger-calculation-v1",
+          "account_id": "cash-usd-1",
+          "quantity_delta": "1.00",
+          "currency": "USD",
+          "base_value": "7.2000",
+          "base_currency": "CNY"
+        }
+      ],
+      "sequence_hash": "sha256:9d220dac10838ffbd11cb8904142711cdf7ef7ec0cfc2bb1f529e85cadc26416"
+    },
+    {
+      "scenario_id": "failure",
+      "postings": [],
+      "sequence_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  ],
+  "canonical_hash": "sha256:2ddba90967f7aa3fec4ca33ff8e15f5a4a816a891b4c4b58cd2953a2c30090a0"
+}

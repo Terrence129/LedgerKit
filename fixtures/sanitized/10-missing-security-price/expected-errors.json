@@ -1,0 +1,33 @@
+{
+  "fixture_id": "10-missing-security-price",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": [
+        {
+          "code": "PRICE_MISSING_AS_OF",
+          "field": "price_revision",
+          "message_key": "ledgerkit.price_missing_as_of"
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "PRICE_MUST_BE_POSITIVE",
+          "field": "price",
+          "message_key": "ledgerkit.price_must_be_positive"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:ad9bc9b92472034b7cd648e76e1aec49ace16e41e79090a98ace7b927c9a218a"
+}

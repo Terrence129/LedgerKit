@@ -1,0 +1,33 @@
+{
+  "fixture_id": "04-same-currency-transfer",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": [
+        {
+          "code": "CURRENCY_PRECISION_CONFIRMATION_REQUIRED",
+          "field": "amount",
+          "message_key": "ledgerkit.currency_precision_confirmation_required"
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "TRANSFER_CURRENCY_MISMATCH",
+          "field": "to_account_id",
+          "message_key": "ledgerkit.transfer_currency_mismatch"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:b191484941e6abf0fb5f983a75bdcf65c935f53be8c69eb9e4332881fe029176"
+}

@@ -1,0 +1,27 @@
+{
+  "fixture_id": "15-calendar-and-sequence",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "DUPLICATE_EVENT_SEQUENCE",
+          "field": "sequence",
+          "message_key": "ledgerkit.duplicate_event_sequence"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:0069f92ba96f9ac0d56be20b1447ee76b0cda71c796805e90a7d777c66d0e58b"
+}

@@ -1,0 +1,87 @@
+{
+  "fixture_id": "22-expense-fee-matrix",
+  "case_number": 22,
+  "title": "P0 expense fee matrix includes each contribution exactly once",
+  "synthetic_data": true,
+  "related_rules": [
+    "EXP-001",
+    "EXP-002",
+    "EXP-003",
+    "EXP-004",
+    "EXP-010"
+  ],
+  "related_adrs": [
+    "ADR-0005",
+    "ADR-0014"
+  ],
+  "coverage": {
+    "normal": {
+      "scenario_ids": [
+        "normal"
+      ],
+      "rule_ids": [
+        "EXP-001",
+        "EXP-002",
+        "EXP-003",
+        "EXP-004",
+        "EXP-010"
+      ]
+    },
+    "boundary": {
+      "scenario_ids": [
+        "boundary"
+      ],
+      "rule_ids": [
+        "EXP-001",
+        "EXP-002",
+        "EXP-003",
+        "EXP-004",
+        "EXP-010"
+      ]
+    },
+    "failure": {
+      "scenario_ids": [
+        "failure"
+      ],
+      "rule_ids": [
+        "EXP-001",
+        "EXP-002",
+        "EXP-003",
+        "EXP-004",
+        "EXP-010"
+      ]
+    }
+  },
+  "decimal_contract": {
+    "id": "decimal-contract-v1",
+    "max_significant_digits": 28,
+    "max_scale": {
+      "amount": 8,
+      "quantity": 12,
+      "unit_price": 12,
+      "fx_rate": 15,
+      "internal": 18
+    }
+  },
+  "calculation_version": "ledger-calculation-v1",
+  "policy_versions": {
+    "expense": "expense-policy-v1",
+    "bucket": "expense-bucket-policy-v1",
+    "refund": "refund-policy-v1",
+    "market_data": "market-data-policy-v1"
+  },
+  "rounding_boundaries": [
+    "internal-scale-18-half-up",
+    "display-currency-half-up"
+  ],
+  "tolerances": {
+    "internal": "0",
+    "display": "0.01"
+  },
+  "generation": {
+    "method": "programmatically-generated-synthetic-data",
+    "generator": "tools/generate-m0-fixtures.mjs",
+    "reviewed": true
+  },
+  "canonical_hash": "sha256:06de2e308cc6f09b3dacdc593686aa3539aad75b74532e14b2c1f716754fd636"
+}

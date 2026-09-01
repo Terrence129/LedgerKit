@@ -1,0 +1,33 @@
+{
+  "fixture_id": "05-cross-currency-exchange-fee",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 1,
+      "state": {
+        "principal_expense": "0",
+        "fee_expense": "2.00",
+        "expense_bucket_id": "system:fx-fee"
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 1,
+      "state": {
+        "principal_expense": "0",
+        "fee_expense": "0"
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "unchanged": true
+      }
+    }
+  ],
+  "canonical_hash": "sha256:a8a4b3a3dcbdd1dfacb1766aeb6127a1ee69db923f357a6b70f810bc445a9c13"
+}

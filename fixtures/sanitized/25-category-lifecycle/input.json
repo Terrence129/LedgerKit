@@ -1,0 +1,57 @@
+{
+  "fixture_id": "25-category-lifecycle",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-25-normal-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "category_id": "cat-stable-1",
+            "operations": [
+              "disable",
+              "rename",
+              "reorder",
+              "enable"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-25-boundary-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "equal_amount_categories": [
+              "cat-stable-2",
+              "cat-stable-1"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-25-failure-01",
+          "command_type": "save_category",
+          "data": {
+            "category_id": "cat-stable-1",
+            "operation": "physical-delete",
+            "has_posted_events": true
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:7bb4c215c7e0d64e0cec2e1584195ff766274b4717fb13cd63f9bfa79d285580"
+}

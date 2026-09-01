@@ -1,0 +1,56 @@
+{
+  "fixture_id": "15-calendar-and-sequence",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": [
+        {
+          "event_id": "evt-15-normal-01",
+          "event_type": "Expense",
+          "effective_date": "2024-02-29",
+          "sequence": 1,
+          "status": "posted",
+          "detail": {
+            "amount": "1.00",
+            "currency": "CNY"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "events": [
+        {
+          "event_id": "evt-15-boundary-01",
+          "event_type": "SecurityBuy",
+          "effective_date": "2026-01-31",
+          "sequence": 10,
+          "status": "posted",
+          "detail": {
+            "quantity": "1.000000000000",
+            "unit_price": "10.000000000000"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        },
+        {
+          "event_id": "evt-15-boundary-02",
+          "event_type": "SecuritySell",
+          "effective_date": "2026-01-31",
+          "sequence": 11,
+          "status": "posted",
+          "detail": {
+            "quantity": "1.000000000000",
+            "unit_price": "11.000000000000"
+          },
+          "calculation_version": "ledger-calculation-v1"
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:dc325f3c802604a74369456e4b8f3230fcab8c8922a042a6e67aa254b2b79ca6"
+}

@@ -1,0 +1,51 @@
+{
+  "fixture_id": "21-expense-date-validation",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-21-normal-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "start_date": "2024-02-29",
+            "end_date": "2024-02-29"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-21-boundary-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "start_date": "2026-01-31",
+            "end_date": "2026-02-01",
+            "resolved_from_local_today": false
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-21-failure-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "start_date": "2026-03-02",
+            "end_date": "2026-03-01",
+            "excel_date_has_unconfirmed_time_fraction": true
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:d93845b9dc39c8cab7657d771fb360f901f342911a977a095c0ccdb29af62b64"
+}

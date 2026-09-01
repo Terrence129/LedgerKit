@@ -1,0 +1,53 @@
+{
+  "fixture_id": "26-expense-missing-fx",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-26-normal-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "valued_expense": "50.00",
+            "unvalued_usd_expense": "10.00",
+            "fx_available": false
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-26-boundary-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "valued_expense": "50.00",
+            "usd_expense": "10.00",
+            "final_rate": "7.00",
+            "fx_available": true
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-26-failure-01",
+          "command_type": "save_fx_revision",
+          "data": {
+            "currency": "USD",
+            "date": "2026-02-28",
+            "rate_to_base": "0"
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:04d290e7a36203f2fc36f640940949600cd014a003f3942e7a11ec5a0d6c0a56"
+}

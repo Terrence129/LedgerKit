@@ -1,0 +1,55 @@
+{
+  "fixture_id": "17-reversal-zero-net",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "postings": [
+        {
+          "posting_id": "post-evt-17-normal-01-01",
+          "event_id": "evt-17-normal-01",
+          "posting_kind": "cash",
+          "calculation_version": "ledger-calculation-v1",
+          "quantity_delta": "-25.00",
+          "currency": "CNY"
+        },
+        {
+          "posting_id": "post-evt-17-normal-02-01",
+          "event_id": "evt-17-normal-02",
+          "posting_kind": "cash-reversal",
+          "calculation_version": "ledger-calculation-v1",
+          "quantity_delta": "25.00",
+          "currency": "CNY"
+        }
+      ],
+      "sequence_hash": "sha256:36d69287f5e4607db9a344ebca8120e24d3a3213223bc9a68e858da0e98571fd"
+    },
+    {
+      "scenario_id": "boundary",
+      "postings": [
+        {
+          "posting_id": "post-evt-17-boundary-01-01",
+          "event_id": "evt-17-boundary-01",
+          "posting_kind": "cash",
+          "calculation_version": "ledger-calculation-v1",
+          "quantity_delta": "0.00000001",
+          "currency": "CNY"
+        },
+        {
+          "posting_id": "post-evt-17-boundary-02-01",
+          "event_id": "evt-17-boundary-02",
+          "posting_kind": "cash-reversal",
+          "calculation_version": "ledger-calculation-v1",
+          "quantity_delta": "-0.00000001",
+          "currency": "CNY"
+        }
+      ],
+      "sequence_hash": "sha256:3e3d2e39e903f6a2301be373ebef3df97f1d73b3478cd525e1725d1e2fcf05ac"
+    },
+    {
+      "scenario_id": "failure",
+      "postings": [],
+      "sequence_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  ],
+  "canonical_hash": "sha256:ccc9831bc27753087be1cd9880a2fe07defbfffd9353e2a6c4b7b873d1c77e9d"
+}

@@ -1,0 +1,36 @@
+{
+  "fixture_id": "17-reversal-zero-net",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 2,
+      "state": {
+        "net_cash_change": "0",
+        "expense": "0",
+        "audit_event_ids": [
+          "evt-17-normal-01",
+          "evt-17-normal-02"
+        ],
+        "rebuild_matches": true
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 2,
+      "state": {
+        "net_cash_change": "0"
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "unchanged": true
+      }
+    }
+  ],
+  "canonical_hash": "sha256:c8823d9d2acabe099052e79e3d631aa43bd22d31d8b68e6e62153d069312b01b"
+}

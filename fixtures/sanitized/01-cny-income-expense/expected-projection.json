@@ -1,0 +1,45 @@
+{
+  "fixture_id": "01-cny-income-expense",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 2,
+      "state": {
+        "account_balances": [
+          {
+            "account_id": "cash-cny-1",
+            "balance": "74.50",
+            "currency": "CNY"
+          }
+        ],
+        "period_income": "100.00",
+        "period_expense": "25.50"
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 1,
+      "state": {
+        "account_balances": [
+          {
+            "account_id": "cash-cny-1",
+            "balance": "-0.00000001",
+            "currency": "CNY"
+          }
+        ],
+        "display_balance": "0.00"
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "unchanged": true
+      }
+    }
+  ],
+  "canonical_hash": "sha256:a314aec0108dae522f27920c753eca3b5c5ca7c1d020da54019915da4cf6ebdd"
+}

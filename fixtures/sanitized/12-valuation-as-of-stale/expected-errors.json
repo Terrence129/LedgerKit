@@ -1,0 +1,38 @@
+{
+  "fixture_id": "12-valuation-as-of-stale",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": [
+        {
+          "code": "STALE_PRICE",
+          "field": "price_revision",
+          "message_key": "ledgerkit.stale_price"
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "PRICE_MISSING_AS_OF",
+          "field": "price_revision",
+          "message_key": "ledgerkit.price_missing_as_of"
+        },
+        {
+          "code": "FX_MISSING_AS_OF",
+          "field": "fx_resolution",
+          "message_key": "ledgerkit.fx_missing_as_of"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:b61cb7d29d11e792125d3c096db8ead1c2bc7d129018fc080d45c0e621e94729"
+}

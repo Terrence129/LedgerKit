@@ -1,0 +1,27 @@
+{
+  "fixture_id": "17-reversal-zero-net",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "REVERSAL_REASON_REQUIRED",
+          "field": "reason",
+          "message_key": "ledgerkit.reversal_reason_required"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:f5d1a3e88b46f089bd886903e36e727a132bb344bfa65ec1a30eb0d974df0137"
+}

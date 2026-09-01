@@ -1,0 +1,18 @@
+{
+  "fixture_id": "14-valuation-date-mtd",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": []
+    },
+    {
+      "scenario_id": "boundary",
+      "events": []
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:cd21262088a5a7f5b3cf338bd7119a2f25a354422d46fdd42bf5ab749833bb07"
+}

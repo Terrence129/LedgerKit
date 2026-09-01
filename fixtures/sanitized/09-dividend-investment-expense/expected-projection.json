@@ -1,0 +1,36 @@
+{
+  "fixture_id": "09-dividend-investment-expense",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 2,
+      "state": {
+        "quantity_delta": "0",
+        "net_dividend": "8.00",
+        "independent_expense": "2.00",
+        "total_return_delta": "6.00",
+        "p0_expense": "0"
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 1,
+      "state": {
+        "instrument_allocation": null,
+        "portfolio_return_delta": "-0.01",
+        "p0_expense": "0"
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "unchanged": true
+      }
+    }
+  ],
+  "canonical_hash": "sha256:8219173a16121dd778be61408d40f1056468dc1e0b8877785e07b284d783a7d9"
+}

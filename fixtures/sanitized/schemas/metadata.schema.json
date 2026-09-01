@@ -1,0 +1,122 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ledgerkit.local/schemas/golden-metadata-v1.json",
+  "title": "LedgerKit golden fixture metadata v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "fixture_id",
+    "case_number",
+    "title",
+    "synthetic_data",
+    "related_rules",
+    "related_adrs",
+    "coverage",
+    "decimal_contract",
+    "calculation_version",
+    "policy_versions",
+    "rounding_boundaries",
+    "tolerances",
+    "generation",
+    "canonical_hash"
+  ],
+  "properties": {
+    "fixture_id": { "type": "string", "pattern": "^[0-9]{2}-[a-z0-9-]+$" },
+    "case_number": { "type": "integer", "minimum": 1, "maximum": 31 },
+    "title": { "type": "string", "minLength": 1 },
+    "synthetic_data": { "const": true },
+    "related_rules": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[A-Z]+-[0-9]{3}$" }
+    },
+    "related_adrs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^ADR-[0-9]{4}$" }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["normal", "boundary", "failure"],
+      "properties": {
+        "normal": { "$ref": "#/definitions/coverageEntry" },
+        "boundary": { "$ref": "#/definitions/coverageEntry" },
+        "failure": { "$ref": "#/definitions/coverageEntry" }
+      }
+    },
+    "decimal_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "max_significant_digits", "max_scale"],
+      "properties": {
+        "id": { "const": "decimal-contract-v1" },
+        "max_significant_digits": { "const": 28 },
+        "max_scale": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["amount", "quantity", "unit_price", "fx_rate", "internal"],
+          "properties": {
+            "amount": { "const": 8 },
+            "quantity": { "const": 12 },
+            "unit_price": { "const": 12 },
+            "fx_rate": { "const": 15 },
+            "internal": { "const": 18 }
+          }
+        }
+      }
+    },
+    "calculation_version": { "const": "ledger-calculation-v1" },
+    "policy_versions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expense", "bucket", "refund", "market_data"],
+      "properties": {
+        "expense": { "const": "expense-policy-v1" },
+        "bucket": { "const": "expense-bucket-policy-v1" },
+        "refund": { "const": "refund-policy-v1" },
+        "market_data": { "const": "market-data-policy-v1" }
+      }
+    },
+    "rounding_boundaries": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["none", "internal-scale-18-half-up", "posting-explicit-half-up", "projection-explicit-half-up", "display-currency-half-up"] }
+    },
+    "tolerances": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["internal", "display"],
+      "properties": {
+        "internal": { "const": "0" },
+        "display": { "const": "0.01" }
+      }
+    },
+    "generation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "generator", "reviewed"],
+      "properties": {
+        "method": { "const": "programmatically-generated-synthetic-data" },
+        "generator": { "const": "tools/generate-m0-fixtures.mjs" },
+        "reviewed": { "type": "boolean" }
+      }
+    },
+    "canonical_hash": { "$ref": "#/definitions/hash" }
+  },
+  "definitions": {
+    "coverageEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scenario_ids", "rule_ids"],
+      "properties": {
+        "scenario_ids": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "rule_ids": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^[A-Z]+-[0-9]{3}$" } }
+      }
+    },
+    "hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

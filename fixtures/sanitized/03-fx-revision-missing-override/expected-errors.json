@@ -1,0 +1,27 @@
+{
+  "fixture_id": "03-fx-revision-missing-override",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "FX_OVERRIDE_REASON_REQUIRED",
+          "field": "override_reason",
+          "message_key": "ledgerkit.fx_override_reason_required"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:4c9ffc2d4d5bbb62e20c84b6ae0334043d5f7e9719ad1180cce4c464cef02b38"
+}

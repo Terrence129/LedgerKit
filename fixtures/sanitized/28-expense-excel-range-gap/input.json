@@ -1,0 +1,51 @@
+{
+  "fixture_id": "28-expense-excel-range-gap",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-28-normal-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "synthetic_category_count": 22,
+            "include_archived": true,
+            "include_uncategorized": true,
+            "include_fx_fee": true,
+            "excel_amount_rows": "O7:O62",
+            "excel_count_rows": "P7:P27"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-28-boundary-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "only_fixed_range_gap_items": true
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-28-failure-01",
+          "command_type": "get_expense_analysis",
+          "data": {
+            "category_scan": "fixed-row-range"
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:c091f6560459dc488b18c77861fd40f8b36cbf52756f22a1f8f27b4582db9de5"
+}

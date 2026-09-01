@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ledgerkit.local/schemas/golden-expected-projection-v1.json",
+  "title": "LedgerKit expected projection v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["fixture_id", "scenarios", "canonical_hash"],
+  "properties": {
+    "fixture_id": { "type": "string" },
+    "scenarios": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scenario_id", "projection_version", "event_watermark", "state"],
+        "properties": {
+          "scenario_id": { "type": "string" },
+          "projection_version": { "const": "projection-v1" },
+          "event_watermark": { "type": "integer", "minimum": 0 },
+          "state": { "type": "object" }
+        }
+      }
+    },
+    "canonical_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "fixture_id": "24-refund-reimbursement",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "REFUND_NETTING_POLICY_FORBIDDEN",
+          "field": "semantic_role",
+          "message_key": "ledgerkit.refund_netting_policy_forbidden"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:8faf4f484877b86874afb6ac1ebdc2396810e96bbebca08c55616035ab51bf55"
+}

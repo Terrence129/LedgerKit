@@ -1,0 +1,27 @@
+{
+  "fixture_id": "29-revision-watermark",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "REVISION_REASON_REQUIRED",
+          "field": "reason",
+          "message_key": "ledgerkit.revision_reason_required"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:9bcfec90e0302b73699063c926d44ac87d6a70e4421f98e6975fd8ab74c85d4a"
+}

@@ -1,0 +1,27 @@
+{
+  "fixture_id": "30-canonical-row-order",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "boundary",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "scenario_id": "failure",
+      "errors": [
+        {
+          "code": "CANONICAL_SERIALIZATION_VIOLATION",
+          "field": "serialization",
+          "message_key": "ledgerkit.canonical_serialization_violation"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "canonical_hash": "sha256:a02aeabb03f97885e981489d9dab050d33241d07dd413b64899387c611881533"
+}

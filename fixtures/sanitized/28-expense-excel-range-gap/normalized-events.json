@@ -1,0 +1,18 @@
+{
+  "fixture_id": "28-expense-excel-range-gap",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "events": []
+    },
+    {
+      "scenario_id": "boundary",
+      "events": []
+    },
+    {
+      "scenario_id": "failure",
+      "events": []
+    }
+  ],
+  "canonical_hash": "sha256:62a6654c81aa8a1719a7fd42fd6c41d89e7900dd6a0f5938f387b9517bf733c4"
+}

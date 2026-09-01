@@ -1,0 +1,78 @@
+{
+  "fixture_id": "10-missing-security-price",
+  "case_number": 10,
+  "title": "Missing security price stays unvalued",
+  "synthetic_data": true,
+  "related_rules": [
+    "FX-005",
+    "VAL-001",
+    "VAL-002"
+  ],
+  "related_adrs": [
+    "ADR-0012"
+  ],
+  "coverage": {
+    "normal": {
+      "scenario_ids": [
+        "normal"
+      ],
+      "rule_ids": [
+        "FX-005",
+        "VAL-001",
+        "VAL-002"
+      ]
+    },
+    "boundary": {
+      "scenario_ids": [
+        "boundary"
+      ],
+      "rule_ids": [
+        "FX-005",
+        "VAL-001",
+        "VAL-002"
+      ]
+    },
+    "failure": {
+      "scenario_ids": [
+        "failure"
+      ],
+      "rule_ids": [
+        "FX-005",
+        "VAL-001",
+        "VAL-002"
+      ]
+    }
+  },
+  "decimal_contract": {
+    "id": "decimal-contract-v1",
+    "max_significant_digits": 28,
+    "max_scale": {
+      "amount": 8,
+      "quantity": 12,
+      "unit_price": 12,
+      "fx_rate": 15,
+      "internal": 18
+    }
+  },
+  "calculation_version": "ledger-calculation-v1",
+  "policy_versions": {
+    "expense": "expense-policy-v1",
+    "bucket": "expense-bucket-policy-v1",
+    "refund": "refund-policy-v1",
+    "market_data": "market-data-policy-v1"
+  },
+  "rounding_boundaries": [
+    "internal-scale-18-half-up",
+    "display-currency-half-up"
+  ],
+  "tolerances": {
+    "internal": "0",
+    "display": "0.01"
+  },
+  "generation": {
+    "method": "programmatically-generated-synthetic-data",
+    "generator": "tools/generate-m0-fixtures.mjs",
+    "reviewed": true
+  },
+  "canonical_hash": "sha256:eb706fb8995a6312cb312dab131f22644915e69936dd61468d8a529a0cd14caf"
+}

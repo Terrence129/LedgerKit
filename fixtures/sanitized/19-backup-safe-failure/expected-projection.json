@@ -1,0 +1,36 @@
+{
+  "fixture_id": "19-backup-safe-failure",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "candidate_validated": true,
+        "live_ledger_replaced": true,
+        "live_ledger_hash_after": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "candidate_validated": false,
+        "live_ledger_replaced": false,
+        "live_ledger_hash_after": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "candidate_validated": false,
+        "live_ledger_replaced": false,
+        "live_ledger_hash_after": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    }
+  ],
+  "canonical_hash": "sha256:0eabb0f28e41938c04f13542b41d826e6cfa7abfdd086414e017781e418fefba"
+}

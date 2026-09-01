@@ -1,0 +1,65 @@
+{
+  "fixture_id": "15-calendar-and-sequence",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-15-normal-01",
+          "command_type": "post_event",
+          "data": {
+            "amount": "1.00",
+            "currency": "CNY"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-15-boundary-01",
+          "command_type": "commit_import",
+          "data": {
+            "source_rows": [
+              {
+                "row": 10,
+                "event_type": "BUY"
+              },
+              {
+                "row": 11,
+                "event_type": "SELL"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-15-failure-01",
+          "command_type": "commit_import",
+          "data": {
+            "events": [
+              {
+                "effective_date": "2026-01-31",
+                "sequence": 10
+              },
+              {
+                "effective_date": "2026-01-31",
+                "sequence": 10
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:103e2cb0041903cdfc5a72328e99fb735d6dc12041c1d3960ec44dd83980f701"
+}

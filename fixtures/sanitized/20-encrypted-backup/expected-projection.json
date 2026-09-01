@@ -1,0 +1,35 @@
+{
+  "fixture_id": "20-encrypted-backup",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "authenticated": true,
+        "candidate_validated": true,
+        "live_ledger_replaced": true
+      }
+    },
+    {
+      "scenario_id": "boundary",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "authenticated": false,
+        "candidate_validated": false,
+        "live_ledger_replaced": false
+      }
+    },
+    {
+      "scenario_id": "failure",
+      "projection_version": "projection-v1",
+      "event_watermark": 0,
+      "state": {
+        "candidate_validated": false,
+        "live_ledger_replaced": false
+      }
+    }
+  ],
+  "canonical_hash": "sha256:68af227e8b5638362062ac074a3e3f0ceb0d0c8b36afaa8d646a9904830c361a"
+}

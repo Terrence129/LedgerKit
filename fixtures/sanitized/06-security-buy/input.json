@@ -1,0 +1,64 @@
+{
+  "fixture_id": "06-security-buy",
+  "base_currency": "CNY",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "kind": "normal",
+      "commands": [
+        {
+          "command_id": "cmd-06-normal-01",
+          "command_type": "post_event",
+          "data": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "settlement_account_id": "cash-usd-1",
+            "quantity": "10.000000000000",
+            "unit_price": "12.340000000000",
+            "trade_fee": "1.60",
+            "currency": "USD"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "boundary",
+      "kind": "boundary",
+      "commands": [
+        {
+          "command_id": "cmd-06-boundary-01",
+          "command_type": "post_event",
+          "data": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "settlement_account_id": "cash-usd-1",
+            "quantity": "0.000000000001",
+            "unit_price": "1000000.000000000000",
+            "trade_fee": "0",
+            "currency": "USD"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "failure",
+      "kind": "failure",
+      "commands": [
+        {
+          "command_id": "cmd-06-failure-01",
+          "command_type": "post_event",
+          "data": {
+            "portfolio_id": "portfolio-a",
+            "instrument_id": "instrument-alpha",
+            "settlement_account_id": "cash-cny-1",
+            "quantity": "10.000000000000",
+            "unit_price": "12.340000000000",
+            "trade_fee": "1.60",
+            "currency": "USD"
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "sha256:8b072ba4cdd32ad263dc262d87b5dad058ffe62575ead9e8a326c1e1f491f964"
+}

@@ -1,0 +1,71 @@
+{
+  "fixture_id": "09-dividend-investment-expense",
+  "scenarios": [
+    {
+      "scenario_id": "normal",
+      "postings": [
+        {
+          "posting_id": "post-evt-09-normal-01-01",
+          "event_id": "evt-09-normal-01",
+          "posting_kind": "settlement-cash",
+          "calculation_version": "ledger-calculation-v1",
+          "quantity_delta": "8.00",
+          "currency": "USD"
+        },
+        {
+          "posting_id": "post-evt-09-normal-01-02",
+          "event_id": "evt-09-normal-01",
+          "posting_kind": "net-dividend",
+          "calculation_version": "ledger-calculation-v1",
+          "net_dividend": "8.00",
+          "currency": "USD"
+        },
+        {
+          "posting_id": "post-evt-09-normal-02-01",
+          "event_id": "evt-09-normal-02",
+          "posting_kind": "settlement-cash",
+          "calculation_version": "ledger-calculation-v1",
+          "quantity_delta": "-2.00",
+          "currency": "USD"
+        },
+        {
+          "posting_id": "post-evt-09-normal-02-02",
+          "event_id": "evt-09-normal-02",
+          "posting_kind": "independent-expense",
+          "calculation_version": "ledger-calculation-v1",
+          "independent_expense": "2.00",
+          "currency": "USD"
+        }
+      ],
+      "sequence_hash": "sha256:d6cb30f6c68e2cbc0f693448584207b8aa42c10aec1669080b9999ef677e1fb3"
+    },
+    {
+      "scenario_id": "boundary",
+      "postings": [
+        {
+          "posting_id": "post-evt-09-boundary-01-01",
+          "event_id": "evt-09-boundary-01",
+          "posting_kind": "settlement-cash",
+          "calculation_version": "ledger-calculation-v1",
+          "quantity_delta": "-0.01",
+          "currency": "USD"
+        },
+        {
+          "posting_id": "post-evt-09-boundary-01-02",
+          "event_id": "evt-09-boundary-01",
+          "posting_kind": "portfolio-independent-expense",
+          "calculation_version": "ledger-calculation-v1",
+          "independent_expense": "0.01",
+          "currency": "USD"
+        }
+      ],
+      "sequence_hash": "sha256:3eaa5840694f98b2dcf4525851349a50a3e4497fc3561e33dca59ecf4d6d926a"
+    },
+    {
+      "scenario_id": "failure",
+      "postings": [],
+      "sequence_hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  ],
+  "canonical_hash": "sha256:41c0cda96f9d80e2b275528bd03d5334e3b19b5d23f11bc01e4689b6c5d3a41c"
+}
