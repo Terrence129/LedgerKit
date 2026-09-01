@@ -17,6 +17,7 @@ LedgerKit 是一款规划中的本地优先、多币种个人资产与现金流�
 2. 人类协作者：先读 [`docs/多币种个人账本-开发计划书.md`](docs/多币种个人账本-开发计划书.md)。
 3. 当前状态与未决问题：[`docs/agent-context.md`](docs/agent-context.md)。
 4. 财务规则摘要：[`docs/financial-rules.md`](docs/financial-rules.md)。
+5. 串行实施提示词：[`docs/implementation-prompts/README.md`](docs/implementation-prompts/README.md)。
 
 ## 隐私
 

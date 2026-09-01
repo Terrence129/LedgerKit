@@ -2,7 +2,7 @@
 
 > 状态：Ready for M0
 >
-> 最后验证：2026-09-01
+> 最后验证：2026-09-02
 >
 > 用途：为新任务提供短期导航和当前事实；不是决策权威或工作日志。
 
@@ -51,16 +51,16 @@ LedgerKit 是单用户、本地优先、隐私友好的多币种现金、投资�
 ## 当前工作区
 
 - 已有完整开发计划书和 agent 工作区规范。
+- 已有 [`implementation-prompts/README.md`](implementation-prompts/README.md) 索引的 14 阶段串行实现提示词包，覆盖 M0 决策、M1 双栈门禁、M2–M6 实现和 Beta 候选审计；提示词尚未执行，不代表任何里程碑已完成。
 - GitHub 公开仓库为 `Terrence129/LedgerKit`，默认分支为 `main`。
 - 尚未创建应用骨架、数据库 schema、测试代码或正式黄金 fixture。
 - 尚未建立统一的 `check/test/build` 命令；在建立前，agent 必须报告实际运行的检查。
 
 ## 下一步建议
 
-1. 审阅并接受 agent 工作区规范。
-2. 生成最小脱敏黄金 fixture。
-3. 依次起草并确认 M0 财务 ADR。
-4. 再进入 M1 技术样机，不提前批量开发 UI。
+1. 严格按 [`implementation-prompts/README.md`](implementation-prompts/README.md) 的共享目录串行规则执行任务 01。
+2. 生成并审阅 M0 Accepted ADR 与脱敏黄金 fixture，完成后再进入 M1。
+3. M1 必须完成双栈同夹具实测和条件门禁，不提前批量开发 UI。
 
 ## 更新规则
 

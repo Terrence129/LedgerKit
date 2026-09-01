@@ -17,6 +17,7 @@
 | [`agent-context.md`](agent-context.md) | 当前状态、暂定决策、blocker 和下一步 | 每个非平凡任务 |
 | [`financial-rules.md`](financial-rules.md) | 可测试的财务规则摘要 | 任何财务或报表任务 |
 | [`adr/README.md`](adr/README.md) | ADR 状态索引和使用方法 | 高影响决策或相关实现 |
+| [`implementation-prompts/README.md`](implementation-prompts/README.md) | 从 M0 到 1.0 Beta 的 14 阶段串行执行提示词 | 准备或执行应用实施任务 |
 | [`operations/migration.md`](operations/migration.md) | Excel staging、cut-over、对账和切换 | 导入与迁移任务 |
 | [`operations/backup-restore.md`](operations/backup-restore.md) | 一致性备份、恢复和升级安全顺序 | 数据安全与发布任务 |
 | [`../fixtures/sanitized/README.md`](../fixtures/sanitized/README.md) | 脱敏黄金样例格式和变更规则 | 测试与财务实现任务 |
