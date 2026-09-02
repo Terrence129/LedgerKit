@@ -27,6 +27,7 @@ ADR 记录会改变财务结果、持久化格式、安全模型、技术栈或�
 | [ADR-0012](ADR-0012-market-data-revisions-as-of.md) | 汇率/价格修订、active 规则与估值 as-of | Accepted |
 | ADR-0013 | 自动备份保留、设备丢失 RPO 与恢复密钥 | Proposed |
 | [ADR-0014](ADR-0014-expense-analysis-contract.md) | 支出分析口径、系统桶、退款、缺 FX 与查询版本 | Accepted |
+| [ADR-0015](ADR-0015-rebuildable-expense-daily-projection.md) | 可重建支出日聚合投影 | Proposed |
 
 只有实际创建 ADR 文件后才把主题改为链接。文件名使用 `ADR-NNNN-short-title.md`。
 

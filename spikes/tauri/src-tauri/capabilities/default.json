@@ -1,0 +1,21 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Only the named LedgerKit spike operations required by the local main window.",
+  "windows": ["main"],
+  "permissions": [
+    "core:app:default",
+    "allow-get-ledger-status",
+    "allow-post-event",
+    "allow-get-activity",
+    "allow-get-overview",
+    "allow-get-expense-analysis",
+    "allow-analyze-import",
+    "allow-export-data",
+    "allow-authorize-attachment",
+    "allow-copy-attachment",
+    "allow-create-backup",
+    "allow-restore-backup",
+    "allow-mark-frontend-ready"
+  ]
+}

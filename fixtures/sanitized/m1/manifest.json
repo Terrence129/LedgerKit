@@ -1,0 +1,9 @@
+{
+  "contract": "ledgerkit-known-template-xlsx/v1",
+  "file": "ledgerkit-known-template-10000.xlsx",
+  "rows": 10000,
+  "worksheet": "Transactions",
+  "sha256": "sha256:d7bbf52a86d2655ec09fe82fa42690f1c9e7aad6d323c6f167a86c797c024bd5",
+  "generated_at": "2026-01-01T00:00:00Z",
+  "contains_only_synthetic_data": true
+}

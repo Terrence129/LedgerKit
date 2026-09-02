@@ -30,6 +30,8 @@ outputs/
 .codex_tmp*/
 tmp/
 temp/
+tmp-*/
+tmp-*.json
 
 # JavaScript / Rust / .NET build outputs
 node_modules/
@@ -42,5 +44,6 @@ coverage/
 # Editors and operating systems
 .idea/
 .vscode/
+.vs/
 .DS_Store
 Thumbs.db

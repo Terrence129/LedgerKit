@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-post-event"
+description = "Enables the post_event command without any pre-configured scope."
+commands.allow = ["post_event"]
+
+[[permission]]
+identifier = "deny-post-event"
+description = "Denies the post_event command without any pre-configured scope."
+commands.deny = ["post_event"]

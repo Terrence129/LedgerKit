@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-get-ledger-status"
+description = "Enables the get_ledger_status command without any pre-configured scope."
+commands.allow = ["get_ledger_status"]
+
+[[permission]]
+identifier = "deny-get-ledger-status"
+description = "Denies the get_ledger_status command without any pre-configured scope."
+commands.deny = ["get_ledger_status"]
