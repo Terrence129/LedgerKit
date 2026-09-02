@@ -18,7 +18,7 @@ import type {
   EventPreview,
   PostedEvent,
   ExpenseAnalysis,
-  DrilldownContext,
+  ActivityRequest,
   ActivityPage,
 } from "./contracts";
 
@@ -51,7 +51,7 @@ class TauriLedgerKitCommands implements LedgerKitCommands {
   reviseEvent(request: { targetEventId: string; reason: string; replacement: CashEventRequest }): Promise<PostedEvent> { return invoke("revise_event", { request }); }
   reverseEvent(request: { targetEventId: string; reason: string; effectiveDate: string; sequence: number }): Promise<PostedEvent> { return invoke("reverse_event", { request }); }
   getExpenseAnalysis(request: { startDate: string; endDate: string; eventWatermark?: number }): Promise<ExpenseAnalysis> { return invoke("get_expense_analysis", { request }); }
-  getActivity(request: { context: DrilldownContext; cursor?: number; limit: number }): Promise<ActivityPage> { return invoke("get_activity", { request }); }
+  getActivity(request: ActivityRequest): Promise<ActivityPage> { return invoke("get_activity", { request }); }
 }
 
 export const ledgerKitCommands: LedgerKitCommands = new TauriLedgerKitCommands();

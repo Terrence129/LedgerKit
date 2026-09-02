@@ -99,7 +99,7 @@ export type FxResolutionResult = {
   valuationState: "valued" | "unvalued";
 };
 export type PostingPreview = { accountId: string; quantityDelta: string; currency: string; baseValue: string | null; baseCurrency: string; role: string };
-export type EventPreview = { eventType: string; effectiveDate: string; sequence: number; postings: PostingPreview[]; fxResolutions: FxResolutionResult[]; qualityIssueCodes: string[] };
+export type EventPreview = { eventType: string; effectiveDate: string; sequence: number; categoryId: string | null; semanticRole: string; feeAccountId: string | null; feeAmount: string | null; postings: PostingPreview[]; fxResolutions: FxResolutionResult[]; qualityIssueCodes: string[] };
 export type PostedEvent = { eventId: string; eventWatermark: number; revision: number; preview: EventPreview };
 export type DrilldownContext = { start_date: string; end_date: string; event_watermark: number; calculation_version: string; expense_policy_version: string; bucket_id?: string; semantic_role?: string; member_rank_gt?: number; valuation_state: "valued" | "unvalued" | "all" };
 export type ExpenseBucket = { bucket_id: string; bucket_kind: "category" | "system"; label: string; archived: boolean; amount: string; distinct_event_count: number; drilldown_context: DrilldownContext };
@@ -118,8 +118,34 @@ export type ExpenseAnalysis = {
   canonicalization: string;
   canonical_hash: string;
 };
-export type ActivityItem = { eventId: string; eventOrder: number; eventType: string; effectiveDate: string; amount: string; currency: string; categoryId: string | null; semanticRole: string; valuationState: "valued" | "unvalued" };
+export type ActivityPosting = { postingKind: string; accountId: string | null; quantityDelta: string; currency: string; baseValue: string | null; baseCurrency: string };
+export type ActivityFxResolution = {
+  purpose: string; currency: string; baseCurrency: string; targetDate: string;
+  automaticCandidateRevisionId: string | null; overrideValue: string | null;
+  overrideReason: string | null; finalRate: string; calculationVersion: string;
+};
+export type ActivityEventContent = {
+  accountId: string | null; fromAccountId: string | null; toAccountId: string | null;
+  amount: string | null; toAmount: string | null; categoryId: string | null;
+  semanticRole: string; merchant: string | null; note: string | null;
+  feeAccountId: string | null; feeAmount: string | null;
+  cutoverDate: string | null; migrationPolicy: string | null;
+};
+export type ActivityItem = {
+  eventId: string; eventOrder: number; eventType: string; effectiveDate: string;
+  sequence: number; revision: number; content: ActivityEventContent;
+  postings: ActivityPosting[]; reversalPreview: ActivityPosting[];
+  fxResolutions: ActivityFxResolution[];
+  relations: { supersedesEventId: string | null; reversesEventId: string | null; supersededByEventId: string | null; reversedByEventId: string | null };
+  audit: { action: string; occurredAtUtc: string; reason: string | null };
+};
 export type ActivityPage = { items: ActivityItem[]; nextCursor: number | null };
+export type ActivityRequest = {
+  startDate: string; endDate: string; context?: DrilldownContext;
+  eventType?: CashEventRequest["eventType"] | "Reversal";
+  accountId?: string; categoryId?: string; search?: string;
+  cursor?: number; limit: number;
+};
 
 export type CreateLedgerRequest = {
   baseCurrency: string;
@@ -155,5 +181,5 @@ export interface LedgerKitCommands {
   reviseEvent(request: { targetEventId: string; reason: string; replacement: CashEventRequest }): Promise<PostedEvent>;
   reverseEvent(request: { targetEventId: string; reason: string; effectiveDate: string; sequence: number }): Promise<PostedEvent>;
   getExpenseAnalysis(request: { startDate: string; endDate: string; eventWatermark?: number }): Promise<ExpenseAnalysis>;
-  getActivity(request: { context: DrilldownContext; cursor?: number; limit: number }): Promise<ActivityPage>;
+  getActivity(request: ActivityRequest): Promise<ActivityPage>;
 }

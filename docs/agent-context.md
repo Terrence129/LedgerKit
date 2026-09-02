@@ -1,6 +1,6 @@
 # Agent Context
 
-> 状态：M2 Cash Core 完成，Ready for M2 UI
+> 状态：M2 UI 完成，Ready for M3
 >
 > M0 状态：完成
 >
@@ -61,19 +61,20 @@ LedgerKit 是单用户、本地优先、隐私友好的多币种现金、投资�
 ## 当前工作区
 
 - 已有完整开发计划书和 agent 工作区规范。
-- 已有 [`implementation-prompts/README.md`](implementation-prompts/README.md) 索引的 14 阶段串行实现提示词包，覆盖 M0 决策、M1 双栈门禁、M2–M6 实现和 Beta 候选审计；任务 01–07 已完成，任务 08–14 尚未执行。
+- 已有 [`implementation-prompts/README.md`](implementation-prompts/README.md) 索引的 14 阶段串行实现提示词包，覆盖 M0 决策、M1 双栈门禁、M2–M6 实现和 Beta 候选审计；任务 01–08 已完成，任务 09–14 尚未执行。
 - GitHub 公开仓库为 `Terrence129/LedgerKit`，默认分支为 `main`。
 - 已创建十四份 Accepted ADR、31 组正式合成黄金 fixture、JSON Schema、确定性生成器和 M0 检查命令；当前生产 [`Schema v2`](persistence-schema-v1.md) 已覆盖设置、主数据、typed event detail、市场修订/FxResolution、posting/audit、import staging、估值快照、备份状态，以及现金/支出可重建投影。
-- 已建立 `app` 生产骨架、锁文件、固定 Node/Rust 工具链、严格 TypeScript/Clippy、最小 unsafe allowlist、两套键一致本地化资源、持久化即时语言切换，以及首次设置/设置与数据页面。当前共有十七项已实现具名 IPC，新增现金预览/过账/修订/冲正、支出分析和活动分页；它们不接受任意数据库路径、SQL 或 posting。
+- 已建立 `app` 生产骨架、锁文件、固定 Node/Rust 工具链、严格 TypeScript/Clippy、最小 unsafe allowlist、两套键一致本地化资源、持久化即时语言切换，以及首次设置/设置与数据页面。当前共有十七项已实现具名 IPC，现金预览/过账/修订/冲正、支出分析和活动分页均通过同一 typed Facade；它们不接受任意数据库路径、SQL、posting、事件状态或前端伪造的财务派生字段。
 - [`Catalog 与市场数据契约 v1`](catalog-and-market-data-v1.md) 已实现机构、现金账户、分类、组合、证券稳定 ID 与允许字段更新，非零账户停用阻断、组合/结算机构一致性、不可变汇率/价格修订、事务化 active 切换、非未来 as-of 解析及带稳定修复上下文的数据质量基础结果。
 - Rust Core 已实现 ADR-0004 Decimal/Money/Currency、LocalDate、UUIDv7、Sequence、CalculationVersion、ProjectionWatermark 和稳定 DomainError；SQLite 已实现只读识别、备份端口、单事务只前进 migration、事务协调器、规范 posting/hash 与现金投影清空重建框架。活库固定在 OS 本地应用数据目录，本位币及有依赖的账户/标的币种由 Domain/Schema 双重阻断原地重解释。
 - M2 Cash Core 已实现 OpeningBalance、Income/Expense、Adjustment、Transfer、CurrencyExchange 的高层命令，冻结交易/费用 FX resolution、修订/冲正、现金余额/月度收支/数据质量投影，以及 `expense-analysis-query/v1` 和有界游标活动下钻。生产事实扫描未达到 10 万事件门禁后，项目所有者接受 ADR-0015；可删除重建的日聚合投影两次复测为冷查询 0–1 ms、warm P95 0 ms、查询加序列化 0 ms、响应 2,457 bytes。
+- M2 UI 已建立总览、流水、资产、数据质量、设置与数据五个稳定顶级入口；流水页完整支持收入、支出、余额调整、同币种调拨、换汇及费用的 Core 权威预览和写入。通用活动查询提供日期、类型、账户、分类、搜索和最多 100 条的游标分页，并一次有界水合业务内容、posting、冻结 FxResolution、修订/冲正关系及脱敏审计元数据；修订和冲正保留旧版本，冲正确认展示 Core 根据既有 posting 推导的反向影响。
 - 已建立统一 `tools/check.ps1`、`tools/test.ps1`、`tools/build.ps1` 和 Windows CI；生产依赖清单见 [`production-dependencies.md`](production-dependencies.md)。一次性 `spikes/` 源码已从当前树删除，仍保留在 Git 历史。
 
 ## 下一步建议
 
-1. 按串行协议执行任务 08，在现有 typed Facade 上实现现金录入、预览、活动时间线和设置/主数据 UI；UI 不重算财务结果。
-2. 后续 M2/M3 必须复用现有 `EventTransactionPort`、Decimal 类型、migration runner 和投影重建框架，不在 UI、导入器或 SQL 复制财务规则。
+1. 按串行协议执行任务 09，基于已选择的 Rust Excel 适配器和既有 staging schema 实现只读现金迁移分析、问题清单、对账与原子提交。
+2. 后续 M3 必须复用现有 `EventTransactionPort`、Decimal 类型、migration runner 和投影重建框架，不在 UI、导入器或 SQL 复制财务规则。
 3. 支出页面与后续导出必须只消费 `expense-analysis-query/v1`；日聚合投影是 ADR-0015 约束的派生结构，不得变成可直接写入的第二事实源。
 
 ## 更新规则

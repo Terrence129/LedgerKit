@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::domain::catalog::SemanticRole;
 use crate::domain::decimal::Decimal;
@@ -26,6 +26,18 @@ pub enum EventInputType {
 }
 
 impl EventInputType {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::OpeningBalance => "OpeningBalance",
+            Self::Income => "Income",
+            Self::Expense => "Expense",
+            Self::Adjustment => "BalanceAdjustment",
+            Self::Transfer => "Transfer",
+            Self::CurrencyExchange => "CurrencyExchange",
+        }
+    }
+
     /// Parses the stable command discriminator.
     ///
     /// # Errors
@@ -98,6 +110,10 @@ pub struct EventPreview {
     pub event_type: &'static str,
     pub effective_date: String,
     pub sequence: u64,
+    pub category_id: Option<String>,
+    pub semantic_role: &'static str,
+    pub fee_account_id: Option<String>,
+    pub fee_amount: Option<String>,
     pub postings: Vec<PostingPreview>,
     pub fx_resolutions: Vec<FxResolutionResult>,
     pub quality_issue_codes: Vec<&'static str>,
@@ -242,9 +258,75 @@ pub struct ExpenseAnalysis {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ActivityQuery {
-    pub context: DrilldownContext,
+    pub start_date: LocalDate,
+    pub end_date: LocalDate,
+    pub context: Option<DrilldownContext>,
+    pub event_type: Option<String>,
+    pub account_id: Option<UuidV7>,
+    pub category_id: Option<String>,
+    pub search: Option<String>,
     pub cursor: Option<u64>,
     pub limit: u32,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ActivityPosting {
+    pub posting_kind: String,
+    pub account_id: Option<String>,
+    pub quantity_delta: String,
+    pub currency: String,
+    pub base_value: Option<String>,
+    pub base_currency: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ActivityFxResolution {
+    pub purpose: String,
+    pub currency: String,
+    pub base_currency: String,
+    pub target_date: String,
+    pub automatic_candidate_revision_id: Option<String>,
+    pub override_value: Option<String>,
+    pub override_reason: Option<String>,
+    pub final_rate: String,
+    pub calculation_version: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ActivityEventContent {
+    pub account_id: Option<String>,
+    pub from_account_id: Option<String>,
+    pub to_account_id: Option<String>,
+    pub amount: Option<String>,
+    pub to_amount: Option<String>,
+    pub category_id: Option<String>,
+    pub semantic_role: String,
+    pub merchant: Option<String>,
+    pub note: Option<String>,
+    pub fee_account_id: Option<String>,
+    pub fee_amount: Option<String>,
+    pub cutover_date: Option<String>,
+    pub migration_policy: Option<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ActivityRelations {
+    pub supersedes_event_id: Option<String>,
+    pub reverses_event_id: Option<String>,
+    pub superseded_by_event_id: Option<String>,
+    pub reversed_by_event_id: Option<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ActivityAudit {
+    pub action: String,
+    pub occurred_at_utc: String,
+    pub reason: Option<String>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
@@ -254,11 +336,14 @@ pub struct ActivityItem {
     pub event_order: u64,
     pub event_type: String,
     pub effective_date: String,
-    pub amount: String,
-    pub currency: String,
-    pub category_id: Option<String>,
-    pub semantic_role: String,
-    pub valuation_state: String,
+    pub sequence: u64,
+    pub revision: u32,
+    pub content: ActivityEventContent,
+    pub postings: Vec<ActivityPosting>,
+    pub reversal_preview: Vec<ActivityPosting>,
+    pub fx_resolutions: Vec<ActivityFxResolution>,
+    pub relations: ActivityRelations,
+    pub audit: ActivityAudit,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]

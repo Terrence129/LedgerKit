@@ -4,7 +4,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::application::canonical::canonical_hash;
 use crate::application::cash::{
-    ActivityItem, ActivityPage, ActivityQuery, CashEventInput, CashPort, DrilldownContext,
+    ActivityAudit, ActivityEventContent, ActivityFxResolution, ActivityItem, ActivityPage,
+    ActivityPosting, ActivityQuery, ActivityRelations, CashEventInput, CashPort, DrilldownContext,
     EventInputType, EventPreview, ExpenseAnalysis, ExpenseBucket, ExpenseMeasure,
     ExpenseQueryContract, ExpenseSummary, ExpenseTop10, ExpenseTopItem, ExpenseVersions,
     ExpenseWatermarks, FxResolutionResult, LargestCategory, PostedEvent, PostingPreview,
@@ -249,6 +250,10 @@ impl LedgerStore {
             event_type: "Reversal",
             effective_date: input.effective_date.as_str().to_owned(),
             sequence: input.sequence.get(),
+            category_id: None,
+            semantic_role: "normal",
+            fee_account_id: None,
+            fee_amount: None,
             postings: preview_postings,
             fx_resolutions: Vec::new(),
             quality_issue_codes: Vec::new(),
@@ -348,6 +353,13 @@ impl LedgerStore {
                 event_type: domain.event_type,
                 effective_date: input.effective_date.as_str().to_owned(),
                 sequence: input.sequence.get(),
+                category_id: input.category_id.map(|value| value.to_string()),
+                semantic_role: input.semantic_role.as_str(),
+                fee_account_id: input.fee_account_id.map(|value| value.to_string()),
+                fee_amount: input
+                    .fee_amount
+                    .as_ref()
+                    .map(|value| value.as_str().to_owned()),
                 postings: previews,
                 fx_resolutions: resolutions.into_values().collect(),
                 quality_issue_codes: quality.into_iter().collect(),
@@ -456,62 +468,70 @@ impl LedgerStore {
         if query.limit == 0 || query.limit > 100 {
             return Err(ApplicationError::ActivityLimitInvalid);
         }
-        if query.context.start_date > query.context.end_date {
+        if query.start_date > query.end_date {
             return Err(ApplicationError::ExpenseDateRangeInvalid);
         }
-        let start = LocalDate::parse(&query.context.start_date)?;
-        let end = LocalDate::parse(&query.context.end_date)?;
         let transaction = self
             .connection
             .unchecked_transaction()
             .map_err(|_| ApplicationError::TransactionFailed)?;
-        let other_members = if query.context.bucket_id.as_deref() == Some("system:top10-other") {
-            Some(load_top_other_member_ids(
+        let current: u64 = transaction
+            .query_row(
+                "SELECT COALESCE(MAX(event_order),0) FROM business_events",
+                [],
+                |row| row.get::<_, i64>(0),
+            )
+            .map_err(|_| ApplicationError::TransactionFailed)?
+            .try_into()
+            .map_err(|_| ApplicationError::TransactionFailed)?;
+        let mut ids = if let Some(context) = &query.context {
+            if context.start_date != query.start_date.as_str()
+                || context.end_date != query.end_date.as_str()
+                || context.event_watermark > current
+            {
+                return Err(ApplicationError::ActivityCursorInvalid);
+            }
+            let other_members = if context.bucket_id.as_deref() == Some("system:top10-other") {
+                Some(load_top_other_member_ids(
+                    &transaction,
+                    &query.start_date,
+                    &query.end_date,
+                    context.event_watermark,
+                    context.member_rank_gt.unwrap_or(10),
+                )?)
+            } else {
+                None
+            };
+            let mut seen = BTreeSet::new();
+            load_contributions(
                 &transaction,
-                &start,
-                &end,
-                query.context.event_watermark,
-                query.context.member_rank_gt.unwrap_or(10),
-            )?)
+                &query.start_date,
+                &query.end_date,
+                context.event_watermark,
+                query.cursor,
+                Some((u64::from(query.limit) + 1).saturating_mul(3)),
+                Some(context),
+                other_members.as_deref(),
+            )?
+            .into_iter()
+            .map(|row| (row.event_id, row.event_order))
+            .filter(|item| seen.insert(item.0.clone()))
+            .collect()
         } else {
-            None
+            load_general_activity_ids(&transaction, query, current)?
         };
-        let rows = load_contributions(
-            &transaction,
-            &start,
-            &end,
-            query.context.event_watermark,
-            query.cursor,
-            Some(u64::from(query.limit) + 1),
-            Some(&query.context),
-            other_members.as_deref(),
-        )?;
-        let mut grouped = BTreeMap::<u64, ActivityItem>::new();
-        for row in rows {
-            grouped
-                .entry(row.event_order)
-                .or_insert_with(|| ActivityItem {
-                    event_id: row.event_id,
-                    event_order: row.event_order,
-                    event_type: row.event_type,
-                    effective_date: row.effective_date,
-                    amount: row.native_amount,
-                    currency: row.currency,
-                    category_id: row.category_id,
-                    semantic_role: row.semantic_role,
-                    valuation_state: if row.base_value.is_some() {
-                        "valued"
-                    } else {
-                        "unvalued"
-                    }
-                    .to_owned(),
-                });
-        }
-        let mut items: Vec<_> = grouped.into_values().rev().collect();
-        let has_more = items.len() > query.limit as usize;
-        items.truncate(query.limit as usize);
-        let next_cursor = has_more.then(|| items.last().map_or(0, |item| item.event_order));
+        let has_more = ids.len() > query.limit as usize;
+        ids.truncate(query.limit as usize);
+        let next_cursor = has_more.then(|| ids.last().map_or(0, |item| item.1));
+        let items = load_activity_items(&transaction, &ids)?;
         let page = ActivityPage { items, next_cursor };
+        if serde_json::to_vec(&page)
+            .map_err(|_| ApplicationError::TransactionFailed)?
+            .len()
+            > MAX_RESPONSE_BYTES
+        {
+            return Err(ApplicationError::ResponseTooLarge);
+        }
         transaction
             .commit()
             .map_err(|_| ApplicationError::TransactionFailed)?;
@@ -2001,6 +2021,272 @@ struct ContributionRow {
     currency: String,
 }
 
+fn load_general_activity_ids(
+    connection: &Connection,
+    query: &ActivityQuery,
+    watermark: u64,
+) -> ApplicationResult<Vec<(String, u64)>> {
+    let search = query
+        .search
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+    if search.is_some_and(|value| value.chars().count() > 200) {
+        return Err(ApplicationError::ActivityFilterInvalid);
+    }
+    let search = search.map(|value| {
+        let escaped = value
+            .replace('!', "!!")
+            .replace('%', "!%")
+            .replace('_', "!_");
+        format!("%{escaped}%")
+    });
+    let cursor = i64::try_from(query.cursor.unwrap_or(i64::MAX as u64))
+        .map_err(|_| ApplicationError::ActivityCursorInvalid)?;
+    let limit = i64::from(query.limit) + 1;
+    let watermark =
+        i64::try_from(watermark).map_err(|_| ApplicationError::ActivityCursorInvalid)?;
+    let event_type = query.event_type.as_deref();
+    let account_id = query.account_id.map(|value| value.to_string());
+    let category_id = query.category_id.as_deref();
+    let mut statement = connection
+        .prepare(
+            "SELECT e.event_id,e.event_order
+             FROM business_events e
+             LEFT JOIN income_expense_details d ON d.event_id=e.event_id
+             LEFT JOIN cash_event_fees f ON f.event_id=e.event_id
+             LEFT JOIN currency_exchange_details x ON x.event_id=e.event_id
+             WHERE e.effective_date BETWEEN ?1 AND ?2
+               AND e.event_order<=?3 AND e.event_order<?4 AND e.status='posted'
+               AND (?5 IS NULL OR e.event_type=?5)
+               AND (?6 IS NULL OR EXISTS(
+                     SELECT 1 FROM ledger_postings p
+                     WHERE p.event_id=e.event_id AND p.account_id=?6
+                   ))
+               AND (?7 IS NULL
+                    OR d.category_id=?7
+                    OR (?7='system:uncategorized' AND d.entry_type='expense' AND d.category_id IS NULL)
+                    OR (?7='system:ordinary-fee' AND f.event_id IS NOT NULL)
+                    OR (?7='system:fx-fee' AND x.fee_amount IS NOT NULL))
+               AND (?8 IS NULL OR lower(
+                     e.event_type||' '||e.event_id||' '||
+                     COALESCE(d.merchant,'')||' '||COALESCE(d.note,'')
+                   ) LIKE lower(?8) ESCAPE '!')
+             ORDER BY e.event_order DESC
+             LIMIT ?9",
+        )
+        .map_err(|_| ApplicationError::TransactionFailed)?;
+    statement
+        .query_map(
+            params![
+                query.start_date.as_str(),
+                query.end_date.as_str(),
+                watermark,
+                cursor,
+                event_type,
+                account_id,
+                category_id,
+                search,
+                limit
+            ],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    u64::try_from(row.get::<_, i64>(1)?).unwrap_or(0),
+                ))
+            },
+        )
+        .map_err(|_| ApplicationError::TransactionFailed)?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| ApplicationError::TransactionFailed)
+}
+
+#[allow(clippy::too_many_lines)] // One bounded hydration query returns the complete activity detail contract.
+fn load_activity_items(
+    connection: &Connection,
+    ids: &[(String, u64)],
+) -> ApplicationResult<Vec<ActivityItem>> {
+    if ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let ids_json =
+        serde_json::to_string(&ids.iter().map(|(event_id, _)| event_id).collect::<Vec<_>>())
+            .map_err(|_| ApplicationError::TransactionFailed)?;
+    let mut statement = connection
+        .prepare(
+            "SELECT e.event_id,e.event_order,e.event_type,e.effective_date,e.sequence,e.revision,
+                    COALESCE(ob.account_id,d.account_id),
+                    COALESCE(t.from_account_id,x.from_account_id),
+                    COALESCE(t.to_account_id,x.to_account_id),
+                    COALESCE(ob.balance_amount,d.amount,t.amount,x.from_amount),
+                    x.to_amount,d.category_id,COALESCE(d.semantic_role,'normal'),d.merchant,d.note,
+                    COALESCE(f.fee_account_id,x.fee_account_id),COALESCE(f.fee_amount,x.fee_amount),
+                    ob.cutover_date,ob.migration_policy,
+                    e.supersedes_event_id,e.reverses_event_id,
+                    (SELECT n.event_id FROM business_events n WHERE n.supersedes_event_id=e.event_id ORDER BY n.event_order LIMIT 1),
+                    (SELECT r.event_id FROM business_events r WHERE r.reverses_event_id=e.event_id ORDER BY r.event_order LIMIT 1),
+                    COALESCE((SELECT a.action FROM audit_events a WHERE a.business_event_id=e.event_id ORDER BY a.occurred_at_utc DESC,a.audit_event_id DESC LIMIT 1),'post'),
+                    COALESCE((SELECT a.occurred_at_utc FROM audit_events a WHERE a.business_event_id=e.event_id ORDER BY a.occurred_at_utc DESC,a.audit_event_id DESC LIMIT 1),e.created_at_utc),
+                    COALESCE((SELECT a.reason FROM audit_events a WHERE a.business_event_id=e.event_id ORDER BY a.occurred_at_utc DESC,a.audit_event_id DESC LIMIT 1),e.revision_reason),
+                    COALESCE((
+                      SELECT json_group_array(json_object(
+                        'postingKind',ordered.posting_kind,
+                        'accountId',ordered.account_id,
+                        'quantityDelta',ordered.quantity_delta,
+                        'currency',ordered.currency,
+                        'baseValue',ordered.base_value,
+                        'baseCurrency',ordered.base_currency
+                      )) FROM (
+                        SELECT posting_kind,account_id,quantity_delta,currency,base_value,base_currency
+                        FROM ledger_postings WHERE event_id=e.event_id ORDER BY posting_ordinal
+                      ) ordered
+                    ),'[]'),
+                    COALESCE((
+                      SELECT json_group_array(json_object(
+                        'purpose',ordered.purpose,
+                        'currency',ordered.currency,
+                        'baseCurrency',ordered.base_currency,
+                        'targetDate',ordered.target_date,
+                        'automaticCandidateRevisionId',ordered.auto_rate_revision_id,
+                        'overrideValue',ordered.override_value,
+                        'overrideReason',ordered.override_reason,
+                        'finalRate',ordered.final_rate,
+                        'calculationVersion',ordered.calculation_version
+                      )) FROM (
+                        SELECT purpose,currency,base_currency,target_date,auto_rate_revision_id,
+                               override_value,override_reason,final_rate,calculation_version
+                        FROM fx_resolutions WHERE owner_type='event' AND owner_id=e.event_id
+                        ORDER BY purpose,currency
+                      ) ordered
+                    ),'[]')
+             FROM business_events e
+             LEFT JOIN opening_balance_details ob ON ob.event_id=e.event_id
+             LEFT JOIN income_expense_details d ON d.event_id=e.event_id
+             LEFT JOIN cash_event_fees f ON f.event_id=e.event_id
+             LEFT JOIN transfer_details t ON t.event_id=e.event_id
+             LEFT JOIN currency_exchange_details x ON x.event_id=e.event_id
+             WHERE e.event_id IN (SELECT value FROM json_each(?1))
+             ORDER BY e.event_order DESC",
+        )
+        .map_err(|_| ApplicationError::TransactionFailed)?;
+    let raw = statement
+        .query_map([ids_json], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, i64>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, i64>(4)?,
+                row.get::<_, i64>(5)?,
+                row.get::<_, Option<String>>(6)?,
+                row.get::<_, Option<String>>(7)?,
+                row.get::<_, Option<String>>(8)?,
+                row.get::<_, Option<String>>(9)?,
+                row.get::<_, Option<String>>(10)?,
+                row.get::<_, Option<String>>(11)?,
+                row.get::<_, String>(12)?,
+                row.get::<_, Option<String>>(13)?,
+                row.get::<_, Option<String>>(14)?,
+                row.get::<_, Option<String>>(15)?,
+                row.get::<_, Option<String>>(16)?,
+                row.get::<_, Option<String>>(17)?,
+                row.get::<_, Option<String>>(18)?,
+                row.get::<_, Option<String>>(19)?,
+                row.get::<_, Option<String>>(20)?,
+                row.get::<_, Option<String>>(21)?,
+                row.get::<_, Option<String>>(22)?,
+                row.get::<_, String>(23)?,
+                row.get::<_, String>(24)?,
+                row.get::<_, Option<String>>(25)?,
+                row.get::<_, String>(26)?,
+                row.get::<_, String>(27)?,
+            ))
+        })
+        .map_err(|_| ApplicationError::TransactionFailed)?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| ApplicationError::TransactionFailed)?;
+    raw.into_iter()
+        .map(|row| {
+            let postings: Vec<ActivityPosting> =
+                serde_json::from_str(&row.26).map_err(|_| ApplicationError::TransactionFailed)?;
+            let fx_resolutions: Vec<ActivityFxResolution> =
+                serde_json::from_str(&row.27).map_err(|_| ApplicationError::TransactionFailed)?;
+            let reversal_preview = if row.2 == "Reversal" {
+                Vec::new()
+            } else {
+                postings
+                    .iter()
+                    .map(|posting| {
+                        Ok(ActivityPosting {
+                            posting_kind: "cash-reversal".to_owned(),
+                            account_id: posting.account_id.clone(),
+                            quantity_delta: Decimal::parse(
+                                &posting.quantity_delta,
+                                DecimalUse::Internal,
+                            )?
+                            .checked_neg(DecimalUse::Internal)?
+                            .as_str()
+                            .to_owned(),
+                            currency: posting.currency.clone(),
+                            base_value: posting
+                                .base_value
+                                .as_deref()
+                                .map(|value| {
+                                    Ok::<String, ApplicationError>(
+                                        Decimal::parse(value, DecimalUse::Internal)?
+                                            .checked_neg(DecimalUse::Internal)?
+                                            .as_str()
+                                            .to_owned(),
+                                    )
+                                })
+                                .transpose()?,
+                            base_currency: posting.base_currency.clone(),
+                        })
+                    })
+                    .collect::<ApplicationResult<Vec<_>>>()?
+            };
+            Ok(ActivityItem {
+                event_id: row.0,
+                event_order: u64::try_from(row.1)
+                    .map_err(|_| ApplicationError::TransactionFailed)?,
+                event_type: row.2,
+                effective_date: row.3,
+                sequence: u64::try_from(row.4).map_err(|_| ApplicationError::TransactionFailed)?,
+                revision: u32::try_from(row.5).map_err(|_| ApplicationError::TransactionFailed)?,
+                content: ActivityEventContent {
+                    account_id: row.6,
+                    from_account_id: row.7,
+                    to_account_id: row.8,
+                    amount: row.9,
+                    to_amount: row.10,
+                    category_id: row.11,
+                    semantic_role: row.12,
+                    merchant: row.13,
+                    note: row.14,
+                    fee_account_id: row.15,
+                    fee_amount: row.16,
+                    cutover_date: row.17,
+                    migration_policy: row.18,
+                },
+                relations: ActivityRelations {
+                    supersedes_event_id: row.19,
+                    reverses_event_id: row.20,
+                    superseded_by_event_id: row.21,
+                    reversed_by_event_id: row.22,
+                },
+                audit: ActivityAudit {
+                    action: row.23,
+                    occurred_at_utc: row.24,
+                    reason: row.25,
+                },
+                postings,
+                reversal_preview,
+                fx_resolutions,
+            })
+        })
+        .collect()
+}
+
 #[allow(clippy::too_many_arguments)] // Query bounds and drilldown filters remain explicit.
 fn load_contributions(
     connection: &Connection,
@@ -2566,6 +2852,249 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::too_many_lines)]
+    fn general_activity_hydrates_details_filters_and_revision_chains() {
+        let (_dir, mut manager, cny, _usd, category) = setup();
+        let mut original = input(EventInputType::Expense, cny, "25.50");
+        original.category_id = Some(category);
+        original.merchant = Some("Synthetic Market".to_owned());
+        original.note = Some("weekly basket".to_owned());
+        let first = manager.post_event(&original).unwrap();
+
+        let mut replacement = original.clone();
+        replacement.amount = Some(Decimal::parse("20.00", DecimalUse::Amount).unwrap());
+        replacement.sequence = crate::domain::types::Sequence::new(2).unwrap();
+        let revised = manager
+            .revise_event(&RevisionInput {
+                target_event_id: UuidV7::parse(&first.event_id).unwrap(),
+                reason: "correct amount".to_owned(),
+                replacement,
+            })
+            .unwrap();
+        let reversal = manager
+            .reverse_event(&ReversalInput {
+                target_event_id: UuidV7::parse(&revised.event_id).unwrap(),
+                reason: "void duplicate".to_owned(),
+                effective_date: LocalDate::parse("2026-02-04").unwrap(),
+                sequence: crate::domain::types::Sequence::new(3).unwrap(),
+            })
+            .unwrap();
+
+        let base_query = ActivityQuery {
+            start_date: LocalDate::parse("2026-02-01").unwrap(),
+            end_date: LocalDate::parse("2026-02-28").unwrap(),
+            context: None,
+            event_type: None,
+            account_id: None,
+            category_id: None,
+            search: None,
+            cursor: None,
+            limit: 2,
+        };
+        let first_page = manager.get_activity(&base_query).unwrap();
+        assert_eq!(first_page.items.len(), 2);
+        assert_eq!(first_page.items[0].event_id, reversal.event_id);
+        assert_eq!(first_page.items[0].audit.action, "reverse");
+        assert_eq!(
+            first_page.items[0].relations.reverses_event_id.as_deref(),
+            Some(revised.event_id.as_str())
+        );
+        assert_eq!(
+            first_page.items[0].postings[0].posting_kind,
+            "cash-reversal"
+        );
+        assert!(first_page.items[0].reversal_preview.is_empty());
+        assert_eq!(first_page.items[1].revision, 2);
+        assert_eq!(
+            first_page.items[1].audit.reason.as_deref(),
+            Some("correct amount")
+        );
+        assert_eq!(
+            first_page.items[1].relations.supersedes_event_id.as_deref(),
+            Some(first.event_id.as_str())
+        );
+        assert_eq!(
+            first_page.items[1]
+                .relations
+                .reversed_by_event_id
+                .as_deref(),
+            Some(reversal.event_id.as_str())
+        );
+        assert_eq!(
+            first_page.items[1].reversal_preview[0].quantity_delta,
+            "20.00"
+        );
+
+        let second_page = manager
+            .get_activity(&ActivityQuery {
+                cursor: first_page.next_cursor,
+                ..base_query.clone()
+            })
+            .unwrap();
+        assert_eq!(second_page.items.len(), 1);
+        assert_eq!(second_page.items[0].event_id, first.event_id);
+        assert_eq!(second_page.next_cursor, None);
+        assert_eq!(
+            second_page.items[0]
+                .relations
+                .superseded_by_event_id
+                .as_deref(),
+            Some(revised.event_id.as_str())
+        );
+
+        for (label, filtered) in [
+            (
+                "type",
+                ActivityQuery {
+                    event_type: Some("Expense".to_owned()),
+                    ..base_query.clone()
+                },
+            ),
+            (
+                "category",
+                ActivityQuery {
+                    category_id: Some(category.to_string()),
+                    ..base_query.clone()
+                },
+            ),
+            (
+                "search",
+                ActivityQuery {
+                    search: Some("weekly BASKET".to_owned()),
+                    ..base_query.clone()
+                },
+            ),
+        ] {
+            let page = manager
+                .get_activity(&filtered)
+                .unwrap_or_else(|error| panic!("{label} filter failed: {error:?}"));
+            assert_eq!(page.items.len(), 2);
+            assert!(page.items.iter().all(|item| item.event_type == "Expense"));
+        }
+        let account_page = manager
+            .get_activity(&ActivityQuery {
+                account_id: Some(cny),
+                ..base_query.clone()
+            })
+            .unwrap();
+        assert_eq!(account_page.items.len(), 2);
+        assert_eq!(account_page.items[0].event_type, "Reversal");
+        let error = manager
+            .get_activity(&ActivityQuery {
+                search: Some("x".repeat(201)),
+                ..base_query
+            })
+            .unwrap_err();
+        assert_eq!(error, ApplicationError::ActivityFilterInvalid);
+    }
+
+    #[test]
+    #[allow(clippy::too_many_lines)]
+    fn every_daily_cash_type_reaches_the_activity_timeline() {
+        let (_dir, mut manager, cny, usd, category) = setup();
+        let institution_id = manager
+            .store
+            .as_ref()
+            .unwrap()
+            .connection
+            .query_row(
+                "SELECT institution_id FROM institutions LIMIT 1",
+                [],
+                |row| row.get::<_, String>(0),
+            )
+            .map(|value| UuidV7::parse(&value).unwrap())
+            .unwrap();
+        let cny_second = UuidV7::new().unwrap();
+        manager
+            .save_cash_account(&CashAccount {
+                account_id: cny_second,
+                business_id: BusinessId::parse("cny-secondary").unwrap(),
+                institution_id,
+                name: CatalogText::parse("CNY secondary").unwrap(),
+                purpose: CatalogText::parse("daily").unwrap(),
+                currency: Currency::parse("CNY").unwrap(),
+                opened_on: None,
+                enabled: true,
+            })
+            .unwrap();
+        manager
+            .save_fx_revision(
+                &FxRateRevision::new(
+                    UuidV7::new().unwrap(),
+                    LocalDate::parse("2026-02-01").unwrap(),
+                    Currency::parse("USD").unwrap(),
+                    Currency::parse("CNY").unwrap(),
+                    "7.1",
+                    CatalogText::parse("synthetic").unwrap(),
+                    true,
+                )
+                .unwrap(),
+            )
+            .unwrap();
+
+        let mut income = input(EventInputType::Income, cny, "30");
+        income.merchant = Some("Synthetic employer".to_owned());
+        manager.post_event(&income).unwrap();
+        let mut expense = input(EventInputType::Expense, cny, "8");
+        expense.sequence = crate::domain::types::Sequence::new(2).unwrap();
+        expense.category_id = Some(category);
+        manager.post_event(&expense).unwrap();
+        let mut adjustment = input(EventInputType::Adjustment, cny, "-2");
+        adjustment.sequence = crate::domain::types::Sequence::new(3).unwrap();
+        manager.post_event(&adjustment).unwrap();
+        let mut transfer = input(EventInputType::Transfer, cny, "5");
+        transfer.sequence = crate::domain::types::Sequence::new(4).unwrap();
+        transfer.account_id = None;
+        transfer.from_account_id = Some(cny);
+        transfer.to_account_id = Some(cny_second);
+        manager.post_event(&transfer).unwrap();
+        let mut exchange = input(EventInputType::CurrencyExchange, cny, "71");
+        exchange.sequence = crate::domain::types::Sequence::new(5).unwrap();
+        exchange.account_id = None;
+        exchange.from_account_id = Some(cny);
+        exchange.to_account_id = Some(usd);
+        exchange.to_amount = Some(Decimal::parse("10", DecimalUse::Amount).unwrap());
+        exchange.fee_account_id = Some(usd);
+        exchange.fee_amount = Some(Decimal::parse("1", DecimalUse::Amount).unwrap());
+        manager.post_event(&exchange).unwrap();
+
+        let page = manager
+            .get_activity(&ActivityQuery {
+                start_date: LocalDate::parse("2026-02-01").unwrap(),
+                end_date: LocalDate::parse("2026-02-28").unwrap(),
+                context: None,
+                event_type: None,
+                account_id: None,
+                category_id: None,
+                search: None,
+                cursor: None,
+                limit: 10,
+            })
+            .unwrap();
+        assert_eq!(page.items.len(), 5);
+        let types = page
+            .items
+            .iter()
+            .map(|item| item.event_type.as_str())
+            .collect::<BTreeSet<_>>();
+        assert_eq!(
+            types,
+            BTreeSet::from([
+                "Income",
+                "Expense",
+                "BalanceAdjustment",
+                "Transfer",
+                "CurrencyExchange"
+            ])
+        );
+        let exchange = &page.items[0];
+        assert_eq!(exchange.event_type, "CurrencyExchange");
+        assert_eq!(exchange.content.fee_amount.as_deref(), Some("1"));
+        assert_eq!(exchange.postings.len(), 3);
+        assert_eq!(exchange.fx_resolutions.len(), 3);
+    }
+
+    #[test]
     fn transfer_exchange_fee_and_frozen_fx_resolution_follow_cash_rules() {
         let (_dir, mut manager, cny, usd, _category) = setup();
         let institution_id = manager
@@ -2826,9 +3355,17 @@ mod tests {
         let other = report.top10.other.unwrap();
         assert_eq!(other.amount, "3");
         assert_eq!(other.distinct_event_count, 2);
+        let start_date = LocalDate::parse("2026-02-01").unwrap();
+        let end_date = LocalDate::parse("2026-02-28").unwrap();
         let first = manager
             .get_activity(&ActivityQuery {
-                context: other.drilldown_context.clone(),
+                start_date: start_date.clone(),
+                end_date: end_date.clone(),
+                context: Some(other.drilldown_context.clone()),
+                event_type: None,
+                account_id: None,
+                category_id: None,
+                search: None,
                 cursor: None,
                 limit: 1,
             })
@@ -2836,7 +3373,13 @@ mod tests {
         assert_eq!(first.items.len(), 1);
         let second = manager
             .get_activity(&ActivityQuery {
-                context: other.drilldown_context,
+                start_date,
+                end_date,
+                context: Some(other.drilldown_context),
+                event_type: None,
+                account_id: None,
+                category_id: None,
+                search: None,
                 cursor: first.next_cursor,
                 limit: 1,
             })

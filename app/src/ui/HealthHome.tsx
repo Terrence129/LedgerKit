@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import type {
   CatalogRecord,
   LedgerStatus,
@@ -13,12 +13,16 @@ import type {
 import { supportedLocales, translate, type SupportedLocale } from "./i18n";
 
 type UiFailure = { code: string; field: string | null } | null;
+export type WorkspaceView = "overview" | "activity" | "assets" | "quality" | "settings";
 
 type HealthHomeProps = {
   locale: SupportedLocale;
   status: LedgerStatus | null;
   failure: UiFailure;
   busy: boolean;
+  activeView: WorkspaceView;
+  activityContent: ReactNode;
+  onNavigate: (view: WorkspaceView) => void;
   onLocaleChange: (locale: SupportedLocale) => void;
   onCreateLedger: (baseCurrency: string) => Promise<void>;
   onOpenLedger: () => Promise<void>;
@@ -54,7 +58,7 @@ export function HealthHome(props: HealthHomeProps) {
 
   const submit = <T,>(event: FormEvent, action: (request: T) => Promise<void>, value: T, reset: () => void) => {
     event.preventDefault();
-    void action(value).then(reset);
+    void action(value).then(reset).catch(() => undefined);
   };
 
   return (
@@ -94,11 +98,17 @@ export function HealthHome(props: HealthHomeProps) {
         </section>
       ) : null}
       {status?.ledgerState === "closed" ? (
-        <section className="onboarding"><h1>{t("setup.closedTitle")}</h1><p>{t("setup.closedDescription")}</p><button disabled={busy} onClick={() => void props.onOpenLedger()}>{t("setup.open")}</button><Protection status={status} t={t} /></section>
+        <section className="onboarding"><h1>{t("setup.closedTitle")}</h1><p>{t("setup.closedDescription")}</p><button disabled={busy} onClick={() => void props.onOpenLedger().catch(() => undefined)}>{t("setup.open")}</button><Protection status={status} t={t} /></section>
       ) : null}
 
       {status?.ledgerState === "open" && catalog ? (
         <>
+          <nav className="workspace-nav" aria-label={t("nav.label")}><ul>{(["overview", "activity", "assets", "quality", "settings"] as const).map((view) => <li key={view}><button type="button" className={props.activeView === view ? "active" : ""} aria-current={props.activeView === view ? "page" : undefined} onClick={() => props.onNavigate(view)}>{t(`nav.${view}` as Parameters<typeof translate>[1])}</button></li>)}</ul></nav>
+          {props.activeView === "activity" ? props.activityContent : null}
+          {props.activeView === "overview" ? <WorkspacePlaceholder eyebrow={t("overview.eyebrow")} title={t("overview.title")} description={t("overview.description")} /> : null}
+          {props.activeView === "assets" ? <WorkspacePlaceholder eyebrow={t("assets.eyebrow")} title={t("assets.title")} description={t("assets.description")} /> : null}
+          {props.activeView === "quality" ? <><section className="page-heading"><p className="eyebrow">{t("quality.eyebrow")}</p><h1>{t("quality.title")}</h1></section><section className="quality-card" aria-labelledby="quality-view-title"><h2 id="quality-view-title">{t("quality.current")}</h2>{catalog.qualityIssues.length === 0 ? <p className="empty-state">{t("quality.empty")}</p> : <ul className="issue-list">{catalog.qualityIssues.map((issue) => <li key={`${issue.code}-${issue.entityId}`}><strong>{t(`quality.${issue.code}` as Parameters<typeof translate>[1])}</strong><code>{issue.entityId}</code><span>{t("quality.fix")}: {issue.fixField}</span></li>)}</ul>}</section></> : null}
+          {props.activeView === "settings" ? <>
           <section className="page-heading"><p className="eyebrow">{t("catalog.eyebrow")}</p><h1>{t("catalog.title")}</h1><p className="lede">{t("catalog.description")}</p></section>
           <Protection status={status} t={t} />
           <section className="quality-card" aria-labelledby="quality-title">
@@ -200,10 +210,15 @@ export function HealthHome(props: HealthHomeProps) {
               </form><RevisionList records={catalog.priceRevisions} t={t} onEdit={(revision) => setPrice({ revisionId: revision.id, instrumentId: revision.ownerId, priceDate: revision.date, price: revision.value, priceCurrency: revision.currency, source: revision.source, active: revision.active })} /></article>
             </div>
           </section>
+          </> : null}
         </>
       ) : null}
     </main>
   );
+}
+
+function WorkspacePlaceholder({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
+  return <section className="page-heading workspace-placeholder"><p className="eyebrow">{eyebrow}</p><h1>{title}</h1><p className="lede">{description}</p></section>;
 }
 
 type T = (key: Parameters<typeof translate>[1]) => string;

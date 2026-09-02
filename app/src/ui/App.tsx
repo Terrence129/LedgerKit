@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ledgerKitCommands } from "../command-client/client";
 import type {
   LedgerStatus,
@@ -10,7 +10,8 @@ import type {
   SavePortfolioRequest,
   SavePriceRevisionRequest,
 } from "../command-client/contracts";
-import { HealthHome } from "./HealthHome";
+import { ActivityPage } from "./ActivityPage";
+import { HealthHome, type WorkspaceView } from "./HealthHome";
 import { applyDocumentLocale, localeFromSystemHint, systemLocaleHint, type SupportedLocale } from "./i18n";
 import "./styles.css";
 
@@ -40,6 +41,8 @@ export function App() {
   const [status, setStatus] = useState<LedgerStatus | null>(null);
   const [failure, setFailure] = useState<UiFailure>(null);
   const [busy, setBusy] = useState(false);
+  const [activeView, setActiveView] = useState<WorkspaceView>("activity");
+  const busyRef = useRef(false);
   const asOfDate = today();
 
   async function refresh(): Promise<void> {
@@ -53,17 +56,22 @@ export function App() {
     void refresh().catch((error: unknown) => setFailure(toFailure(error)));
   }, []);
 
-  async function execute(action: () => Promise<unknown>): Promise<void> {
+  async function execute<T>(action: () => Promise<T>, refreshAfter = true): Promise<T> {
+    if (busyRef.current) throw { code: "COMMAND_ALREADY_RUNNING", field: null };
+    busyRef.current = true;
     setBusy(true);
     setFailure(null);
     try {
-      await action();
-      await refresh();
+      const result = await action();
+      if (refreshAfter) await refresh();
+      return result;
     } catch (error: unknown) {
       const nextFailure = toFailure(error);
       setFailure(nextFailure);
       if (nextFailure?.field) document.getElementById(nextFailure.field)?.focus();
+      throw error;
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   }
@@ -84,7 +92,7 @@ export function App() {
     });
   }
 
-  const save = <T,>(command: (request: T) => Promise<unknown>) => (request: T) => execute(() => command(request));
+  const save = <T,>(command: (request: T) => Promise<unknown>) => (request: T) => execute(() => command(request)).then(() => undefined);
 
   return (
     <HealthHome
@@ -92,9 +100,21 @@ export function App() {
       status={status}
       failure={failure}
       busy={busy}
-      onLocaleChange={(nextLocale) => void changeLocale(nextLocale)}
-      onCreateLedger={(baseCurrency) => execute(() => ledgerKitCommands.createLedger({ baseCurrency, uiLocale: locale }))}
-      onOpenLedger={() => execute(() => ledgerKitCommands.openLedger())}
+      activeView={activeView}
+      onNavigate={setActiveView}
+      activityContent={status?.ledgerState === "open" && status.catalog ? <ActivityPage
+        locale={locale}
+        status={status}
+        busy={busy}
+        onLoad={(request) => ledgerKitCommands.getActivity(request)}
+        onPreview={(request) => execute(() => ledgerKitCommands.previewEvent(request), false)}
+        onPost={(request) => execute(() => ledgerKitCommands.postEvent(request))}
+        onRevise={(request) => execute(() => ledgerKitCommands.reviseEvent(request))}
+        onReverse={(request) => execute(() => ledgerKitCommands.reverseEvent(request))}
+      /> : null}
+      onLocaleChange={(nextLocale) => void changeLocale(nextLocale).catch(() => undefined)}
+      onCreateLedger={(baseCurrency) => execute(() => ledgerKitCommands.createLedger({ baseCurrency, uiLocale: locale })).then(() => undefined)}
+      onOpenLedger={() => execute(() => ledgerKitCommands.openLedger()).then(() => undefined)}
       onSaveInstitution={save<SaveInstitutionRequest>((request) => ledgerKitCommands.saveInstitution(request))}
       onSaveCashAccount={save<SaveCashAccountRequest>((request) => ledgerKitCommands.saveCashAccount(request))}
       onSaveCategory={save<SaveCategoryRequest>((request) => ledgerKitCommands.saveCategory(request))}

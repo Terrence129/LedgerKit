@@ -29,6 +29,7 @@ pub enum ApplicationError {
     CatalogReferenceInvalid,
     ActivityLimitInvalid,
     ActivityCursorInvalid,
+    ActivityFilterInvalid,
     ExpenseDateRangeInvalid,
     ResponseTooLarge,
 }
@@ -58,6 +59,7 @@ impl ApplicationError {
             Self::CatalogReferenceInvalid => "CATALOG_REFERENCE_INVALID",
             Self::ActivityLimitInvalid => "ACTIVITY_LIMIT_INVALID",
             Self::ActivityCursorInvalid => "ACTIVITY_CURSOR_INVALID",
+            Self::ActivityFilterInvalid => "ACTIVITY_FILTER_INVALID",
             Self::ExpenseDateRangeInvalid => "EXPENSE_DATE_RANGE_INVALID",
             Self::ResponseTooLarge => "RESPONSE_TOO_LARGE",
         }
@@ -90,6 +92,7 @@ impl ApplicationError {
             ) => Some("reason"),
             Self::ActivityLimitInvalid => Some("limit"),
             Self::ActivityCursorInvalid => Some("cursor"),
+            Self::ActivityFilterInvalid => Some("search"),
             Self::ExpenseDateRangeInvalid => Some("dateRange"),
             _ => None,
         }

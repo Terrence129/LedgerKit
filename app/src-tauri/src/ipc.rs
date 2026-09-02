@@ -412,7 +412,13 @@ pub struct DrilldownContextRequest {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ActivityRequest {
-    context: DrilldownContextRequest,
+    start_date: String,
+    end_date: String,
+    context: Option<DrilldownContextRequest>,
+    event_type: Option<String>,
+    account_id: Option<String>,
+    category_id: Option<String>,
+    search: Option<String>,
     cursor: Option<u64>,
     limit: u32,
 }
@@ -613,28 +619,53 @@ pub fn get_activity(
     request: ActivityRequest,
     state: State<'_, AppState>,
 ) -> Result<ActivityPage, CommandError> {
-    let context = request.context;
-    if context.expense_policy_version != "expense-policy-v1"
-        || context.calculation_version != "ledger-calculation-v1"
-        || !matches!(
-            context.valuation_state.as_str(),
-            "valued" | "unvalued" | "all"
-        )
-    {
-        return Err(CommandError::from(ApplicationError::ActivityCursorInvalid));
-    }
+    let start_date = LocalDate::parse(&request.start_date)?;
+    let end_date = LocalDate::parse(&request.end_date)?;
+    let context = request
+        .context
+        .map(|context| {
+            if context.expense_policy_version != "expense-policy-v1"
+                || context.calculation_version != "ledger-calculation-v1"
+                || !matches!(
+                    context.valuation_state.as_str(),
+                    "valued" | "unvalued" | "all"
+                )
+                || context.start_date != request.start_date
+                || context.end_date != request.end_date
+            {
+                return Err(CommandError::from(ApplicationError::ActivityCursorInvalid));
+            }
+            Ok(DrilldownContext {
+                start_date: context.start_date,
+                end_date: context.end_date,
+                event_watermark: context.event_watermark,
+                calculation_version: "ledger-calculation-v1",
+                expense_policy_version: "expense-policy-v1",
+                bucket_id: context.bucket_id,
+                semantic_role: context.semantic_role,
+                member_rank_gt: context.member_rank_gt,
+                valuation_state: context.valuation_state,
+            })
+        })
+        .transpose()?;
+    let event_type = request
+        .event_type
+        .map(|value| -> Result<String, CommandError> {
+            if value == "Reversal" {
+                Ok(value)
+            } else {
+                Ok(EventInputType::parse(&value)?.as_str().to_owned())
+            }
+        })
+        .transpose()?;
     let query = ActivityQuery {
-        context: DrilldownContext {
-            start_date: context.start_date,
-            end_date: context.end_date,
-            event_watermark: context.event_watermark,
-            calculation_version: "ledger-calculation-v1",
-            expense_policy_version: "expense-policy-v1",
-            bucket_id: context.bucket_id,
-            semantic_role: context.semantic_role,
-            member_rank_gt: context.member_rank_gt,
-            valuation_state: context.valuation_state,
-        },
+        start_date,
+        end_date,
+        context,
+        event_type,
+        account_id: parse_optional_id(request.account_id.as_deref())?,
+        category_id: request.category_id,
+        search: request.search,
         cursor: request.cursor,
         limit: request.limit,
     };
@@ -753,7 +784,7 @@ fn lock_facade<'a>(
 
 #[cfg(test)]
 mod tests {
-    use super::{ActivityRequest, CreateLedgerRequest, SaveFxRevisionRequest};
+    use super::{ActivityRequest, CashEventRequest, CreateLedgerRequest, SaveFxRevisionRequest};
     use serde_json::json;
 
     #[test]
@@ -763,6 +794,8 @@ mod tests {
         let fx_with_float = json!({ "rateDate": "2026-09-02", "currency": "USD", "rateToBase": 7.1, "source": "manual", "active": true });
         assert!(serde_json::from_value::<SaveFxRevisionRequest>(fx_with_float).is_err());
         let canonical_context = json!({
+            "startDate": "2026-09-01",
+            "endDate": "2026-09-02",
             "context": {
                 "start_date": "2026-09-01",
                 "end_date": "2026-09-02",
@@ -775,5 +808,32 @@ mod tests {
             "limit": 25
         });
         assert!(serde_json::from_value::<ActivityRequest>(canonical_context).is_ok());
+        let base_event = json!({
+            "effectiveDate": "2026-09-02",
+            "sequence": 1,
+            "eventType": "Expense",
+            "accountId": "019d0000-0000-7000-8000-000000000001",
+            "amount": "10"
+        });
+        assert!(serde_json::from_value::<CashEventRequest>(base_event.clone()).is_ok());
+        for (field, value) in [
+            ("currency", json!("USD")),
+            ("sign", json!("credit")),
+            ("posting", json!([])),
+            ("status", json!("posted")),
+            ("finalFx", json!("7.1")),
+        ] {
+            let mut forged = base_event.clone();
+            forged[field] = value;
+            assert!(serde_json::from_value::<CashEventRequest>(forged).is_err());
+        }
+        let general_activity = json!({
+            "startDate": "2026-09-01",
+            "endDate": "2026-09-02",
+            "eventType": "Reversal",
+            "search": "sample",
+            "limit": 25
+        });
+        assert!(serde_json::from_value::<ActivityRequest>(general_activity).is_ok());
     }
 }

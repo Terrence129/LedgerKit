@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { LedgerStatus } from "../command-client/contracts";
 import { HealthHome } from "./HealthHome";
+import { translate } from "./i18n";
 
 const status: LedgerStatus = {
   appVersion: "0.1.0",
@@ -33,6 +34,9 @@ describe("HealthHome", () => {
         status={{ ...status, uiLocale: locale }}
         failure={null}
         busy={false}
+        activeView="settings"
+        activityContent={null}
+        onNavigate={() => undefined}
         onLocaleChange={() => undefined}
         onCreateLedger={async () => undefined}
         onOpenLedger={async () => undefined}
@@ -72,7 +76,7 @@ describe("HealthHome", () => {
     };
     const html = renderToStaticMarkup(
       <HealthHome
-        locale={locale} status={openStatus} failure={null} busy={false}
+        locale={locale} status={openStatus} failure={null} busy={false} activeView="settings" activityContent={null} onNavigate={() => undefined}
         onLocaleChange={() => undefined} onCreateLedger={async () => undefined} onOpenLedger={async () => undefined}
         onSaveInstitution={async () => undefined} onSaveCashAccount={async () => undefined} onSaveCategory={async () => undefined}
         onSavePortfolio={async () => undefined} onSaveInstrument={async () => undefined} onSaveFxRevision={async () => undefined}
@@ -82,6 +86,7 @@ describe("HealthHome", () => {
     expect(html).toContain(heading);
     expect(html).toContain("<form");
     expect(html).toContain("<button");
+    for (const key of ["nav.overview", "nav.activity", "nav.assets", "nav.quality", "nav.settings"] as const) expect(html).toContain(translate(locale, key).replace("&", "&amp;"));
     expect(html).toContain("原文机构");
     expect(html).toContain("019d0000-0000-7000-8000-000000000003");
   });
