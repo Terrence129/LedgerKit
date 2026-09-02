@@ -31,7 +31,7 @@ const LEDGER_FILENAME: &str = "ledger.sqlite3";
 
 pub struct SqliteLedgerManager {
     pub(super) database_path: PathBuf,
-    backup: VerifiedSqliteMigrationBackup,
+    pub(super) backup: VerifiedSqliteMigrationBackup,
     pub(super) store: Option<LedgerStore>,
 }
 
@@ -181,7 +181,7 @@ pub struct LedgerStore {
 }
 
 impl LedgerStore {
-    fn initialize(
+    pub(super) fn initialize(
         mut connection: Connection,
         base_currency: Currency,
         ui_locale: UiLocale,
@@ -245,7 +245,7 @@ impl LedgerStore {
         })
     }
 
-    fn from_open_connection(mut connection: Connection) -> ApplicationResult<Self> {
+    pub(super) fn from_open_connection(mut connection: Connection) -> ApplicationResult<Self> {
         validate_schema(&connection)?;
         let metadata_count: u32 = connection
             .query_row("SELECT COUNT(*) FROM ledger_metadata", [], |row| row.get(0))
@@ -270,7 +270,7 @@ impl LedgerStore {
         })
     }
 
-    fn status(&self) -> ApplicationResult<LedgerStatus> {
+    pub(super) fn status(&self) -> ApplicationResult<LedgerStatus> {
         let (ledger_id, base_currency, ui_locale): (String, String, String) = self
             .connection
             .query_row(

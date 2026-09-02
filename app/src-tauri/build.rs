@@ -17,6 +17,8 @@ fn main() {
         "reverse_event",
         "get_expense_analysis",
         "get_activity",
+        "analyze_import",
+        "commit_import",
     ];
     let attributes = tauri_build::Attributes::new()
         .app_manifest(tauri_build::AppManifest::new().commands(COMMANDS));

@@ -122,9 +122,9 @@ struct ResolvedPosting {
 }
 
 #[derive(Clone)]
-struct PreparedWrite {
+pub(super) struct PreparedWrite {
     domain: PreparedCashEvent,
-    preview: EventPreview,
+    pub(super) preview: EventPreview,
     postings: Vec<ResolvedPosting>,
 }
 
@@ -292,7 +292,7 @@ impl LedgerStore {
         })
     }
 
-    fn prepare_write(&self, input: &CashEventInput) -> ApplicationResult<PreparedWrite> {
+    pub(super) fn prepare_write(&self, input: &CashEventInput) -> ApplicationResult<PreparedWrite> {
         let command = to_domain_command(&self.connection, input)?;
         let domain = prepare_cash_event(&command)?;
         let base_currency = load_base_currency(&self.connection)?;
@@ -745,7 +745,7 @@ fn resolve_rate(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn insert_prepared_event(
+pub(super) fn insert_prepared_event(
     transaction: &Transaction<'_>,
     event_id: UuidV7,
     input: &CashEventInput,

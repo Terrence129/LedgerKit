@@ -233,7 +233,11 @@ fn apply_current_schema(transaction: &Transaction<'_>) -> ApplicationResult<()> 
 fn migrate_to_current(transaction: &Transaction<'_>, source_version: u32) -> ApplicationResult<()> {
     match source_version {
         0 => migrate_legacy_to_current(transaction),
-        1 => migrate_v1_to_v2(transaction),
+        1 => {
+            migrate_v1_to_v2(transaction)?;
+            migrate_v2_to_v3(transaction)
+        }
+        2 => migrate_v2_to_v3(transaction),
         _ => Err(ApplicationError::MigrationFailed),
     }
 }
@@ -398,6 +402,45 @@ fn migrate_v1_to_v2(transaction: &Transaction<'_>) -> ApplicationResult<()> {
               ('expense-daily','expense-daily-projection-v1','ledger-calculation-v1',0,1);",
         )
         .map_err(|_| ApplicationError::MigrationFailed)?;
+    transaction
+        .execute_batch("PRAGMA user_version = 2;")
+        .map_err(|_| ApplicationError::MigrationFailed)?;
+    transaction
+        .execute(
+            "INSERT INTO migration_history(schema_version,applied_at_utc,application_version,schema_hash) VALUES(?1,CURRENT_TIMESTAMP,?2,?3)",
+            rusqlite::params![2, env!("CARGO_PKG_VERSION"), "superseded-by-v3"],
+        )
+        .map_err(|_| ApplicationError::MigrationFailed)?;
+    Ok(())
+}
+
+fn migrate_v2_to_v3(transaction: &Transaction<'_>) -> ApplicationResult<()> {
+    let mut columns = transaction
+        .prepare("PRAGMA table_info(import_batches)")
+        .map_err(|_| ApplicationError::MigrationFailed)?;
+    let column_names = columns
+        .query_map([], |row| row.get::<_, String>(1))
+        .map_err(|_| ApplicationError::MigrationFailed)?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| ApplicationError::MigrationFailed)?;
+    drop(columns);
+    if !column_names
+        .iter()
+        .any(|name| name == "target_schema_version")
+    {
+        transaction
+            .execute_batch(
+                "ALTER TABLE import_batches ADD COLUMN target_schema_version INTEGER NOT NULL DEFAULT 3 CHECK (target_schema_version > 0);",
+            )
+            .map_err(|_| ApplicationError::MigrationFailed)?;
+    }
+    if !column_names.iter().any(|name| name == "analysis_json") {
+        transaction
+            .execute_batch(
+                "ALTER TABLE import_batches ADD COLUMN analysis_json TEXT CHECK (analysis_json IS NULL OR json_valid(analysis_json));",
+            )
+            .map_err(|_| ApplicationError::MigrationFailed)?;
+    }
     transaction
         .execute_batch(&format!("PRAGMA user_version = {SCHEMA_VERSION};"))
         .map_err(|_| ApplicationError::MigrationFailed)?;

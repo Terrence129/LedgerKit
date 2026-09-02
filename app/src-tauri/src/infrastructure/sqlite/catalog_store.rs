@@ -75,7 +75,7 @@ impl SqliteLedgerManager {
 }
 
 impl LedgerStore {
-    fn save_institution(&mut self, value: &Institution) -> ApplicationResult<()> {
+    pub(super) fn save_institution(&mut self, value: &Institution) -> ApplicationResult<()> {
         let transaction = begin(&mut self.connection)?;
         ensure_unique_business_id(
             &transaction,
@@ -94,7 +94,7 @@ impl LedgerStore {
         commit(transaction)
     }
 
-    fn save_cash_account(&mut self, value: &CashAccount) -> ApplicationResult<()> {
+    pub(super) fn save_cash_account(&mut self, value: &CashAccount) -> ApplicationResult<()> {
         let transaction = begin(&mut self.connection)?;
         ensure_entity(
             &transaction,
@@ -134,7 +134,7 @@ impl LedgerStore {
         commit(transaction)
     }
 
-    fn save_category(&mut self, value: &Category) -> ApplicationResult<()> {
+    pub(super) fn save_category(&mut self, value: &Category) -> ApplicationResult<()> {
         let transaction = begin(&mut self.connection)?;
         let duplicate: bool = transaction
             .query_row(
@@ -226,7 +226,7 @@ impl LedgerStore {
         commit(transaction)
     }
 
-    fn save_fx_revision(&mut self, value: &FxRateRevision) -> ApplicationResult<()> {
+    pub(super) fn save_fx_revision(&mut self, value: &FxRateRevision) -> ApplicationResult<()> {
         let transaction = begin(&mut self.connection)?;
         let base_currency: String = transaction
             .query_row(

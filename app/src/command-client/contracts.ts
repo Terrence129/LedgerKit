@@ -164,6 +164,24 @@ export type UpdateSettingsResult = {
   persisted: boolean;
 };
 
+export type ImportIssue = { code: string; severity: "blocker" | "warning"; sheet: string; row: number; field: string };
+export type ImportMapping = { entityType: string; legacyId: string; targetId: string; migrationPolicy: string | null };
+export type ImportPosting = { accountId: string; quantityDelta: string; currency: string; baseValue: string | null; role: string };
+export type ImportProposedEvent = { sourceSheet: string; sourceRow: number; eventType: string; effectiveDate: string; sequence: number; postings: ImportPosting[] };
+export type ImportBalance = { accountId: string; currency: string; sourceBalance: string; proposedBalance: string; difference: string };
+export type ImportAnalysis = {
+  batchId: string; sourceSha256: string; templateVersion: string; importerVersion: string;
+  targetSchemaVersion: number; status: "ready" | "needs-review" | "committed";
+  rowCount: number; validRowCount: number; blockerCount: number; warningCount: number;
+  issues: ImportIssue[]; mappings: ImportMapping[]; proposedEvents: ImportProposedEvent[];
+  reconciliation: { balances: ImportBalance[]; differenceBridge: string[]; canonicalResultSha256: string; balanced: boolean };
+  canCommit: boolean; reusedStaging: boolean;
+};
+export type ImportCommitResult = {
+  batchId: string; sourceSha256: string; status: "committed"; ledgerId: string;
+  eventWatermark: number; canonicalPostingSha256: string; alreadyCommitted: boolean;
+};
+
 export interface LedgerKitCommands {
   createLedger(request: CreateLedgerRequest): Promise<LedgerStatus>;
   openLedger(): Promise<LedgerStatus>;
@@ -182,4 +200,6 @@ export interface LedgerKitCommands {
   reverseEvent(request: { targetEventId: string; reason: string; effectiveDate: string; sequence: number }): Promise<PostedEvent>;
   getExpenseAnalysis(request: { startDate: string; endDate: string; eventWatermark?: number }): Promise<ExpenseAnalysis>;
   getActivity(request: ActivityRequest): Promise<ActivityPage>;
+  analyzeImport(): Promise<ImportAnalysis>;
+  commitImport(request: { batchId: string; confirmed: boolean }): Promise<ImportCommitResult>;
 }

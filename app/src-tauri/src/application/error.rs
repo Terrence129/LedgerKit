@@ -32,6 +32,17 @@ pub enum ApplicationError {
     ActivityFilterInvalid,
     ExpenseDateRangeInvalid,
     ResponseTooLarge,
+    ImportCancelled,
+    ImportFileInvalid,
+    ImportFileTooLarge,
+    ImportTemplateUnsupported,
+    ImportBatchNotFound,
+    ImportConfirmationRequired,
+    ImportBlockersPresent,
+    ImportModifiedMergeForbidden,
+    ImportCandidateSwitchFailed,
+    ImportReconciliationFailed,
+    ImportWorkerFailed,
 }
 
 impl ApplicationError {
@@ -62,6 +73,17 @@ impl ApplicationError {
             Self::ActivityFilterInvalid => "ACTIVITY_FILTER_INVALID",
             Self::ExpenseDateRangeInvalid => "EXPENSE_DATE_RANGE_INVALID",
             Self::ResponseTooLarge => "RESPONSE_TOO_LARGE",
+            Self::ImportCancelled => "IMPORT_CANCELLED",
+            Self::ImportFileInvalid => "IMPORT_FILE_INVALID",
+            Self::ImportFileTooLarge => "IMPORT_FILE_TOO_LARGE",
+            Self::ImportTemplateUnsupported => "IMPORT_TEMPLATE_UNSUPPORTED",
+            Self::ImportBatchNotFound => "IMPORT_BATCH_NOT_FOUND",
+            Self::ImportConfirmationRequired => "IMPORT_CONFIRMATION_REQUIRED",
+            Self::ImportBlockersPresent => "IMPORT_BLOCKERS_PRESENT",
+            Self::ImportModifiedMergeForbidden => "IMPORT_MODIFIED_MERGE_FORBIDDEN",
+            Self::ImportCandidateSwitchFailed => "IMPORT_CANDIDATE_SWITCH_FAILED",
+            Self::ImportReconciliationFailed => "IMPORT_RECONCILIATION_FAILED",
+            Self::ImportWorkerFailed => "IMPORT_WORKER_FAILED",
         }
     }
 

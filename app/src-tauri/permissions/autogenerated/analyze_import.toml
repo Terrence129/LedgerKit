@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-analyze-import"
+description = "Enables the analyze_import command without any pre-configured scope."
+commands.allow = ["analyze_import"]
+
+[[permission]]
+identifier = "deny-analyze-import"
+description = "Denies the analyze_import command without any pre-configured scope."
+commands.deny = ["analyze_import"]

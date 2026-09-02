@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+use std::path::Path;
+
 use crate::domain::catalog::{BusinessId, CatalogText, CategoryKind, SemanticRole, SortOrder};
 use crate::domain::settings::UiLocale;
 use crate::domain::types::{Currency, LocalDate, UuidV7};
@@ -13,6 +15,7 @@ use super::catalog::{
     SecurityInstrument, SecurityPriceRevision,
 };
 use super::error::{ApplicationError, ApplicationResult};
+use super::import::{ImportAnalysis, ImportCommitResult, ImportPort};
 use super::ledger::{
     CreateLedgerCommand, LedgerPort, LedgerState, LedgerStatus, UpdateLedgerSettingsCommand,
 };
@@ -21,6 +24,32 @@ use super::settings::{SettingsError, SettingsRepository};
 pub struct ApplicationFacade<L: LedgerPort + CatalogPort + CashPort, S: SettingsRepository> {
     ledger: L,
     shell_settings: S,
+}
+
+impl<L: LedgerPort + CatalogPort + CashPort + ImportPort, S: SettingsRepository>
+    ApplicationFacade<L, S>
+{
+    /// Stages and analyzes one user-selected workbook without mutating the live ledger.
+    ///
+    /// # Errors
+    ///
+    /// Returns stable file, template, staging, or validation errors.
+    pub fn analyze_import(&mut self, path: &Path) -> ApplicationResult<ImportAnalysis> {
+        self.ledger.analyze_import(path)
+    }
+
+    /// Commits one opaque staged batch after explicit confirmation.
+    ///
+    /// # Errors
+    ///
+    /// Returns stable authorization, reconciliation, backup, or switch errors.
+    pub fn commit_import(
+        &mut self,
+        batch_id: &str,
+        confirmed: bool,
+    ) -> ApplicationResult<ImportCommitResult> {
+        self.ledger.commit_import(batch_id, confirmed)
+    }
 }
 
 impl<L: LedgerPort + CatalogPort + CashPort, S: SettingsRepository> ApplicationFacade<L, S> {

@@ -1,10 +1,10 @@
 # Production dependency inventory
 
-> Baseline: M2 Catalog/Market Data, 2026-09-02. Exact versions are locked in `app/package-lock.json` and `app/src-tauri/Cargo.lock`.
+> Baseline: M3 Excel Cash Migration, 2026-09-03. Exact versions are locked in `app/package-lock.json` and `app/src-tauri/Cargo.lock`.
 
-The current application has **13 direct production dependencies** (3 npm + 10 Rust, including Windows-targeted crates), below the hard budget of 25. Build/test-only dependencies are excluded from that number and never ship as Node or Python sidecars. Rust crates are statically linked, so size evidence is recorded at the aggregate binary/package level rather than as misleading per-crate deltas.
+The current application has **16 direct production dependencies** (3 npm + 13 Rust, including Windows-targeted crates), below the hard budget of 25. Build/test-only dependencies are excluded from that number and never ship as Node or Python sidecars. Rust crates are statically linked, so size evidence is recorded at the aggregate binary/package level rather than as misleading per-crate deltas.
 
-The verified M2 Catalog Windows x64 release build produced a 9,964,544-byte application executable and a 2,665,133-byte standard thin NSIS installer. First-load HTML/CSS/JS is 69,853 gzip bytes. The installer remains below the M1 hard budget, grows 68,488 bytes from the Foundation build, and continues to reuse the system Evergreen WebView2 runtime.
+The verified M3 Excel Cash Migration Windows x64 release build produced a 12,295,168-byte application executable and a 3,367,284-byte standard thin NSIS installer. First-load HTML/CSS/JS is 80,906 gzip bytes. Compared with the M2 Catalog baseline this adds 2,330,624 executable bytes, 702,151 installer bytes, and 11,053 first-load gzip bytes for native XLSX parsing/writing, the one-use native picker, and the import review UI. The installer remains below the M1 hard budget and continues to reuse the system Evergreen WebView2 runtime.
 
 | Dependency | Purpose and boundary | Size evidence | License | Security and maintenance | Cost of not using it |
 |---|---|---|---|---|---|
@@ -21,6 +21,9 @@ The verified M2 Catalog Windows x64 release build produced a 9,964,544-byte appl
 | `unicode-normalization 0.1.25` | Unicode NFC normalization for canonical JSON v1 | Aggregate Rust binary only | Apache-2.0 OR MIT | Narrow canonicalization boundary | Cross-stack hashes differ for canonically equivalent text |
 | `webview2-com 0.38.2` | Windows-only low-memory target adapter | Aggregate Rust binary only | MIT | One reviewed unsafe block; WebView upgrades require remeasurement | Lose measured RSS control |
 | `windows-core 0.61.2` | Windows COM interface support for the adapter | Aggregate Rust binary only | Apache-2.0 OR MIT | Isolated under `platform`; no Domain dependency | Hand-written COM ABI |
+| `calamine 0.36.1` | Read-only parser for the allowlisted `.xlsx` template behind the Infrastructure adapter | Included in measured M3 aggregate delta | MIT | No formula execution; strict file/sheet/row/column/cell limits, macro/external-link rejection, and cached-value validation | Hand-written ZIP/XML parser with a larger audit surface |
+| `rust_xlsxwriter 0.99.0` | Deterministic synthetic XLSX fixtures now and the accepted export adapter later | Included in measured M3 aggregate delta | MIT | Generator pins metadata time and is checked for byte stability; never reads private workbooks | Maintain raw OOXML generation and canonical packaging ourselves |
+| `rfd 0.17.2` | One-use native `.xlsx` file picker invoked on Tauri's blocking pool | Included in measured M3 aggregate delta | MIT | Returns only a Core-consumed path; the WebView never receives filesystem capability or arbitrary path IPC | Add a broader Tauri filesystem/dialog plugin or platform-specific dialog code |
 
 ## Build and test dependencies
 
@@ -30,7 +33,6 @@ The verified M2 Catalog Windows x64 release build produced a 9,964,544-byte appl
 
 The following exact dependencies are approved by Accepted ADRs but are deliberately absent until the stage that implements their port. They do not count in the current 8-dependency baseline:
 
-- ADR-0007: `calamine 0.36.1`, `rust_xlsxwriter 0.99.0`.
 - ADR-0008: `argon2 0.6.0`, `aes-gcm 0.11.1`, `zeroize 1.9.0`, `base64 0.23.1`; the already-present `getrandom 0.4.3` will also supply backup randomness.
 
 Adding any of these still requires a manifest diff, license/security review, updated aggregate package measurement and this inventory update. Approval is not permission to introduce an unused dependency.

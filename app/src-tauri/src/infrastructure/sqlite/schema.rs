@@ -3,7 +3,7 @@
 use sha2::{Digest, Sha256};
 
 pub const APPLICATION_ID: u32 = 1_280_002_388;
-pub const SCHEMA_VERSION: u32 = 2;
+pub const SCHEMA_VERSION: u32 = 3;
 
 pub const REQUIRED_TABLES: &[&str] = &[
     "app_settings",
@@ -158,12 +158,14 @@ CREATE TABLE import_batches (
     source_sha256 TEXT NOT NULL CHECK (source_sha256 GLOB 'sha256:[0-9a-f]*' AND length(source_sha256) = 71),
     importer_version TEXT NOT NULL,
     source_schema_version TEXT NOT NULL,
+    target_schema_version INTEGER NOT NULL CHECK (target_schema_version > 0),
     status TEXT NOT NULL CHECK (
         status IN ('staging', 'needs-review', 'ready', 'committed', 'rejected', 'failed')
     ),
     created_at_utc TEXT NOT NULL,
     committed_at_utc TEXT,
-    UNIQUE (source_sha256, importer_version, source_schema_version)
+    analysis_json TEXT CHECK (analysis_json IS NULL OR json_valid(analysis_json)),
+    UNIQUE (source_sha256, importer_version, target_schema_version)
 ) STRICT;
 
 CREATE TABLE import_rows (

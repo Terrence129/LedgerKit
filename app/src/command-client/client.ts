@@ -20,6 +20,8 @@ import type {
   ExpenseAnalysis,
   ActivityRequest,
   ActivityPage,
+  ImportAnalysis,
+  ImportCommitResult,
 } from "./contracts";
 
 class TauriLedgerKitCommands implements LedgerKitCommands {
@@ -52,6 +54,8 @@ class TauriLedgerKitCommands implements LedgerKitCommands {
   reverseEvent(request: { targetEventId: string; reason: string; effectiveDate: string; sequence: number }): Promise<PostedEvent> { return invoke("reverse_event", { request }); }
   getExpenseAnalysis(request: { startDate: string; endDate: string; eventWatermark?: number }): Promise<ExpenseAnalysis> { return invoke("get_expense_analysis", { request }); }
   getActivity(request: ActivityRequest): Promise<ActivityPage> { return invoke("get_activity", { request }); }
+  analyzeImport(): Promise<ImportAnalysis> { return invoke("analyze_import"); }
+  commitImport(request: { batchId: string; confirmed: boolean }): Promise<ImportCommitResult> { return invoke("commit_import", { request }); }
 }
 
 export const ledgerKitCommands: LedgerKitCommands = new TauriLedgerKitCommands();

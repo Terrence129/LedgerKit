@@ -20,7 +20,7 @@ const status: LedgerStatus = {
   deviceLossProtected: false,
   catalog: null,
   localOnly: true,
-  privilegedOperationCount: 17,
+  privilegedOperationCount: 19,
 };
 
 describe("HealthHome", () => {

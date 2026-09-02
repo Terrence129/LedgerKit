@@ -2,7 +2,7 @@
 
 use crate::domain::settings::UiLocale;
 
-pub const PRIVILEGED_OPERATION_COUNT: u8 = 17;
+pub const PRIVILEGED_OPERATION_COUNT: u8 = 19;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SettingsError {

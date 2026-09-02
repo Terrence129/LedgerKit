@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -15,6 +15,7 @@ use crate::application::catalog::{
 };
 use crate::application::error::ApplicationError;
 use crate::application::facade::ApplicationFacade;
+use crate::application::import::{ImportAnalysis, ImportCommitResult};
 use crate::application::ledger::{LedgerState, LedgerStatus};
 use crate::application::settings::PRIVILEGED_OPERATION_COUNT;
 use crate::domain::catalog::SemanticRole;
@@ -27,13 +28,13 @@ use crate::infrastructure::sqlite::SqliteLedgerManager;
 type DesktopFacade = ApplicationFacade<SqliteLedgerManager, FileSettingsRepository>;
 
 pub struct AppState {
-    facade: Mutex<DesktopFacade>,
+    facade: Arc<Mutex<DesktopFacade>>,
 }
 
 impl AppState {
-    pub const fn new(facade: DesktopFacade) -> Self {
+    pub fn new(facade: DesktopFacade) -> Self {
         Self {
-            facade: Mutex::new(facade),
+            facade: Arc::new(Mutex::new(facade)),
         }
     }
 }
@@ -423,6 +424,13 @@ pub struct ActivityRequest {
     limit: u32,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CommitImportRequest {
+    batch_id: String,
+    confirmed: bool,
+}
+
 #[derive(Debug, Serialize)]
 pub struct SaveResult {
     id: String,
@@ -674,6 +682,42 @@ pub fn get_activity(
         .map_err(Into::into)
 }
 
+#[tauri::command]
+pub async fn analyze_import(state: State<'_, AppState>) -> Result<ImportAnalysis, CommandError> {
+    let facade = Arc::clone(&state.facade);
+    tauri::async_runtime::spawn_blocking(move || {
+        let path = rfd::FileDialog::new()
+            .add_filter("Excel workbook", &["xlsx"])
+            .pick_file()
+            .ok_or(CommandError::from(ApplicationError::ImportCancelled))?;
+        facade
+            .lock()
+            .map_err(|_| CommandError::from(ApplicationError::ApplicationStateUnavailable))?
+            .analyze_import(&path)
+            .map_err(Into::into)
+    })
+    .await
+    .map_err(|_| CommandError::from(ApplicationError::ImportWorkerFailed))?
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub async fn commit_import(
+    request: CommitImportRequest,
+    state: State<'_, AppState>,
+) -> Result<ImportCommitResult, CommandError> {
+    let facade = Arc::clone(&state.facade);
+    tauri::async_runtime::spawn_blocking(move || {
+        facade
+            .lock()
+            .map_err(|_| CommandError::from(ApplicationError::ApplicationStateUnavailable))?
+            .commit_import(&request.batch_id, request.confirmed)
+            .map_err(Into::into)
+    })
+    .await
+    .map_err(|_| CommandError::from(ApplicationError::ImportWorkerFailed))?
+}
+
 fn parse_optional_id(value: Option<&str>) -> Result<Option<UuidV7>, CommandError> {
     value.map(UuidV7::parse).transpose().map_err(Into::into)
 }
@@ -784,7 +828,10 @@ fn lock_facade<'a>(
 
 #[cfg(test)]
 mod tests {
-    use super::{ActivityRequest, CashEventRequest, CreateLedgerRequest, SaveFxRevisionRequest};
+    use super::{
+        ActivityRequest, CashEventRequest, CommitImportRequest, CreateLedgerRequest,
+        SaveFxRevisionRequest,
+    };
     use serde_json::json;
 
     #[test]
@@ -835,5 +882,18 @@ mod tests {
             "limit": 25
         });
         assert!(serde_json::from_value::<ActivityRequest>(general_activity).is_ok());
+        let forged_import = json!({
+            "batchId": "019d0000-0000-7000-8000-000000000001",
+            "confirmed": true,
+            "sourcePath": "D:/private/ledger.xlsx"
+        });
+        assert!(serde_json::from_value::<CommitImportRequest>(forged_import).is_err());
+    }
+
+    #[test]
+    fn excel_dialog_parsing_and_commit_run_off_the_ui_thread() {
+        let source = include_str!("ipc.rs");
+        assert!(source.matches("spawn_blocking(move ||").count() >= 2);
+        assert!(source.contains("rfd::FileDialog"));
     }
 }

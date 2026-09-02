@@ -22,6 +22,7 @@ type HealthHomeProps = {
   busy: boolean;
   activeView: WorkspaceView;
   activityContent: ReactNode;
+  importContent?: ReactNode;
   onNavigate: (view: WorkspaceView) => void;
   onLocaleChange: (locale: SupportedLocale) => void;
   onCreateLedger: (baseCurrency: string) => Promise<void>;
@@ -94,6 +95,7 @@ export function HealthHome(props: HealthHomeProps) {
             <small id="base-currency-help">{t("setup.currencyHelp")}</small>
             <button disabled={busy} type="submit">{t("setup.create")}</button>
           </form>
+          {props.importContent}
           <Protection status={status} t={t} />
         </section>
       ) : null}

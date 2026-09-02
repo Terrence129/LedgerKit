@@ -63,6 +63,8 @@ const capability = readJson(join(appRoot, "src-tauri/capabilities/main.json"));
 const privilegedPermissions = capability.permissions.filter((item) => item.startsWith("allow-"));
 if (privilegedPermissions.length > 25) fail(`privileged IPC budget exceeded: ${privilegedPermissions.length}/25`);
 const expectedPermissions = [
+  "allow-analyze-import",
+  "allow-commit-import",
   "allow-create-ledger",
   "allow-get-activity",
   "allow-get-expense-analysis",
@@ -81,8 +83,8 @@ const expectedPermissions = [
   "allow-save-price-revision",
   "allow-update-settings",
 ];
-if (JSON.stringify(privilegedPermissions.sort()) !== JSON.stringify(expectedPermissions)) {
-  fail("M2 cash capability set differs from the seventeen reviewed operations");
+if (JSON.stringify(privilegedPermissions.sort()) !== JSON.stringify(expectedPermissions.sort())) {
+  fail("reviewed capability set differs from the nineteen named operations");
 }
 
 const sourceFiles = walkFiles(join(appRoot, "src")).filter((path) => /\.(ts|tsx)$/.test(path));

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ledgerKitCommands } from "../command-client/client";
 import type {
   LedgerStatus,
+  ImportAnalysis,
   SaveCashAccountRequest,
   SaveCategoryRequest,
   SaveFxRevisionRequest,
@@ -12,6 +13,7 @@ import type {
 } from "../command-client/contracts";
 import { ActivityPage } from "./ActivityPage";
 import { HealthHome, type WorkspaceView } from "./HealthHome";
+import { ImportWizard } from "./ImportWizard";
 import { applyDocumentLocale, localeFromSystemHint, systemLocaleHint, type SupportedLocale } from "./i18n";
 import "./styles.css";
 
@@ -42,6 +44,7 @@ export function App() {
   const [failure, setFailure] = useState<UiFailure>(null);
   const [busy, setBusy] = useState(false);
   const [activeView, setActiveView] = useState<WorkspaceView>("activity");
+  const [importAnalysis, setImportAnalysis] = useState<ImportAnalysis | null>(null);
   const busyRef = useRef(false);
   const asOfDate = today();
 
@@ -112,6 +115,18 @@ export function App() {
         onRevise={(request) => execute(() => ledgerKitCommands.reviseEvent(request))}
         onReverse={(request) => execute(() => ledgerKitCommands.reverseEvent(request))}
       /> : null}
+      importContent={<ImportWizard
+        locale={locale}
+        busy={busy}
+        analysis={importAnalysis}
+        onAnalyze={() => execute(() => ledgerKitCommands.analyzeImport(), false).then((analysis) => {
+          setImportAnalysis(analysis);
+          return analysis;
+        })}
+        onCommit={(batchId) => execute(() => ledgerKitCommands.commitImport({ batchId, confirmed: true })).then(() => {
+          setImportAnalysis(null);
+        })}
+      />}
       onLocaleChange={(nextLocale) => void changeLocale(nextLocale).catch(() => undefined)}
       onCreateLedger={(baseCurrency) => execute(() => ledgerKitCommands.createLedger({ baseCurrency, uiLocale: locale })).then(() => undefined)}
       onOpenLedger={() => execute(() => ledgerKitCommands.openLedger()).then(() => undefined)}

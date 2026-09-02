@@ -1,6 +1,6 @@
 # LedgerKit Persistence Schema v1 / v2
 
-> 状态：Schema v1 基线与 M2 Cash Schema v2 前向迁移已实现
+> 状态：Schema v1 基线、M2 Cash Schema v2 与 M3 Import Schema v3 前向迁移已实现
 >
 > 权威边界：受 ADR-0002、ADR-0003、ADR-0004、ADR-0006、ADR-0011 和 ADR-0012 约束；本文记录物理实现，不改变财务口径。
 
@@ -24,6 +24,8 @@
 | 估值审计 | `valuation_snapshots`、`valuation_snapshot_lines` |
 
 Schema v2 在不改写 Schema v1 权威事实的前提下增加 `cash_event_fees`、`monthly_cash_flow_projection`、`cash_data_quality_projection`，以及 ADR-0015 接受的 `expense_daily_projection`、`expense_daily_summary_projection`、`expense_daily_event_bucket_projection`。后三张表分别保存日/桶规范金额、日级全局 distinct 计数和 Top 10 “其他”所需的有界事件—桶集合；全部可删除并从 typed event/detail/posting 确定性重建。
+
+Schema v3 为 `import_batches` 增加正整数 `target_schema_version` 和受 `json_valid` 约束的 `analysis_json`。`import_rows` 继续保存原始文本、规范化字段/目标 ID、公式文本与缓存证据、逐行内容 SHA-256 和定位问题；同字节幂等键由源 SHA-256、导入器版本和目标 schema 共同约束。v2→v3 只前进迁移先创建并验证一致性备份，既有 staging 行不被改写为正式事件。
 
 Schema 使用外键、业务 ID/自然键唯一约束、日期与枚举状态检查。汇率和价格由 partial unique index 保证同一业务键至多一个 active 修订。活动、修订/冲正、费用分类、posting、持仓、as-of 市场数据、导入和估值均有对应查询索引。
 

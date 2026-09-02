@@ -20,8 +20,9 @@
 | [`implementation-prompts/README.md`](implementation-prompts/README.md) | 从 M0 到 1.0 Beta 的 14 阶段串行执行提示词 | 准备或执行应用实施任务 |
 | [`operations/migration.md`](operations/migration.md) | Excel staging、cut-over、对账和切换 | 导入与迁移任务 |
 | [`operations/backup-restore.md`](operations/backup-restore.md) | 一致性备份、恢复和升级安全顺序 | 数据安全与发布任务 |
+| [`local/README.md`](local/README.md) | 本机私有源文件定位规则；实际路径保存在 Git 忽略文件中 | 真实源调查、微调、最终迁移与 cut-over |
 | [`production-dependencies.md`](production-dependencies.md) | 已锁定生产依赖、预算与延期适配器 | 新增/升级依赖或发布审计 |
-| [`persistence-schema-v1.md`](persistence-schema-v1.md) | Schema v1 基线、v2 前向迁移、事务、路径和重建边界 | Core/SQLite 实现与后续 catalog/ledger 阶段 |
+| [`persistence-schema-v1.md`](persistence-schema-v1.md) | Schema v1 基线、v2/v3 前向迁移、事务、staging、路径和重建边界 | Core/SQLite、迁移与后续 ledger 阶段 |
 | [`catalog-and-market-data-v1.md`](catalog-and-market-data-v1.md) | 首次设置、主数据、市场修订、as-of 与质量修复契约 | Catalog、市场数据、估值与设置 UI |
 | [`../fixtures/sanitized/README.md`](../fixtures/sanitized/README.md) | 脱敏黄金样例格式和变更规则 | 测试与财务实现任务 |
 

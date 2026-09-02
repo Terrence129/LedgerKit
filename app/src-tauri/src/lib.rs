@@ -12,10 +12,10 @@ use infrastructure::sqlite::SqliteLedgerManager;
 use tauri::Manager;
 
 use crate::ipc::{
-    AppState, create_ledger, get_activity, get_expense_analysis, get_ledger_status, open_ledger,
-    post_event, preview_event, reverse_event, revise_event, save_cash_account, save_category,
-    save_fx_revision, save_institution, save_instrument, save_portfolio, save_price_revision,
-    update_settings,
+    AppState, analyze_import, commit_import, create_ledger, get_activity, get_expense_analysis,
+    get_ledger_status, open_ledger, post_event, preview_event, reverse_event, revise_event,
+    save_cash_account, save_category, save_fx_revision, save_institution, save_instrument,
+    save_portfolio, save_price_revision, update_settings,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -60,7 +60,9 @@ pub fn run() {
             revise_event,
             reverse_event,
             get_expense_analysis,
-            get_activity
+            get_activity,
+            analyze_import,
+            commit_import
         ])
         .run(tauri::generate_context!())
         .expect("LedgerKit desktop runtime failed");
