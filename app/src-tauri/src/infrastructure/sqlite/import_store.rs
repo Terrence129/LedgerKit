@@ -764,10 +764,31 @@ fn build_event_inputs(
             continue;
         }
         let result = (|| -> ApplicationResult<CashEventInput> {
+            let effective_date = LocalDate::parse(value(row, "date"))?;
+            let event_type = EventInputType::parse(value(row, "type"))?;
+            let (cutover_date, migration_policy) = if event_type == EventInputType::OpeningBalance {
+                let account = parsed
+                    .rows
+                    .iter()
+                    .find(|candidate| {
+                        candidate.sheet == "资金子账户"
+                            && value(candidate, "legacy_id") == value(row, "account_legacy_id")
+                    })
+                    .ok_or(ApplicationError::ImportFileInvalid)?;
+                if value(account, "migration_policy") != "full_history" {
+                    return Err(ApplicationError::ImportFileInvalid);
+                }
+                (
+                    Some(effective_date.clone()),
+                    Some("full_history".to_owned()),
+                )
+            } else {
+                (None, None)
+            };
             Ok(CashEventInput {
-                effective_date: LocalDate::parse(value(row, "date"))?,
+                effective_date,
                 sequence: Sequence::new(parse_u64(value(row, "sequence"))?)?,
-                event_type: EventInputType::parse(value(row, "type"))?,
+                event_type,
                 account_id: Some(target(&lookup, "account", value(row, "account_legacy_id"))?),
                 from_account_id: None,
                 to_account_id: None,
@@ -787,8 +808,8 @@ fn build_event_inputs(
                     value(row, "fee_account_legacy_id"),
                 )?,
                 fee_amount: optional_decimal(value(row, "fee_amount"))?,
-                cutover_date: None,
-                migration_policy: None,
+                cutover_date,
+                migration_policy,
                 fx_overrides: parse_fx_overrides(
                     row,
                     &[
@@ -2489,7 +2510,12 @@ mod tests {
             analysis.reconciliation.difference_items,
             analysis.reconciliation.balances
         );
-        assert_eq!(analysis.proposed_events.len(), 5);
+        assert_eq!(analysis.proposed_events.len(), 6);
+        assert!(analysis.proposed_events.iter().any(|item| {
+            item.event_type == "OpeningBalance"
+                && item.source_sheet == "收支流水"
+                && item.effective_date == "2025-01-01"
+        }));
         assert!(
             analysis
                 .reconciliation
@@ -2508,7 +2534,7 @@ mod tests {
         let overview = manager
             .get_overview(&LocalDate::parse("2026-03-15").unwrap())
             .unwrap();
-        assert_eq!(overview.valued_net_assets, "7140");
+        assert_eq!(overview.valued_net_assets, "7840");
         assert_eq!(overview.mtd_expense, "35");
         assert!(overview.unvalued_assets.is_empty());
         let activity = manager

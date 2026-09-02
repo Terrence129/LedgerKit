@@ -346,9 +346,10 @@ fn write_common(workbook: &mut Workbook, kind: FixtureKind) -> Result<(), XlsxEr
 
 #[allow(clippy::too_many_lines)] // One contiguous scenario makes the fixture contract reviewable.
 fn write_full_history(workbook: &mut Workbook) -> Result<(), XlsxError> {
+    write_cash(workbook, 1, "2025-01-01", "1", "OpeningBalance", "", "100")?;
     write_cash(
         workbook,
-        1,
+        2,
         "2026-01-01",
         "1",
         "Income",
@@ -357,7 +358,7 @@ fn write_full_history(workbook: &mut Workbook) -> Result<(), XlsxError> {
     )?;
     write_cash(
         workbook,
-        2,
+        3,
         "2026-03-05",
         "1",
         "Expense",
@@ -445,7 +446,7 @@ fn write_full_history(workbook: &mut Workbook) -> Result<(), XlsxError> {
             "2026-03-15",
         ],
     )?;
-    write_checks(workbook, 5, "7140")?;
+    write_checks(workbook, 6, "7840")?;
     write_row(
         workbook.worksheet_from_name("支出分析")?,
         1,

@@ -568,7 +568,7 @@ mod tests {
         assert_eq!(valued.mtd_start_date, "2026-03-01");
         assert_eq!(valued.mtd_end_date, "2026-03-15");
         assert_eq!(valued.mtd_expense, "35");
-        assert_eq!(valued.valued_net_assets, "7140");
+        assert_eq!(valued.valued_net_assets, "7840");
     }
 
     #[test]

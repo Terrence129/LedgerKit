@@ -2,7 +2,7 @@
 
 These workbooks are deterministic, synthetic, and safe for the public repository. They contain no data derived from a private ledger.
 
-- `full-import-history.xlsx` proves full-history cash and investment replay, including a disabled account with preserved history, price/FX selection, holding metrics, checks, and the expense reference bridge.
+- `full-import-history.xlsx` proves full-history cash and investment replay, including an explicit opening-balance event, a disabled account with preserved history, price/FX selection, holding metrics, checks, and the expense reference bridge.
 - `full-import-cutover.xlsx` proves end-of-day explicit cut-over: rows dated on or before the cut-over are evidence-only, opening cash/position/performance events preserve a zero position and portfolio-level expense, and later events are replayed normally.
 - `full-import-invalid.xlsx` proves missing per-account/per-portfolio policy and an inconsistent check block the candidate switch.
 
