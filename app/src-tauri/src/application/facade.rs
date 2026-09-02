@@ -1,20 +1,25 @@
 #![forbid(unsafe_code)]
 
+use crate::domain::catalog::{BusinessId, CatalogText, CategoryKind, SemanticRole, SortOrder};
 use crate::domain::settings::UiLocale;
-use crate::domain::types::Currency;
+use crate::domain::types::{Currency, LocalDate, UuidV7};
 
+use super::catalog::{
+    CashAccount, CatalogPort, CatalogSnapshot, Category, FxRateRevision, Institution, Portfolio,
+    SecurityInstrument, SecurityPriceRevision,
+};
 use super::error::{ApplicationError, ApplicationResult};
 use super::ledger::{
     CreateLedgerCommand, LedgerPort, LedgerState, LedgerStatus, UpdateLedgerSettingsCommand,
 };
 use super::settings::{SettingsError, SettingsRepository};
 
-pub struct ApplicationFacade<L: LedgerPort, S: SettingsRepository> {
+pub struct ApplicationFacade<L: LedgerPort + CatalogPort, S: SettingsRepository> {
     ledger: L,
     shell_settings: S,
 }
 
-impl<L: LedgerPort, S: SettingsRepository> ApplicationFacade<L, S> {
+impl<L: LedgerPort + CatalogPort, S: SettingsRepository> ApplicationFacade<L, S> {
     pub const fn new(ledger: L, shell_settings: S) -> Self {
         Self {
             ledger,
@@ -101,11 +106,237 @@ impl<L: LedgerPort, S: SettingsRepository> ApplicationFacade<L, S> {
         Ok(status)
     }
 
+    /// Returns persisted setup/reference data and deterministic quality issues.
+    ///
+    /// # Errors
+    ///
+    /// Returns a stable validation or persistence error.
+    pub fn catalog_snapshot(&self, as_of_date: &str) -> ApplicationResult<CatalogSnapshot> {
+        self.ledger.catalog_snapshot(&LocalDate::parse(as_of_date)?)
+    }
+
+    /// Validates and saves an institution while preserving its stable ID.
+    ///
+    /// # Errors
+    ///
+    /// Returns a stable validation, uniqueness, reference, or persistence error.
+    #[allow(clippy::too_many_arguments)]
+    pub fn save_institution(
+        &mut self,
+        institution_id: Option<&str>,
+        business_id: &str,
+        name: &str,
+        region: Option<&str>,
+        institution_type: &str,
+        enabled: bool,
+    ) -> ApplicationResult<String> {
+        let value = Institution {
+            institution_id: parse_or_create_id(institution_id)?,
+            business_id: BusinessId::parse(business_id)?,
+            name: CatalogText::parse(name)?,
+            region: region.map(CatalogText::parse).transpose()?,
+            institution_type: CatalogText::parse(institution_type)?,
+            enabled,
+        };
+        let id = value.institution_id.to_string();
+        self.ledger.save_institution(&value)?;
+        Ok(id)
+    }
+
+    /// Validates and saves a cash account while enforcing stable references.
+    ///
+    /// # Errors
+    ///
+    /// Returns a stable validation, balance, reference, or persistence error.
+    #[allow(clippy::too_many_arguments)]
+    pub fn save_cash_account(
+        &mut self,
+        account_id: Option<&str>,
+        business_id: &str,
+        institution_id: &str,
+        name: &str,
+        purpose: &str,
+        currency: &str,
+        opened_on: Option<&str>,
+        enabled: bool,
+    ) -> ApplicationResult<String> {
+        let value = CashAccount {
+            account_id: parse_or_create_id(account_id)?,
+            business_id: BusinessId::parse(business_id)?,
+            institution_id: UuidV7::parse(institution_id)?,
+            name: CatalogText::parse(name)?,
+            purpose: CatalogText::parse(purpose)?,
+            currency: Currency::parse(currency)?,
+            opened_on: opened_on.map(LocalDate::parse).transpose()?,
+            enabled,
+        };
+        let id = value.account_id.to_string();
+        self.ledger.save_cash_account(&value)?;
+        Ok(id)
+    }
+
+    /// Validates and saves a stable category definition.
+    ///
+    /// # Errors
+    ///
+    /// Returns a stable validation, uniqueness, or persistence error.
+    #[allow(clippy::too_many_arguments)]
+    pub fn save_category(
+        &mut self,
+        category_id: Option<&str>,
+        name: &str,
+        kind: &str,
+        semantic_role: &str,
+        sort_order: u32,
+        enabled: bool,
+    ) -> ApplicationResult<String> {
+        let value = Category {
+            category_id: parse_or_create_id(category_id)?,
+            name: CatalogText::parse(name)?,
+            kind: CategoryKind::parse(kind)?,
+            semantic_role: SemanticRole::parse(semantic_role)?,
+            sort_order: SortOrder::new(sort_order)?,
+            enabled,
+        };
+        let id = value.category_id.to_string();
+        self.ledger.save_category(&value)?;
+        Ok(id)
+    }
+
+    /// Validates and saves a portfolio and settlement-account relationship.
+    ///
+    /// # Errors
+    ///
+    /// Returns a stable validation, institution, reference, or persistence error.
+    #[allow(clippy::too_many_arguments)]
+    pub fn save_portfolio(
+        &mut self,
+        portfolio_id: Option<&str>,
+        business_id: &str,
+        institution_id: &str,
+        settlement_account_id: &str,
+        name: &str,
+        portfolio_type: &str,
+        enabled: bool,
+    ) -> ApplicationResult<String> {
+        let value = Portfolio {
+            portfolio_id: parse_or_create_id(portfolio_id)?,
+            business_id: BusinessId::parse(business_id)?,
+            institution_id: UuidV7::parse(institution_id)?,
+            settlement_account_id: UuidV7::parse(settlement_account_id)?,
+            name: CatalogText::parse(name)?,
+            portfolio_type: CatalogText::parse(portfolio_type)?,
+            enabled,
+        };
+        let id = value.portfolio_id.to_string();
+        self.ledger.save_portfolio(&value)?;
+        Ok(id)
+    }
+
+    /// Validates and saves a security instrument.
+    ///
+    /// # Errors
+    ///
+    /// Returns a stable validation, uniqueness, freeze, or persistence error.
+    #[allow(clippy::too_many_arguments)]
+    pub fn save_instrument(
+        &mut self,
+        instrument_id: Option<&str>,
+        business_id: &str,
+        code: &str,
+        name: &str,
+        trade_currency: &str,
+        enabled: bool,
+    ) -> ApplicationResult<String> {
+        let value = SecurityInstrument {
+            instrument_id: parse_or_create_id(instrument_id)?,
+            business_id: BusinessId::parse(business_id)?,
+            code: CatalogText::parse(code)?,
+            name: CatalogText::parse(name)?,
+            trade_currency: Currency::parse(trade_currency)?,
+            enabled,
+        };
+        let id = value.instrument_id.to_string();
+        self.ledger.save_instrument(&value)?;
+        Ok(id)
+    }
+
+    /// Creates or activates an immutable FX-rate revision.
+    ///
+    /// # Errors
+    ///
+    /// Returns a stable Decimal, currency, immutability, or persistence error.
+    #[allow(clippy::too_many_arguments)]
+    pub fn save_fx_revision(
+        &mut self,
+        revision_id: Option<&str>,
+        rate_date: &str,
+        currency: &str,
+        rate_to_base: &str,
+        source: &str,
+        active: bool,
+    ) -> ApplicationResult<String> {
+        let base_currency = self
+            .ledger
+            .get_ledger_status(UiLocale::EnUs)?
+            .base_currency
+            .ok_or(ApplicationError::LedgerNotOpen)?;
+        let value = FxRateRevision::new(
+            parse_or_create_id(revision_id)?,
+            LocalDate::parse(rate_date)?,
+            Currency::parse(currency)?,
+            base_currency,
+            rate_to_base,
+            CatalogText::parse(source)?,
+            active,
+        )?;
+        let id = value.revision_id.to_string();
+        self.ledger.save_fx_revision(&value)?;
+        Ok(id)
+    }
+
+    /// Creates or activates an immutable security-price revision.
+    ///
+    /// # Errors
+    ///
+    /// Returns a stable Decimal, reference, immutability, or persistence error.
+    #[allow(clippy::too_many_arguments)]
+    pub fn save_price_revision(
+        &mut self,
+        revision_id: Option<&str>,
+        instrument_id: &str,
+        price_date: &str,
+        price: &str,
+        price_currency: &str,
+        source: &str,
+        active: bool,
+    ) -> ApplicationResult<String> {
+        let value = SecurityPriceRevision::new(
+            parse_or_create_id(revision_id)?,
+            UuidV7::parse(instrument_id)?,
+            LocalDate::parse(price_date)?,
+            price,
+            Currency::parse(price_currency)?,
+            CatalogText::parse(source)?,
+            active,
+        )?;
+        let id = value.revision_id.to_string();
+        self.ledger.save_price_revision(&value)?;
+        Ok(id)
+    }
+
     fn save_shell_locale(&self, locale: UiLocale) -> ApplicationResult<()> {
         self.shell_settings
             .save_ui_locale(locale)
             .map_err(map_settings_error)
     }
+}
+
+fn parse_or_create_id(value: Option<&str>) -> ApplicationResult<UuidV7> {
+    value
+        .map(UuidV7::parse)
+        .transpose()?
+        .map_or_else(|| UuidV7::new().map_err(ApplicationError::from), Ok)
 }
 
 fn parse_locale(value: &str) -> ApplicationResult<UiLocale> {

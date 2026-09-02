@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-save-portfolio"
+description = "Enables the save_portfolio command without any pre-configured scope."
+commands.allow = ["save_portfolio"]
+
+[[permission]]
+identifier = "deny-save-portfolio"
+description = "Denies the save_portfolio command without any pre-configured scope."
+commands.deny = ["save_portfolio"]

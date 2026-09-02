@@ -1,13 +1,20 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "The local main window can call only the four M2 foundation operations.",
+  "description": "The local main window can call only the eleven completed M2 setup and catalog operations.",
   "windows": ["main"],
   "permissions": [
     "core:app:default",
     "allow-create-ledger",
     "allow-open-ledger",
     "allow-get-ledger-status",
-    "allow-update-settings"
+    "allow-update-settings",
+    "allow-save-institution",
+    "allow-save-cash-account",
+    "allow-save-category",
+    "allow-save-portfolio",
+    "allow-save-instrument",
+    "allow-save-fx-revision",
+    "allow-save-price-revision"
   ]
 }

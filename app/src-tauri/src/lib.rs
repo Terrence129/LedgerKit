@@ -11,7 +11,11 @@ use infrastructure::file_settings::FileSettingsRepository;
 use infrastructure::sqlite::SqliteLedgerManager;
 use tauri::Manager;
 
-use crate::ipc::{AppState, create_ledger, get_ledger_status, open_ledger, update_settings};
+use crate::ipc::{
+    AppState, create_ledger, get_ledger_status, open_ledger, save_cash_account, save_category,
+    save_fx_revision, save_institution, save_instrument, save_portfolio, save_price_revision,
+    update_settings,
+};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 /// Starts the single `LedgerKit` desktop process tree.
@@ -42,7 +46,14 @@ pub fn run() {
             create_ledger,
             open_ledger,
             get_ledger_status,
-            update_settings
+            update_settings,
+            save_institution,
+            save_cash_account,
+            save_category,
+            save_portfolio,
+            save_instrument,
+            save_fx_revision,
+            save_price_revision
         ])
         .run(tauri::generate_context!())
         .expect("LedgerKit desktop runtime failed");

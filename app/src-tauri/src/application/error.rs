@@ -24,6 +24,9 @@ pub enum ApplicationError {
     SchemaValidationFailed,
     TransactionFailed,
     ApplicationStateUnavailable,
+    CatalogEntityNotFound,
+    CatalogDuplicate,
+    CatalogReferenceInvalid,
 }
 
 impl ApplicationError {
@@ -46,6 +49,31 @@ impl ApplicationError {
             Self::SchemaValidationFailed => "SCHEMA_VALIDATION_FAILED",
             Self::TransactionFailed => "TRANSACTION_FAILED",
             Self::ApplicationStateUnavailable => "APPLICATION_STATE_UNAVAILABLE",
+            Self::CatalogEntityNotFound => "CATALOG_ENTITY_NOT_FOUND",
+            Self::CatalogDuplicate => "CATALOG_DUPLICATE",
+            Self::CatalogReferenceInvalid => "CATALOG_REFERENCE_INVALID",
+        }
+    }
+
+    #[must_use]
+    pub const fn field(self) -> Option<&'static str> {
+        match self {
+            Self::InvalidLocale => Some("uiLocale"),
+            Self::Domain(DomainError::CurrencyInvalid | DomainError::FxSelfRateImmutable) => {
+                Some("currency")
+            }
+            Self::Domain(DomainError::LocalDateInvalid) => Some("date"),
+            Self::Domain(DomainError::UuidV7Invalid) => Some("id"),
+            Self::Domain(DomainError::CatalogTextInvalid) => Some("name"),
+            Self::Domain(DomainError::BusinessIdInvalid) => Some("businessId"),
+            Self::Domain(DomainError::CategoryKindInvalid) => Some("kind"),
+            Self::Domain(DomainError::SemanticRoleInvalid) => Some("semanticRole"),
+            Self::Domain(DomainError::SortOrderInvalid) => Some("sortOrder"),
+            Self::Domain(DomainError::PositiveValueRequired) => Some("value"),
+            Self::Domain(DomainError::PortfolioInstitutionMismatch) => Some("settlementAccountId"),
+            Self::Domain(DomainError::AccountBalanceNonzero) => Some("enabled"),
+            Self::Domain(DomainError::RevisionImmutable) => Some("revisionId"),
+            _ => None,
         }
     }
 }

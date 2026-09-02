@@ -20,6 +20,16 @@ pub enum DomainError {
     InstrumentCurrencyFrozen,
     EventInvariantViolation,
     PostingInvariantViolation,
+    CatalogTextInvalid,
+    BusinessIdInvalid,
+    CategoryKindInvalid,
+    SemanticRoleInvalid,
+    SortOrderInvalid,
+    PositiveValueRequired,
+    FxSelfRateImmutable,
+    PortfolioInstitutionMismatch,
+    AccountBalanceNonzero,
+    RevisionImmutable,
 }
 
 impl DomainError {
@@ -44,6 +54,16 @@ impl DomainError {
             Self::InstrumentCurrencyFrozen => "INSTRUMENT_TRADE_CURRENCY_FROZEN",
             Self::EventInvariantViolation => "EVENT_INVARIANT_VIOLATION",
             Self::PostingInvariantViolation => "POSTING_INVARIANT_VIOLATION",
+            Self::CatalogTextInvalid => "CATALOG_TEXT_INVALID",
+            Self::BusinessIdInvalid => "BUSINESS_ID_INVALID",
+            Self::CategoryKindInvalid => "CATEGORY_KIND_INVALID",
+            Self::SemanticRoleInvalid => "SEMANTIC_ROLE_INVALID",
+            Self::SortOrderInvalid => "SORT_ORDER_INVALID",
+            Self::PositiveValueRequired => "POSITIVE_VALUE_REQUIRED",
+            Self::FxSelfRateImmutable => "FX_SELF_RATE_IMMUTABLE",
+            Self::PortfolioInstitutionMismatch => "PORTFOLIO_INSTITUTION_MISMATCH",
+            Self::AccountBalanceNonzero => "ACCOUNT_BALANCE_NONZERO",
+            Self::RevisionImmutable => "MARKET_REVISION_IMMUTABLE",
         }
     }
 }

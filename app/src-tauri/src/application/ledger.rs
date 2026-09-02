@@ -43,6 +43,9 @@ pub struct LedgerStatus {
     pub projection_watermark: u64,
     pub calculation_version: &'static str,
     pub blocked_reason: Option<&'static str>,
+    pub database_location: Option<String>,
+    pub backup_protection_state: String,
+    pub device_loss_protected: bool,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

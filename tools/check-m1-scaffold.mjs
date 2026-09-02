@@ -62,8 +62,21 @@ if (pluginCount > 8) fail(`Tauri plugin budget exceeded: ${pluginCount}/8`);
 const capability = readJson(join(appRoot, "src-tauri/capabilities/main.json"));
 const privilegedPermissions = capability.permissions.filter((item) => item.startsWith("allow-"));
 if (privilegedPermissions.length > 25) fail(`privileged IPC budget exceeded: ${privilegedPermissions.length}/25`);
-if (JSON.stringify(privilegedPermissions.sort()) !== JSON.stringify(["allow-create-ledger", "allow-get-ledger-status", "allow-open-ledger", "allow-update-settings"])) {
-  fail("M2 foundation capability must contain exactly create_ledger, open_ledger, get_ledger_status, and update_settings");
+const expectedPermissions = [
+  "allow-create-ledger",
+  "allow-get-ledger-status",
+  "allow-open-ledger",
+  "allow-save-cash-account",
+  "allow-save-category",
+  "allow-save-fx-revision",
+  "allow-save-institution",
+  "allow-save-instrument",
+  "allow-save-portfolio",
+  "allow-save-price-revision",
+  "allow-update-settings",
+];
+if (JSON.stringify(privilegedPermissions.sort()) !== JSON.stringify(expectedPermissions)) {
+  fail("M2 catalog capability set differs from the eleven reviewed operations");
 }
 
 const sourceFiles = walkFiles(join(appRoot, "src")).filter((path) => /\.(ts|tsx)$/.test(path));

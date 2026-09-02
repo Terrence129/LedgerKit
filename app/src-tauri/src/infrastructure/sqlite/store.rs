@@ -32,9 +32,9 @@ pub const CALCULATION_VERSION: &str = "ledger-calculation-v1";
 const LEDGER_FILENAME: &str = "ledger.sqlite3";
 
 pub struct SqliteLedgerManager {
-    database_path: PathBuf,
+    pub(super) database_path: PathBuf,
     backup: VerifiedSqliteMigrationBackup,
-    store: Option<LedgerStore>,
+    pub(super) store: Option<LedgerStore>,
 }
 
 impl SqliteLedgerManager {
@@ -55,7 +55,7 @@ impl LedgerPort for SqliteLedgerManager {
         }
         let connection = MigrationRunner::create_new(&self.database_path)?;
         let store = LedgerStore::initialize(connection, command.base_currency, command.ui_locale)?;
-        let status = store.status()?;
+        let status = self.with_database_location(store.status()?);
         self.store = Some(store);
         Ok(status)
     }
@@ -66,32 +66,37 @@ impl LedgerPort for SqliteLedgerManager {
         }
         let connection = MigrationRunner::open_existing(&self.database_path, &mut self.backup)?;
         let store = LedgerStore::from_open_connection(connection)?;
-        let status = store.status()?;
+        let status = self.with_database_location(store.status()?);
         self.store = Some(store);
         Ok(status)
     }
 
     fn get_ledger_status(&self, fallback_locale: UiLocale) -> ApplicationResult<LedgerStatus> {
         if let Some(store) = &self.store {
-            return store.status();
+            return store
+                .status()
+                .map(|status| self.with_database_location(status));
         }
         if !self.database_path.exists() {
-            return Ok(empty_status(LedgerState::NotCreated, fallback_locale, None));
+            return Ok(self.with_database_location(empty_status(
+                LedgerState::NotCreated,
+                fallback_locale,
+                None,
+            )));
         }
         match inspect_read_only(&self.database_path) {
-            Ok(identity) if identity.schema_version <= SCHEMA_VERSION => {
-                Ok(empty_status(LedgerState::Closed, fallback_locale, None))
-            }
-            Ok(_) => Ok(empty_status(
+            Ok(identity) if identity.schema_version <= SCHEMA_VERSION => Ok(self
+                .with_database_location(empty_status(LedgerState::Closed, fallback_locale, None))),
+            Ok(_) => Ok(self.with_database_location(empty_status(
                 LedgerState::Blocked,
                 fallback_locale,
                 Some(ApplicationError::SchemaTooNew.code()),
-            )),
-            Err(error) => Ok(empty_status(
+            ))),
+            Err(error) => Ok(self.with_database_location(empty_status(
                 LedgerState::Blocked,
                 fallback_locale,
                 Some(error.code()),
-            )),
+            ))),
         }
     }
 
@@ -99,10 +104,19 @@ impl LedgerPort for SqliteLedgerManager {
         &mut self,
         command: &UpdateLedgerSettingsCommand,
     ) -> ApplicationResult<LedgerStatus> {
-        self.store
+        let status = self
+            .store
             .as_mut()
             .ok_or(ApplicationError::LedgerNotOpen)?
-            .update_settings(command)
+            .update_settings(command)?;
+        Ok(self.with_database_location(status))
+    }
+}
+
+impl SqliteLedgerManager {
+    fn with_database_location(&self, mut status: LedgerStatus) -> LedgerStatus {
+        status.database_location = Some(self.database_path.to_string_lossy().into_owned());
+        status
     }
 }
 
@@ -147,6 +161,9 @@ fn empty_status(
         projection_watermark: 0,
         calculation_version: CALCULATION_VERSION,
         blocked_reason,
+        database_location: None,
+        backup_protection_state: "not-configured".to_owned(),
+        device_loss_protected: false,
     }
 }
 
@@ -161,7 +178,7 @@ pub enum CommitFailpoint {
 }
 
 pub struct LedgerStore {
-    connection: Connection,
+    pub(super) connection: Connection,
 }
 
 impl LedgerStore {
@@ -248,6 +265,14 @@ impl LedgerStore {
                 |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
             )
             .map_err(|_| ApplicationError::SchemaValidationFailed)?;
+        let backup_protection_state: String = self
+            .connection
+            .query_row(
+                "SELECT protection_state FROM backup_status WHERE singleton_id=1",
+                [],
+                |row| row.get(0),
+            )
+            .map_err(|_| ApplicationError::SchemaValidationFailed)?;
         let event_watermark: i64 = self
             .connection
             .query_row(
@@ -279,6 +304,9 @@ impl LedgerStore {
                 .map_err(|_| ApplicationError::SchemaValidationFailed)?,
             calculation_version: CALCULATION_VERSION,
             blocked_reason: None,
+            database_location: None,
+            device_loss_protected: backup_protection_state == "protected",
+            backup_protection_state,
         })
     }
 
@@ -517,7 +545,7 @@ fn maybe_fail(actual: CommitFailpoint, expected: CommitFailpoint) -> Application
     }
 }
 
-fn map_sqlite_error(error: rusqlite::Error) -> ApplicationError {
+pub(super) fn map_sqlite_error(error: rusqlite::Error) -> ApplicationError {
     let rusqlite::Error::SqliteFailure(_, Some(message)) = error else {
         return ApplicationError::TransactionFailed;
     };
@@ -527,6 +555,10 @@ fn map_sqlite_error(error: rusqlite::Error) -> ApplicationError {
         DomainError::CashAccountCurrencyFrozen.into()
     } else if message.contains("INSTRUMENT_TRADE_CURRENCY_FROZEN") {
         DomainError::InstrumentCurrencyFrozen.into()
+    } else if message.contains("UNIQUE constraint failed") {
+        ApplicationError::CatalogDuplicate
+    } else if message.contains("FOREIGN KEY constraint failed") {
+        ApplicationError::CatalogReferenceInvalid
     } else {
         ApplicationError::TransactionFailed
     }

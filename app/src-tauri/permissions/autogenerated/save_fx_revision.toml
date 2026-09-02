@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-save-fx-revision"
+description = "Enables the save_fx_revision command without any pre-configured scope."
+commands.allow = ["save_fx_revision"]
+
+[[permission]]
+identifier = "deny-save-fx-revision"
+description = "Denies the save_fx_revision command without any pre-configured scope."
+commands.deny = ["save_fx_revision"]

@@ -90,6 +90,11 @@ impl Decimal {
         self.value.is_zero()
     }
 
+    #[must_use]
+    pub const fn is_positive(&self) -> bool {
+        self.value.is_sign_positive() && !self.value.is_zero()
+    }
+
     /// Adds without implicit rounding.
     ///
     /// # Errors
