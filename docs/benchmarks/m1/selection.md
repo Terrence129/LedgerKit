@@ -88,7 +88,9 @@ The selected spike was not adopted wholesale. `app` contains a deliberately redu
 
 The fresh production Release profile compiled in 3 min 19 s on the same development machine; package overhead completed inside the 10-minute hard limit. The localized MSVC linker “creating import library” line is compiler-classified `linker_messages` output rather than a source warning and is explicitly allowed; Clippy still denies all warnings.
 
-`tools/check.ps1`, `tools/test.ps1` and `tools/build.ps1` each bootstrap locked npm dependencies, so a clean checkout needs one command for checks/tests and one for the package. Final task-04 verification records the clean-checkout result after the stage commit, before merging to `main`.
+`tools/check.ps1`, `tools/test.ps1` and `tools/build.ps1` each bootstrap locked npm dependencies, so a clean checkout needs one command for checks/tests and one for the package. A separate clean clone of stage commit `8c7366a` passed all three entry points on 2026-09-02: 6 frontend tests, 5 Rust tests, the complete M0 gate, M1 scaffold and privacy checks, and the NSIS build. Its installer was 1,782,022 bytes with SHA-256 `666301DF5B73AFB0319BB30406BE0CA72C930E51A6F9B8F17385A9A3C627A4DA`; installation, main-window readiness, normal close, uninstall and directory removal all passed, with a 7,789,337-byte installed payload.
+
+The clean-clone NSIS bytes and hash differ from the working-tree build above even though both came from the same locked source. M1 gates package size and lifecycle rather than bit-for-bit installer reproducibility, so no reproducible-installer claim is made.
 
 ## Retention and exclusions
 
