@@ -1,0 +1,37 @@
+[package]
+name = "ledgerkit-desktop"
+version = "0.1.0"
+description = "LedgerKit local-first personal finance desktop application"
+authors = ["LedgerKit contributors"]
+edition = "2024"
+rust-version = "1.98"
+license = "MIT"
+default-run = "ledgerkit-desktop"
+
+[lib]
+name = "ledgerkit_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "=2.6.3", features = [] }
+
+[dependencies]
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.151"
+tauri = { version = "=2.11.5", default-features = false, features = ["common-controls-v6", "compression", "wry"] }
+
+[target.'cfg(windows)'.dependencies]
+webview2-com = "=0.38.2"
+windows-core = "=0.61.2"
+
+[lints.rust]
+elided_lifetimes_in_paths = "deny"
+linker_messages = "allow"
+unsafe_op_in_unsafe_fn = "deny"
+unused_lifetimes = "deny"
+unused_qualifications = "deny"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "deny", priority = -1 }
+module_name_repetitions = "allow"

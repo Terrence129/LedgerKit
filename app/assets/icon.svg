@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="LedgerKit L mark">
+  <rect width="512" height="512" rx="112" fill="#265e3c"/>
+  <path d="M154 112h72v221h148v67H154z" fill="#fbfdf9"/>
+  <path d="M254 184h120v58H254z" fill="#8cc89a"/>
+</svg>

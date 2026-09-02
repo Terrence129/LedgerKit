@@ -1,10 +1,10 @@
 # Agent Context
 
-> 状态：M0 完成，Ready for M1
+> 状态：M1 完成，Ready for M2
 >
-> M1-A 状态：Tauri 样机已通过全部硬门禁，Ready for M1-B 同口径比较
+> M0 状态：完成
 >
-> M1-B 状态：Avalonia Native AOT 样机已通过全部硬门禁，Ready for M1 Gate 技术栈选择
+> M1 状态：Tauri 2 + React/TypeScript + Rust Core 已选择并建立生产骨架
 >
 > 最后验证：2026-09-02
 >
@@ -34,11 +34,17 @@ LedgerKit 是单用户、本地优先、隐私友好的多币种现金、投资�
 - M0 已接受模块化单体/本地 SQLite、类型化事件/确定性 posting/可重建投影、`decimal-contract-v1`、逐笔移动加权平均、修订/冲正、逐账户/组合迁移策略、冻结交易 FX/动态估值和 `expense-analysis-query/v1`；权威内容见 [`docs/adr/README.md`](adr/README.md)。
 - M0 黄金基线包含开发计划书 14.2 的 31 组技术栈无关合成 fixture、六类 JSON Schema、规范序列化/哈希和跨栈消费说明；验证入口为 [`tools/check-m0-fixtures.ps1`](../tools/check-m0-fixtures.ps1)。
 
+## 已接受的 M1 决策
+
+- ADR-0001 已按确定性门禁选择 Tauri 2 + React/TypeScript + Rust Core；Avalonia Native AOT 作为有实测证据的反转基线。双栈逐项报告见 [`benchmarks/m1/selection.md`](benchmarks/m1/selection.md)。
+- ADR-0007 已选择 Rust `calamine` + `rust_xlsxwriter` 作为隔离于 Infrastructure 的已知模板 XLSX 读写适配器。
+- ADR-0008 已确定 P0 活库使用标准 SQLite、不使用 SQLCipher；便携备份使用版本化 Argon2id + AES-256-GCM 随机 data-key 封装格式。
+- ADR-0009 已固定标准薄包复用系统 Evergreen WebView2；离线 runtime 包若发布必须单独计量。
+- ADR-0010 已固定 P0 不自动联网更新，代码签名和自动更新留到 P1；Beta 明确未签名。
+
 ## 暂定方案（尚未 Accepted）
 
-- 技术栈首选 Tauri 2 + React/TypeScript + Rust Core + SQLite；M1 与 .NET/Avalonia 风险样机比较后接受 ADR-0001。
 - Tauri 样机已验证可重建支出日聚合投影能满足 10 万事件门禁；该方案仅记录于 Proposed ADR-0015，未获接受，不得作为后续权威实现依据。
-- P0 支持密码加密的便携备份；是否引入 SQLCipher 由威胁模型和 M1 PoC 决定。
 - 本位币出现依赖记录后不可原地修改；需要新账本和显式迁移。
 
 不得把本节的暂定方案描述成最终结论。
@@ -51,24 +57,22 @@ LedgerKit 是单用户、本地优先、隐私友好的多币种现金、投资�
 
 ### M1
 
-- 技术栈必须通过真实 SQLite、已知模板 XLSX、安装包、完整进程树、默认网络、启动/内存和依赖预算验证。
-- 数据库加密、备份加密、WebView2 分发与发布签名策略需要 PoC/ADR。
-- Tauri M1 样机报告见 [`benchmarks/m1/tauri.md`](benchmarks/m1/tauri.md)：完整进程树 idle RSS P95 为 147,173,376 bytes，正式五分钟运行观察到零远程 endpoint，冷启动 P95 为 1,024.195 ms，100k 支出 cold/warm P95 为 2.6740/2.1098 ms，全部硬门禁通过。该单栈结果仍不能据此接受 ADR-0001 或选择技术栈。
-- Avalonia M1 样机报告见 [`benchmarks/m1/avalonia.md`](benchmarks/m1/avalonia.md)：framework-dependent 冷启动 P95 2,845.878 ms 未通过，但 deployable Native AOT 冷启动 P95 849.659 ms、idle RSS P95 95,350,784 bytes，正式五分钟运行观察到零远程 endpoint，100k 支出 cold/warm P95 为 2.6989/1.8187 ms，最终 AOT 安装包 17,675,474 bytes、实装载荷 68,005,284 bytes，全部硬门禁通过。双栈报告已齐备，但仍须任务 04 明确选择并接受 ADR-0001。
+- 无。两套样机均通过硬门禁；任务 04 已按授权规则选择 Tauri，并由 ADR-0001、0007–0010 和 [`benchmarks/m1/selection.md`](benchmarks/m1/selection.md) 关闭门禁。
 
 ## 当前工作区
 
 - 已有完整开发计划书和 agent 工作区规范。
-- 已有 [`implementation-prompts/README.md`](implementation-prompts/README.md) 索引的 14 阶段串行实现提示词包，覆盖 M0 决策、M1 双栈门禁、M2–M6 实现和 Beta 候选审计；任务 01–03 已完成，任务 04–14 尚未执行。
+- 已有 [`implementation-prompts/README.md`](implementation-prompts/README.md) 索引的 14 阶段串行实现提示词包，覆盖 M0 决策、M1 双栈门禁、M2–M6 实现和 Beta 候选审计；任务 01–04 已完成，任务 05–14 尚未执行。
 - GitHub 公开仓库为 `Terrence129/LedgerKit`，默认分支为 `main`。
-- 已创建八份 M0 Accepted ADR、Proposed ADR-0015、31 组正式合成黄金 fixture、JSON Schema、确定性生成器和 M0 检查命令；尚未创建生产应用骨架或生产数据库 schema，`spikes/tauri` 与 `spikes/avalonia` 均为一次性样机。
-- 尚未建立全项目统一的 `check/test/build` 命令；M0 fixture 使用 `pwsh -NoProfile -File tools/check-m0-fixtures.ps1`，两个 M1 样机各有目录内检查与测量脚本，后续阶段仍必须报告实际运行的检查。
+- 已创建十三份 Accepted ADR、Proposed ADR-0015、31 组正式合成黄金 fixture、JSON Schema、确定性生成器和 M0 检查命令；生产数据库 schema 将在 M2 建立。
+- 已建立 `app` 生产骨架、锁文件、固定 Node/Rust 工具链、严格 TypeScript/Clippy、最小 unsafe allowlist、两套键一致本地化资源、持久化即时语言切换、设计 token 和健康首页。UI 只有 `get_ledger_status` 与 `update_settings` 两个具名 IPC。
+- 已建立统一 `tools/check.ps1`、`tools/test.ps1`、`tools/build.ps1` 和 Windows CI；生产依赖清单见 [`production-dependencies.md`](production-dependencies.md)。一次性 `spikes/` 源码已从当前树删除，仍保留在 Git 历史。
 
 ## 下一步建议
 
-1. 按串行协议执行任务 04 的 M1 Gate，对两份同口径报告进行选择并更新 ADR-0001；本任务不自动启动该阶段。
-2. 选择时必须保留 framework-dependent Avalonia 冷启动失败、Native AOT 约束、Tauri WebView2 约束和双栈完整载荷/维护成本，不得只比较单一最优数字。
-3. ADR-0001 接受且 M1 Gate 完整关闭后，才能按选定栈进入任务 05；不要提前批量开发 UI。
+1. 按串行协议执行任务 05，建立权威 Core、Schema v1、受控 migration 和四个基础 Application 操作；本任务不自动启动该阶段。
+2. M2 必须保持当前 `UI → typed IPC → Application → Domain` 方向，SQLite 和 Excel 只能由 Rust Infrastructure 实现端口。
+3. ADR-0015 仍为 Proposed；任务 05 不得因为样机性能结果自行把支出日聚合投影变成生产架构。
 
 ## 更新规则
 

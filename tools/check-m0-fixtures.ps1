@@ -47,8 +47,8 @@ if ($financialRulesText -match '（Proposed）') {
 }
 
 $agentContextText = Get-Content -LiteralPath (Join-Path $repositoryRoot 'docs/agent-context.md') -Raw
-if ($agentContextText -notmatch '(?m)^> 状态：M0 完成，Ready for M1$') {
-    throw 'agent-context.md does not record M0 completion and M1 readiness.'
+if ($agentContextText -notmatch '(?m)^> M0 状态：完成$') {
+    throw 'agent-context.md does not retain the completed M0 milestone.'
 }
 
 $fixtureDirectories = @(Get-ChildItem -LiteralPath $fixturesRoot -Directory | Where-Object Name -Match '^[0-9]{2}-' | Sort-Object Name)
@@ -82,4 +82,4 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Output "Validated $validated JSON files against schemas."
-Write-Output "Validated $($acceptedAdrs.Count) Accepted ADRs and synchronized M0 status documents."
+Write-Output "Validated $($acceptedAdrs.Count) M0 Accepted ADRs and the retained M0 milestone."

@@ -20,6 +20,7 @@
 | [`implementation-prompts/README.md`](implementation-prompts/README.md) | 从 M0 到 1.0 Beta 的 14 阶段串行执行提示词 | 准备或执行应用实施任务 |
 | [`operations/migration.md`](operations/migration.md) | Excel staging、cut-over、对账和切换 | 导入与迁移任务 |
 | [`operations/backup-restore.md`](operations/backup-restore.md) | 一致性备份、恢复和升级安全顺序 | 数据安全与发布任务 |
+| [`production-dependencies.md`](production-dependencies.md) | 已锁定生产依赖、预算与延期适配器 | 新增/升级依赖或发布审计 |
 | [`../fixtures/sanitized/README.md`](../fixtures/sanitized/README.md) | 脱敏黄金样例格式和变更规则 | 测试与财务实现任务 |
 
 ## 更新原则

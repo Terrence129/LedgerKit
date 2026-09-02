@@ -40,6 +40,11 @@ target/
 bin/
 obj/
 coverage/
+*.tsbuildinfo
+
+# One-time M1 spike sources are retained only in Git history. Local ignored
+# measurement artifacts may remain for audit but can never enter new commits.
+spikes/
 
 # Editors and operating systems
 .idea/

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "LedgerKit",
+  "version": "0.1.0",
+  "identifier": "com.ledgerkit.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "LedgerKit",
+        "width": 1080,
+        "height": 760,
+        "minWidth": 640,
+        "minHeight": 560,
+        "resizable": true,
+        "incognito": true,
+        "browserExtensionsEnabled": false,
+        "generalAutofillEnabled": false,
+        "additionalBrowserArgs": "--disable-background-networking --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --disable-crash-reporter --disable-default-apps --disable-domain-reliability --disable-extensions --disable-sync --metrics-recording-only --no-first-run --disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection,msOneAuthWAM,AutofillServerCommunication,CertificateTransparencyComponentUpdater,OptimizationHints,MediaRouter"
+      }
+    ],
+    "security": {
+      "capabilities": ["main"],
+      "csp": "default-src 'self' customprotocol: asset:; connect-src ipc: http://ipc.localhost; img-src 'self' asset: data:; style-src 'self' 'unsafe-inline'; script-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "category": "Finance",
+    "shortDescription": "Local-first personal finance desktop application",
+    "windows": {
+      "webviewInstallMode": {
+        "type": "skip"
+      },
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
+  }
+}

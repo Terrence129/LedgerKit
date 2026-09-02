@@ -1,0 +1,11 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main",
+  "description": "The local main window can call only the two M1 scaffold operations.",
+  "windows": ["main"],
+  "permissions": [
+    "core:app:default",
+    "allow-get-ledger-status",
+    "allow-update-settings"
+  ]
+}
