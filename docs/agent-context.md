@@ -17,7 +17,7 @@ LedgerKit 是单用户、本地优先、隐私友好的多币种现金、投资�
 权威源工作簿基线：
 
 - 文件名：`多币种个人账本v1.3.0.xlsx`
-- SHA-256：`E8B7D7BB743AE79AB51980115CD8BC88DC7E2E149295F56E5B6521BFCDF5F41D`
+- SHA-256：`20CAFF41D7E5D08F71591CF8206DB015905BEAD40BC5AFEFD25008EE648D5820`（用户于 2026-09-03 确认为新的权威迁移源）
 - 当前工作站定位：读取 Git 忽略的 `docs/local/private-source-workbook.md`；真实源调查、功能微调、最终对账或 cut-over 前必须按其中说明校验并使用副本。
 - 真实文件不得提交、复制到 fixture 或在公开材料中披露内容。
 
