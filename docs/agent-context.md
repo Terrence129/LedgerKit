@@ -4,6 +4,8 @@
 >
 > M1-A 状态：Tauri 样机已通过全部硬门禁，Ready for M1-B 同口径比较
 >
+> M1-B 状态：Avalonia Native AOT 样机已通过全部硬门禁，Ready for M1 Gate 技术栈选择
+>
 > 最后验证：2026-09-02
 >
 > 用途：为新任务提供短期导航和当前事实；不是决策权威或工作日志。
@@ -51,20 +53,21 @@ LedgerKit 是单用户、本地优先、隐私友好的多币种现金、投资�
 - 技术栈必须通过真实 SQLite、已知模板 XLSX、安装包、完整进程树、默认网络、启动/内存和依赖预算验证。
 - 数据库加密、备份加密、WebView2 分发与发布签名策略需要 PoC/ADR。
 - Tauri M1 样机报告见 [`benchmarks/m1/tauri.md`](benchmarks/m1/tauri.md)：完整进程树 idle RSS P95 为 147,173,376 bytes，正式五分钟运行观察到零远程 endpoint，冷启动 P95 为 1,024.195 ms，100k 支出 cold/warm P95 为 2.6740/2.1098 ms，全部硬门禁通过。该单栈结果仍不能据此接受 ADR-0001 或选择技术栈。
+- Avalonia M1 样机报告见 [`benchmarks/m1/avalonia.md`](benchmarks/m1/avalonia.md)：framework-dependent 冷启动 P95 2,845.878 ms 未通过，但 deployable Native AOT 冷启动 P95 849.659 ms、idle RSS P95 95,350,784 bytes，正式五分钟运行观察到零远程 endpoint，100k 支出 cold/warm P95 为 2.6989/1.8187 ms，最终 AOT 安装包 17,675,474 bytes、实装载荷 68,005,284 bytes，全部硬门禁通过。双栈报告已齐备，但仍须任务 04 明确选择并接受 ADR-0001。
 
 ## 当前工作区
 
 - 已有完整开发计划书和 agent 工作区规范。
-- 已有 [`implementation-prompts/README.md`](implementation-prompts/README.md) 索引的 14 阶段串行实现提示词包，覆盖 M0 决策、M1 双栈门禁、M2–M6 实现和 Beta 候选审计；任务 01、02 已完成，任务 03–14 尚未执行。
+- 已有 [`implementation-prompts/README.md`](implementation-prompts/README.md) 索引的 14 阶段串行实现提示词包，覆盖 M0 决策、M1 双栈门禁、M2–M6 实现和 Beta 候选审计；任务 01–03 已完成，任务 04–14 尚未执行。
 - GitHub 公开仓库为 `Terrence129/LedgerKit`，默认分支为 `main`。
-- 已创建八份 M0 Accepted ADR、Proposed ADR-0015、31 组正式合成黄金 fixture、JSON Schema、确定性生成器和 M0 检查命令；尚未创建生产应用骨架或生产数据库 schema，`spikes/tauri` 仅为一次性样机。
-- 尚未建立全项目统一的 `check/test/build` 命令；M0 fixture 使用 `pwsh -NoProfile -File tools/check-m0-fixtures.ps1`，Tauri 样机有其目录内的 npm/Cargo 检查，后续阶段仍必须报告实际运行的检查。
+- 已创建八份 M0 Accepted ADR、Proposed ADR-0015、31 组正式合成黄金 fixture、JSON Schema、确定性生成器和 M0 检查命令；尚未创建生产应用骨架或生产数据库 schema，`spikes/tauri` 与 `spikes/avalonia` 均为一次性样机。
+- 尚未建立全项目统一的 `check/test/build` 命令；M0 fixture 使用 `pwsh -NoProfile -File tools/check-m0-fixtures.ps1`，两个 M1 样机各有目录内检查与测量脚本，后续阶段仍必须报告实际运行的检查。
 
 ## 下一步建议
 
-1. 按串行协议执行任务 03 的 Avalonia 样机；本任务不自动启动该阶段。
-2. Avalonia 样机必须消费同一 M0/M1 fixture 并报告逐字段与 canonical hash 结果，不得维护候选栈私有预期。
-3. 两份同口径报告完成后再执行任务 04 的 M1 Gate 与 ADR-0001 选择，不提前批量开发 UI。
+1. 按串行协议执行任务 04 的 M1 Gate，对两份同口径报告进行选择并更新 ADR-0001；本任务不自动启动该阶段。
+2. 选择时必须保留 framework-dependent Avalonia 冷启动失败、Native AOT 约束、Tauri WebView2 约束和双栈完整载荷/维护成本，不得只比较单一最优数字。
+3. ADR-0001 接受且 M1 Gate 完整关闭后，才能按选定栈进入任务 05；不要提前批量开发 UI。
 
 ## 更新规则
 

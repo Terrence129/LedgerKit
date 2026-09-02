@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LedgerKit.AvaloniaSpike.Core/LedgerKit.AvaloniaSpike.Core.csproj" />
+    <Project Path="src/LedgerKit.AvaloniaSpike/LedgerKit.AvaloniaSpike.csproj" />
+  </Folder>
+  <Folder Name="/quality/">
+    <Project Path="checks/LedgerKit.AvaloniaSpike.Checks/LedgerKit.AvaloniaSpike.Checks.csproj" />
+    <Project Path="benchmarks/LedgerKit.AvaloniaSpike.Benchmarks/LedgerKit.AvaloniaSpike.Benchmarks.csproj" />
+  </Folder>
+</Solution>

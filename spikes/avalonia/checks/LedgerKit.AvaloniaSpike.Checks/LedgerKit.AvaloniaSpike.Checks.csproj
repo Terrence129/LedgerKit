@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>LedgerKit.AvaloniaSpike.Checks</AssemblyName>
+    <RootNamespace>LedgerKit.AvaloniaSpike.Checks</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/LedgerKit.AvaloniaSpike.Core/LedgerKit.AvaloniaSpike.Core.csproj" />
+  </ItemGroup>
+</Project>

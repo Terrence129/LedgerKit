@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>LedgerKit.AvaloniaSpike.Core</AssemblyName>
+    <RootNamespace>LedgerKit.AvaloniaSpike.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="DocumentFormat.OpenXml" />
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="LedgerKit.AvaloniaSpike.Checks" />
+    <InternalsVisibleTo Include="LedgerKit.AvaloniaSpike.Benchmarks" />
+  </ItemGroup>
+</Project>
