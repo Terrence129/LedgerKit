@@ -17,14 +17,14 @@ fn main() {
         "reverse_event",
         "get_expense_analysis",
         "get_activity",
-        "preview_investment_event",
-        "post_investment_event",
-        "revise_investment_event",
-        "get_investment_workspace",
         "get_overview",
         "get_data_quality",
         "analyze_import",
         "commit_import",
+        "create_backup",
+        "restore_backup",
+        "get_backup_status",
+        "export_data",
     ];
     let attributes = tauri_build::Attributes::new()
         .app_manifest(tauri_build::AppManifest::new().commands(COMMANDS));

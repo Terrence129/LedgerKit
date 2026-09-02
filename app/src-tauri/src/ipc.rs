@@ -21,6 +21,7 @@ use crate::application::investment::{
     InvestmentWorkspace, PostedInvestmentEvent,
 };
 use crate::application::ledger::{LedgerState, LedgerStatus};
+use crate::application::safety::{BackupResult, BackupStatus, ExportResult, RestoreResult};
 use crate::application::settings::PRIVILEGED_OPERATION_COUNT;
 use crate::application::valuation::{DataQualityReport, Overview};
 use crate::domain::catalog::SemanticRole;
@@ -30,6 +31,7 @@ use crate::domain::investment::FeeScope;
 use crate::domain::types::{Currency, LocalDate, Sequence, UuidV7};
 use crate::infrastructure::file_settings::FileSettingsRepository;
 use crate::infrastructure::sqlite::SqliteLedgerManager;
+use zeroize::Zeroizing;
 
 type DesktopFacade = ApplicationFacade<SqliteLedgerManager, FileSettingsRepository>;
 
@@ -41,6 +43,12 @@ impl AppState {
     pub fn new(facade: DesktopFacade) -> Self {
         Self {
             facade: Arc::new(Mutex::new(facade)),
+        }
+    }
+
+    pub fn create_exit_backup(&self) {
+        if let Ok(mut facade) = self.facade.lock() {
+            facade.create_exit_backup();
         }
     }
 }
@@ -366,6 +374,27 @@ pub struct InvestmentEventRequest {
     fx_overrides: Vec<FxOverrideRequest>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum EventRequest {
+    Investment(InvestmentEventRequest),
+    Cash(CashEventRequest),
+}
+
+#[derive(Debug, Serialize)]
+#[serde(untagged)]
+pub enum EventPreviewResponse {
+    Investment(InvestmentEventPreview),
+    Cash(EventPreview),
+}
+
+#[derive(Debug, Serialize)]
+#[serde(untagged)]
+pub enum PostedEventResponse {
+    Investment(PostedInvestmentEvent),
+    Cash(PostedEvent),
+}
+
 impl InvestmentEventRequest {
     fn into_application(self) -> Result<InvestmentEventInput, CommandError> {
         Ok(InvestmentEventInput {
@@ -447,8 +476,22 @@ pub struct ReviseInvestmentEventRequest {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct InvestmentWorkspaceRequest {
+pub struct AsOfDateRequest {
     as_of_date: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct OverviewRequest {
+    as_of_date: String,
+    view: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(untagged)]
+pub enum OverviewResponse {
+    Investments(InvestmentWorkspace),
+    Summary(Box<Overview>),
 }
 
 impl CashEventRequest {
@@ -492,10 +535,17 @@ impl CashEventRequest {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct ReviseEventRequest {
+pub struct CashRevisionRequest {
     target_event_id: String,
     reason: String,
     replacement: CashEventRequest,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum ReviseEventRequest {
+    Investment(ReviseInvestmentEventRequest),
+    Cash(CashRevisionRequest),
 }
 
 #[derive(Debug, Deserialize)]
@@ -549,6 +599,25 @@ pub struct ActivityRequest {
 pub struct CommitImportRequest {
     batch_id: String,
     confirmed: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CreateBackupRequest {
+    password: String,
+    configure_external_target: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct RestoreBackupRequest {
+    password: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ExportDataRequest {
+    format: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -674,23 +743,49 @@ save_command!(
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
 pub fn preview_event(
-    request: CashEventRequest,
+    request: EventRequest,
     state: State<'_, AppState>,
-) -> Result<EventPreview, CommandError> {
-    let input = request.into_application()?;
-    lock_facade(&state)?
-        .preview_event(&input)
-        .map_err(Into::into)
+) -> Result<EventPreviewResponse, CommandError> {
+    match request {
+        EventRequest::Cash(request) => {
+            let input = request.into_application()?;
+            lock_facade(&state)?
+                .preview_event(&input)
+                .map(EventPreviewResponse::Cash)
+                .map_err(Into::into)
+        }
+        EventRequest::Investment(request) => {
+            let input = request.into_application()?;
+            lock_facade(&state)?
+                .preview_investment_event(&input)
+                .map(EventPreviewResponse::Investment)
+                .map_err(Into::into)
+        }
+    }
 }
 
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
 pub fn post_event(
-    request: CashEventRequest,
+    request: EventRequest,
     state: State<'_, AppState>,
-) -> Result<PostedEvent, CommandError> {
-    let input = request.into_application()?;
-    lock_facade(&state)?.post_event(&input).map_err(Into::into)
+) -> Result<PostedEventResponse, CommandError> {
+    match request {
+        EventRequest::Cash(request) => {
+            let input = request.into_application()?;
+            lock_facade(&state)?
+                .post_event(&input)
+                .map(PostedEventResponse::Cash)
+                .map_err(Into::into)
+        }
+        EventRequest::Investment(request) => {
+            let input = request.into_application()?;
+            lock_facade(&state)?
+                .post_investment_event(&input)
+                .map(PostedEventResponse::Investment)
+                .map_err(Into::into)
+        }
+    }
 }
 
 #[tauri::command]
@@ -698,15 +793,31 @@ pub fn post_event(
 pub fn revise_event(
     request: ReviseEventRequest,
     state: State<'_, AppState>,
-) -> Result<PostedEvent, CommandError> {
-    let input = RevisionInput {
-        target_event_id: UuidV7::parse(&request.target_event_id)?,
-        reason: request.reason,
-        replacement: request.replacement.into_application()?,
-    };
-    lock_facade(&state)?
-        .revise_event(&input)
-        .map_err(Into::into)
+) -> Result<PostedEventResponse, CommandError> {
+    match request {
+        ReviseEventRequest::Cash(request) => {
+            let input = RevisionInput {
+                target_event_id: UuidV7::parse(&request.target_event_id)?,
+                reason: request.reason,
+                replacement: request.replacement.into_application()?,
+            };
+            lock_facade(&state)?
+                .revise_event(&input)
+                .map(PostedEventResponse::Cash)
+                .map_err(Into::into)
+        }
+        ReviseEventRequest::Investment(request) => {
+            let input = InvestmentRevisionInput {
+                target_event_id: UuidV7::parse(&request.target_event_id)?,
+                reason: request.reason,
+                replacement: request.replacement.into_application()?,
+            };
+            lock_facade(&state)?
+                .revise_investment_event(&input)
+                .map(PostedEventResponse::Investment)
+                .map_err(Into::into)
+        }
+    }
 }
 
 #[tauri::command]
@@ -728,70 +839,28 @@ pub fn reverse_event(
 
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
-pub fn preview_investment_event(
-    request: InvestmentEventRequest,
-    state: State<'_, AppState>,
-) -> Result<InvestmentEventPreview, CommandError> {
-    let input = request.into_application()?;
-    lock_facade(&state)?
-        .preview_investment_event(&input)
-        .map_err(Into::into)
-}
-
-#[tauri::command]
-#[allow(clippy::needless_pass_by_value)]
-pub fn post_investment_event(
-    request: InvestmentEventRequest,
-    state: State<'_, AppState>,
-) -> Result<PostedInvestmentEvent, CommandError> {
-    let input = request.into_application()?;
-    lock_facade(&state)?
-        .post_investment_event(&input)
-        .map_err(Into::into)
-}
-
-#[tauri::command]
-#[allow(clippy::needless_pass_by_value)]
-pub fn revise_investment_event(
-    request: ReviseInvestmentEventRequest,
-    state: State<'_, AppState>,
-) -> Result<PostedInvestmentEvent, CommandError> {
-    let input = InvestmentRevisionInput {
-        target_event_id: UuidV7::parse(&request.target_event_id)?,
-        reason: request.reason,
-        replacement: request.replacement.into_application()?,
-    };
-    lock_facade(&state)?
-        .revise_investment_event(&input)
-        .map_err(Into::into)
-}
-
-#[tauri::command]
-#[allow(clippy::needless_pass_by_value)]
-pub fn get_investment_workspace(
-    request: InvestmentWorkspaceRequest,
-    state: State<'_, AppState>,
-) -> Result<InvestmentWorkspace, CommandError> {
-    lock_facade(&state)?
-        .get_investment_workspace(&request.as_of_date)
-        .map_err(Into::into)
-}
-
-#[tauri::command]
-#[allow(clippy::needless_pass_by_value)]
 pub fn get_overview(
-    request: InvestmentWorkspaceRequest,
+    request: OverviewRequest,
     state: State<'_, AppState>,
-) -> Result<Overview, CommandError> {
-    lock_facade(&state)?
-        .get_overview(&request.as_of_date)
-        .map_err(Into::into)
+) -> Result<OverviewResponse, CommandError> {
+    match request.view.as_deref() {
+        None | Some("summary") => lock_facade(&state)?
+            .get_overview(&request.as_of_date)
+            .map(Box::new)
+            .map(OverviewResponse::Summary)
+            .map_err(Into::into),
+        Some("investments") => lock_facade(&state)?
+            .get_investment_workspace(&request.as_of_date)
+            .map(OverviewResponse::Investments)
+            .map_err(Into::into),
+        Some(_) => Err(ApplicationError::InvalidView.into()),
+    }
 }
 
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
 pub fn get_data_quality(
-    request: InvestmentWorkspaceRequest,
+    request: AsOfDateRequest,
     state: State<'_, AppState>,
 ) -> Result<DataQualityReport, CommandError> {
     lock_facade(&state)?
@@ -918,6 +987,112 @@ pub async fn commit_import(
     .map_err(|_| CommandError::from(ApplicationError::ImportWorkerFailed))?
 }
 
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub async fn create_backup(
+    request: CreateBackupRequest,
+    state: State<'_, AppState>,
+) -> Result<BackupResult, CommandError> {
+    let facade = Arc::clone(&state.facade);
+    tauri::async_runtime::spawn_blocking(move || {
+        let password = Zeroizing::new(request.password);
+        let target = if request.configure_external_target {
+            rfd::FileDialog::new()
+                .pick_folder()
+                .map(|directory| -> Result<_, CommandError> {
+                    let backup_id = UuidV7::new().map_err(CommandError::from)?;
+                    Ok(directory.join(format!("ledgerkit-manual-{backup_id}.lkbackup")))
+                })
+                .transpose()?
+        } else {
+            rfd::FileDialog::new()
+                .add_filter("LedgerKit encrypted backup", &["lkbackup"])
+                .set_file_name("ledgerkit-backup.lkbackup")
+                .save_file()
+        }
+        .ok_or(CommandError::from(ApplicationError::BackupCancelled))?;
+        facade
+            .lock()
+            .map_err(|_| CommandError::from(ApplicationError::ApplicationStateUnavailable))?
+            .create_backup(
+                &target,
+                password.as_str(),
+                request.configure_external_target,
+            )
+            .map_err(Into::into)
+    })
+    .await
+    .map_err(|_| CommandError::from(ApplicationError::BackupWriteFailed))?
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub async fn restore_backup(
+    request: RestoreBackupRequest,
+    state: State<'_, AppState>,
+) -> Result<RestoreResult, CommandError> {
+    let facade = Arc::clone(&state.facade);
+    tauri::async_runtime::spawn_blocking(move || {
+        let password = Zeroizing::new(request.password);
+        let source = rfd::FileDialog::new()
+            .add_filter("LedgerKit encrypted backup", &["lkbackup"])
+            .pick_file()
+            .ok_or(CommandError::from(ApplicationError::BackupCancelled))?;
+        facade
+            .lock()
+            .map_err(|_| CommandError::from(ApplicationError::ApplicationStateUnavailable))?
+            .restore_backup(&source, password.as_str())
+            .map_err(Into::into)
+    })
+    .await
+    .map_err(|_| CommandError::from(ApplicationError::BackupRestoreFailed))?
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub async fn get_backup_status(state: State<'_, AppState>) -> Result<BackupStatus, CommandError> {
+    let facade = Arc::clone(&state.facade);
+    tauri::async_runtime::spawn_blocking(move || {
+        facade
+            .lock()
+            .map_err(|_| CommandError::from(ApplicationError::ApplicationStateUnavailable))?
+            .get_backup_status()
+            .map_err(Into::into)
+    })
+    .await
+    .map_err(|_| CommandError::from(ApplicationError::BackupWriteFailed))?
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub async fn export_data(
+    request: ExportDataRequest,
+    state: State<'_, AppState>,
+) -> Result<ExportResult, CommandError> {
+    let (extension, default_name) = match request.format.as_str() {
+        "xlsx" => ("xlsx", "ledgerkit-export.xlsx"),
+        "csv" => ("csv", "ledgerkit-events.csv"),
+        "reconciliation" => ("json", "ledgerkit-reconciliation.json"),
+        "diagnostics" => ("json", "ledgerkit-diagnostics.json"),
+        _ => return Err(ApplicationError::ExportFormatUnsupported.into()),
+    };
+    let facade = Arc::clone(&state.facade);
+    tauri::async_runtime::spawn_blocking(move || {
+        let target = rfd::FileDialog::new()
+            .add_filter("LedgerKit export", &[extension])
+            .set_file_name(default_name)
+            .save_file()
+            .ok_or(CommandError::from(ApplicationError::ExportCancelled))?;
+        facade
+            .lock()
+            .map_err(|_| CommandError::from(ApplicationError::ApplicationStateUnavailable))?
+            .export_data(&target, &request.format)
+            .map_err(Into::into)
+    })
+    .await
+    .map_err(|_| CommandError::from(ApplicationError::ExportWriteFailed))?
+}
+
 fn parse_optional_id(value: Option<&str>) -> Result<Option<UuidV7>, CommandError> {
     value.map(UuidV7::parse).transpose().map_err(Into::into)
 }
@@ -1039,8 +1214,8 @@ fn lock_facade<'a>(
 #[cfg(test)]
 mod tests {
     use super::{
-        ActivityRequest, CashEventRequest, CommitImportRequest, CreateLedgerRequest,
-        SaveFxRevisionRequest,
+        ActivityRequest, CashEventRequest, CommitImportRequest, CreateBackupRequest,
+        CreateLedgerRequest, ExportDataRequest, RestoreBackupRequest, SaveFxRevisionRequest,
     };
     use serde_json::json;
 
@@ -1098,6 +1273,22 @@ mod tests {
             "sourcePath": "D:/private/ledger.xlsx"
         });
         assert!(serde_json::from_value::<CommitImportRequest>(forged_import).is_err());
+        let forged_backup = json!({
+            "password": "synthetic-password",
+            "configureExternalTarget": false,
+            "targetPath": "D:/private/backup.lkbackup"
+        });
+        assert!(serde_json::from_value::<CreateBackupRequest>(forged_backup).is_err());
+        let forged_restore = json!({
+            "password": "synthetic-password",
+            "sourcePath": "D:/private/backup.lkbackup"
+        });
+        assert!(serde_json::from_value::<RestoreBackupRequest>(forged_restore).is_err());
+        let forged_export = json!({
+            "format": "xlsx",
+            "targetPath": "D:/private/export.xlsx"
+        });
+        assert!(serde_json::from_value::<ExportDataRequest>(forged_export).is_err());
     }
 
     #[test]

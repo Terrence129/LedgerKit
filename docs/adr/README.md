@@ -25,7 +25,7 @@ ADR 记录会改变财务结果、持久化格式、安全模型、技术栈或�
 | [ADR-0010](ADR-0010-p0-manual-update-and-unsigned-beta.md) | P0 手动更新、P1 签名与自动更新 | Accepted |
 | [ADR-0011](ADR-0011-history-cutover-migration.md) | 完整历史与 cut-over 迁移策略 | Accepted |
 | [ADR-0012](ADR-0012-market-data-revisions-as-of.md) | 汇率/价格修订、active 规则与估值 as-of | Accepted |
-| ADR-0013 | 自动备份保留、设备丢失 RPO 与恢复密钥 | Proposed |
+| [ADR-0013](ADR-0013-automatic-backup-retention-rpo-and-recovery-secret.md) | 自动备份保留、设备丢失 RPO 与恢复密钥 | Accepted |
 | [ADR-0014](ADR-0014-expense-analysis-contract.md) | 支出分析口径、系统桶、退款、缺 FX 与查询版本 | Accepted |
 | [ADR-0015](ADR-0015-rebuildable-expense-daily-projection.md) | 可重建支出日聚合投影 | Accepted |
 

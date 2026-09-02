@@ -12,11 +12,11 @@ use infrastructure::sqlite::SqliteLedgerManager;
 use tauri::Manager;
 
 use crate::ipc::{
-    AppState, analyze_import, commit_import, create_ledger, get_activity, get_data_quality,
-    get_expense_analysis, get_investment_workspace, get_ledger_status, get_overview, open_ledger,
-    post_event, post_investment_event, preview_event, preview_investment_event, reverse_event,
-    revise_event, revise_investment_event, save_cash_account, save_category, save_fx_revision,
-    save_institution, save_instrument, save_portfolio, save_price_revision, update_settings,
+    AppState, analyze_import, commit_import, create_backup, create_ledger, export_data,
+    get_activity, get_backup_status, get_data_quality, get_expense_analysis, get_ledger_status,
+    get_overview, open_ledger, post_event, preview_event, restore_backup, reverse_event,
+    revise_event, save_cash_account, save_category, save_fx_revision, save_institution,
+    save_instrument, save_portfolio, save_price_revision, update_settings,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -37,11 +37,19 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
-            if window.label() == "main"
-                && let tauri::WindowEvent::Focused(focused) = event
-                && let Some(webview_window) = window.app_handle().get_webview_window("main")
-            {
-                platform::webview::handle_focus_change(&webview_window, *focused);
+            if window.label() == "main" {
+                match event {
+                    tauri::WindowEvent::Focused(focused) => {
+                        if let Some(webview_window) = window.app_handle().get_webview_window("main")
+                        {
+                            platform::webview::handle_focus_change(&webview_window, *focused);
+                        }
+                    }
+                    tauri::WindowEvent::Destroyed => {
+                        window.state::<AppState>().create_exit_backup();
+                    }
+                    _ => {}
+                }
             }
         })
         .invoke_handler(tauri::generate_handler![
@@ -62,14 +70,14 @@ pub fn run() {
             reverse_event,
             get_expense_analysis,
             get_activity,
-            preview_investment_event,
-            post_investment_event,
-            revise_investment_event,
-            get_investment_workspace,
             get_overview,
             get_data_quality,
             analyze_import,
-            commit_import
+            commit_import,
+            create_backup,
+            restore_backup,
+            get_backup_status,
+            export_data
         ])
         .run(tauri::generate_context!())
         .expect("LedgerKit desktop runtime failed");

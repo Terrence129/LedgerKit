@@ -3,7 +3,7 @@
 use sha2::{Digest, Sha256};
 
 pub const APPLICATION_ID: u32 = 1_280_002_388;
-pub const SCHEMA_VERSION: u32 = 5;
+pub const SCHEMA_VERSION: u32 = 6;
 
 pub const REQUIRED_TABLES: &[&str] = &[
     "app_settings",
@@ -538,7 +538,9 @@ CREATE TABLE backup_status (
     last_success_at_utc TEXT,
     last_verified_schema_version INTEGER,
     last_error_code TEXT,
-    external_target_configured INTEGER NOT NULL DEFAULT 0 CHECK (external_target_configured IN (0, 1))
+    external_target_configured INTEGER NOT NULL DEFAULT 0 CHECK (external_target_configured IN (0, 1)),
+    external_target_path TEXT,
+    CHECK ((external_target_configured = 0 AND external_target_path IS NULL) OR (external_target_configured = 1 AND external_target_path IS NOT NULL AND length(trim(external_target_path)) > 0))
 ) STRICT;
 
 CREATE TABLE migration_history (

@@ -25,6 +25,7 @@ type HealthHomeProps = {
   overviewContent?: ReactNode;
   assetsContent?: ReactNode;
   qualityContent?: ReactNode;
+  safetyContent?: ReactNode;
   importContent?: ReactNode;
   onNavigate: (view: WorkspaceView) => void;
   onLocaleChange: (locale: SupportedLocale) => void;
@@ -100,10 +101,11 @@ export function HealthHome(props: HealthHomeProps) {
           </form>
           {props.importContent}
           <Protection status={status} t={t} />
+          {props.safetyContent}
         </section>
       ) : null}
       {status?.ledgerState === "closed" ? (
-        <section className="onboarding"><h1>{t("setup.closedTitle")}</h1><p>{t("setup.closedDescription")}</p><button disabled={busy} onClick={() => void props.onOpenLedger().catch(() => undefined)}>{t("setup.open")}</button><Protection status={status} t={t} /></section>
+        <section className="onboarding"><h1>{t("setup.closedTitle")}</h1><p>{t("setup.closedDescription")}</p><button disabled={busy} onClick={() => void props.onOpenLedger().catch(() => undefined)}>{t("setup.open")}</button><Protection status={status} t={t} />{props.safetyContent}</section>
       ) : null}
 
       {status?.ledgerState === "open" && catalog ? (
@@ -116,6 +118,7 @@ export function HealthHome(props: HealthHomeProps) {
           {props.activeView === "settings" ? <>
           <section className="page-heading"><p className="eyebrow">{t("catalog.eyebrow")}</p><h1>{t("catalog.title")}</h1><p className="lede">{t("catalog.description")}</p></section>
           <Protection status={status} t={t} />
+          {props.safetyContent}
           <section className="quality-card" aria-labelledby="quality-title">
             <div><p className="eyebrow">{t("quality.eyebrow")}</p><h2 id="quality-title">{t("quality.title")}</h2></div>
             {catalog.qualityIssues.length === 0 ? <p className="empty-state">{t("quality.empty")}</p> : <ul className="issue-list">{catalog.qualityIssues.map((issue) => <li key={`${issue.code}-${issue.entityId}`}><strong>{t(`quality.${issue.code}` as Parameters<typeof translate>[1])}</strong><code>{issue.entityId}</code><span>{t("quality.fix")}: {issue.fixField}</span></li>)}</ul>}

@@ -23,6 +23,9 @@ use super::investment::{
 use super::ledger::{
     CreateLedgerCommand, LedgerPort, LedgerState, LedgerStatus, UpdateLedgerSettingsCommand,
 };
+use super::safety::{
+    BackupResult, BackupStatus, ExportFormat, ExportResult, RestoreResult, SafetyPort,
+};
 use super::settings::{SettingsError, SettingsRepository};
 use super::valuation::{DataQualityReport, Overview, ValuationPort};
 
@@ -32,6 +35,84 @@ pub struct ApplicationFacade<
 > {
     ledger: L,
     shell_settings: S,
+}
+
+impl<
+    L: LedgerPort + CatalogPort + CashPort + InvestmentPort + ValuationPort + SafetyPort,
+    S: SettingsRepository,
+> ApplicationFacade<L, S>
+{
+    fn backup_settings_json(&self) -> ApplicationResult<String> {
+        let locale = self
+            .shell_settings
+            .load_ui_locale()
+            .map_err(map_settings_error)?
+            .unwrap_or(UiLocale::EnUs);
+        serde_json::to_string(&serde_json::json!({ "uiLocale": locale.as_str() }))
+            .map_err(|_| ApplicationError::StorageUnavailable)
+    }
+
+    /// Creates a verified portable backup at a path granted by the native picker.
+    ///
+    /// # Errors
+    ///
+    /// Returns a stable validation, snapshot, encryption, or write error.
+    pub fn create_backup(
+        &mut self,
+        target: &Path,
+        password: &str,
+        configure_external_target: bool,
+    ) -> ApplicationResult<BackupResult> {
+        let settings = self.backup_settings_json()?;
+        self.ledger
+            .create_portable_backup(target, password, &settings, configure_external_target)
+    }
+
+    /// Restores only after authentication, compatibility and complete database verification.
+    ///
+    /// # Errors
+    ///
+    /// Returns a stable authentication, compatibility, validation, or switch error.
+    pub fn restore_backup(
+        &mut self,
+        source: &Path,
+        password: &str,
+    ) -> ApplicationResult<RestoreResult> {
+        let restored = self.ledger.restore_portable_backup(source, password)?;
+        let locale = UiLocale::parse(&restored.settings_locale)
+            .ok_or(ApplicationError::BackupVerificationFailed)?;
+        self.shell_settings
+            .save_ui_locale(locale)
+            .map_err(map_settings_error)?;
+        Ok(restored)
+    }
+
+    /// Returns evidence-backed backup protection state and runs a due daily backup when unlocked.
+    ///
+    /// # Errors
+    ///
+    /// Returns a stable storage or backup-status error.
+    pub fn get_backup_status(&mut self) -> ApplicationResult<BackupStatus> {
+        let settings = self.backup_settings_json()?;
+        self.ledger.get_backup_status(&settings)
+    }
+
+    /// Exports one user-selected, standalone representation.
+    ///
+    /// # Errors
+    ///
+    /// Returns a stable format, path, query, or write error.
+    pub fn export_data(&self, target: &Path, format: &str) -> ApplicationResult<ExportResult> {
+        let format =
+            ExportFormat::parse(format).ok_or(ApplicationError::ExportFormatUnsupported)?;
+        self.ledger.export_data(target, format)
+    }
+
+    pub fn create_exit_backup(&mut self) {
+        if let Ok(settings) = self.backup_settings_json() {
+            self.ledger.create_exit_backup(&settings);
+        }
+    }
 }
 
 impl<

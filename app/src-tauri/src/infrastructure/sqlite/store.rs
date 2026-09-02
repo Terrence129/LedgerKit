@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::path::PathBuf;
 
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
+use zeroize::Zeroizing;
 
 use crate::application::canonical::canonical_postings_hash;
 use crate::application::error::{ApplicationError, ApplicationResult};
@@ -33,6 +34,7 @@ pub struct SqliteLedgerManager {
     pub(super) database_path: PathBuf,
     pub(super) backup: VerifiedSqliteMigrationBackup,
     pub(super) store: Option<LedgerStore>,
+    pub(super) automatic_backup_password: Option<Zeroizing<String>>,
 }
 
 impl SqliteLedgerManager {
@@ -42,6 +44,7 @@ impl SqliteLedgerManager {
             database_path: local_data_root.join(LEDGER_FILENAME),
             backup: VerifiedSqliteMigrationBackup::new(local_data_root.join("migration-backups")),
             store: None,
+            automatic_backup_password: None,
         })
     }
 }
@@ -280,12 +283,19 @@ impl LedgerStore {
                 |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
             )
             .map_err(|_| ApplicationError::SchemaValidationFailed)?;
-        let backup_protection_state: String = self
+        let (backup_protection_state, device_loss_protected): (String, bool) = self
             .connection
             .query_row(
-                "SELECT protection_state FROM backup_status WHERE singleton_id=1",
+                "SELECT CASE
+                    WHEN external_target_configured=0 THEN 'not-configured'
+                    WHEN last_error_code IS NOT NULL THEN 'failed'
+                    WHEN protection_state='protected' AND datetime(last_success_at_utc) >= datetime('now','-24 hours') THEN 'protected'
+                    ELSE 'pending'
+                 END,
+                 (external_target_configured=1 AND last_error_code IS NULL AND protection_state='protected' AND datetime(last_success_at_utc) >= datetime('now','-24 hours'))
+                 FROM backup_status WHERE singleton_id=1",
                 [],
-                |row| row.get(0),
+                |row| Ok((row.get(0)?, row.get(1)?)),
             )
             .map_err(|_| ApplicationError::SchemaValidationFailed)?;
         let event_watermark: i64 = self
@@ -320,7 +330,7 @@ impl LedgerStore {
             calculation_version: CALCULATION_VERSION,
             blocked_reason: None,
             database_location: None,
-            device_loss_protected: backup_protection_state == "protected",
+            device_loss_protected,
             backup_protection_state,
         })
     }

@@ -10,6 +10,7 @@ pub type ApplicationResult<T> = Result<T, ApplicationError>;
 pub enum ApplicationError {
     Domain(DomainError),
     InvalidLocale,
+    InvalidView,
     StorageUnavailable,
     LedgerAlreadyExists,
     LedgerNotFound,
@@ -32,6 +33,20 @@ pub enum ApplicationError {
     ActivityFilterInvalid,
     ExpenseDateRangeInvalid,
     ResponseTooLarge,
+    BackupCancelled,
+    BackupPathInvalid,
+    BackupPasswordRequired,
+    BackupFormatUnsupported,
+    BackupKdfUnsupported,
+    BackupAuthenticationFailed,
+    BackupHashMismatch,
+    BackupVerificationFailed,
+    BackupWriteFailed,
+    BackupRestoreFailed,
+    ExportCancelled,
+    ExportFormatUnsupported,
+    ExportPathInvalid,
+    ExportWriteFailed,
     ImportCancelled,
     ImportFileInvalid,
     ImportFileTooLarge,
@@ -51,6 +66,7 @@ impl ApplicationError {
         match self {
             Self::Domain(error) => error.code(),
             Self::InvalidLocale => "SETTINGS_LOCALE_UNSUPPORTED",
+            Self::InvalidView => "VIEW_UNSUPPORTED",
             Self::StorageUnavailable => "SETTINGS_STORAGE_UNAVAILABLE",
             Self::LedgerAlreadyExists => "LEDGER_ALREADY_EXISTS",
             Self::LedgerNotFound => "LEDGER_NOT_FOUND",
@@ -73,6 +89,20 @@ impl ApplicationError {
             Self::ActivityFilterInvalid => "ACTIVITY_FILTER_INVALID",
             Self::ExpenseDateRangeInvalid => "EXPENSE_DATE_RANGE_INVALID",
             Self::ResponseTooLarge => "RESPONSE_TOO_LARGE",
+            Self::BackupCancelled => "BACKUP_CANCELLED",
+            Self::BackupPathInvalid => "BACKUP_PATH_INVALID",
+            Self::BackupPasswordRequired => "BACKUP_PASSWORD_REQUIRED",
+            Self::BackupFormatUnsupported => "BACKUP_FORMAT_UNSUPPORTED",
+            Self::BackupKdfUnsupported => "BACKUP_KDF_UNSUPPORTED",
+            Self::BackupAuthenticationFailed => "BACKUP_AUTHENTICATION_FAILED",
+            Self::BackupHashMismatch => "BACKUP_HASH_MISMATCH",
+            Self::BackupVerificationFailed => "BACKUP_VERIFICATION_FAILED",
+            Self::BackupWriteFailed => "BACKUP_WRITE_FAILED",
+            Self::BackupRestoreFailed => "BACKUP_RESTORE_FAILED",
+            Self::ExportCancelled => "EXPORT_CANCELLED",
+            Self::ExportFormatUnsupported => "EXPORT_FORMAT_UNSUPPORTED",
+            Self::ExportPathInvalid => "EXPORT_PATH_INVALID",
+            Self::ExportWriteFailed => "EXPORT_WRITE_FAILED",
             Self::ImportCancelled => "IMPORT_CANCELLED",
             Self::ImportFileInvalid => "IMPORT_FILE_INVALID",
             Self::ImportFileTooLarge => "IMPORT_FILE_TOO_LARGE",
@@ -91,6 +121,7 @@ impl ApplicationError {
     pub const fn field(self) -> Option<&'static str> {
         match self {
             Self::InvalidLocale => Some("uiLocale"),
+            Self::InvalidView => Some("view"),
             Self::Domain(DomainError::CurrencyInvalid | DomainError::FxSelfRateImmutable) => {
                 Some("currency")
             }
@@ -130,6 +161,12 @@ impl ApplicationError {
             Self::ActivityCursorInvalid => Some("cursor"),
             Self::ActivityFilterInvalid => Some("search"),
             Self::ExpenseDateRangeInvalid => Some("dateRange"),
+            Self::BackupPasswordRequired | Self::BackupAuthenticationFailed => {
+                Some("backupPassword")
+            }
+            Self::BackupPathInvalid => Some("backupTarget"),
+            Self::ExportFormatUnsupported => Some("exportFormat"),
+            Self::ExportPathInvalid => Some("exportTarget"),
             _ => None,
         }
     }

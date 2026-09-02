@@ -28,6 +28,13 @@ import type {
   InvestmentWorkspace,
   Overview,
   DataQualityReport,
+  CreateBackupRequest,
+  RestoreBackupRequest,
+  BackupResult,
+  RestoreResult,
+  BackupStatus,
+  ExportFormat,
+  ExportResult,
 } from "./contracts";
 
 class TauriLedgerKitCommands implements LedgerKitCommands {
@@ -62,12 +69,16 @@ class TauriLedgerKitCommands implements LedgerKitCommands {
   getActivity(request: ActivityRequest): Promise<ActivityPage> { return invoke("get_activity", { request }); }
   analyzeImport(): Promise<ImportAnalysis> { return invoke("analyze_import"); }
   commitImport(request: { batchId: string; confirmed: boolean }): Promise<ImportCommitResult> { return invoke("commit_import", { request }); }
-  previewInvestmentEvent(request: InvestmentEventRequest): Promise<InvestmentEventPreview> { return invoke("preview_investment_event", { request }); }
-  postInvestmentEvent(request: InvestmentEventRequest): Promise<PostedInvestmentEvent> { return invoke("post_investment_event", { request }); }
-  reviseInvestmentEvent(request: { targetEventId: string; reason: string; replacement: InvestmentEventRequest }): Promise<PostedInvestmentEvent> { return invoke("revise_investment_event", { request }); }
-  getInvestmentWorkspace(request: { asOfDate: string }): Promise<InvestmentWorkspace> { return invoke("get_investment_workspace", { request }); }
-  getOverview(request: { asOfDate: string }): Promise<Overview> { return invoke("get_overview", { request }); }
+  previewInvestmentEvent(request: InvestmentEventRequest): Promise<InvestmentEventPreview> { return invoke("preview_event", { request }); }
+  postInvestmentEvent(request: InvestmentEventRequest): Promise<PostedInvestmentEvent> { return invoke("post_event", { request }); }
+  reviseInvestmentEvent(request: { targetEventId: string; reason: string; replacement: InvestmentEventRequest }): Promise<PostedInvestmentEvent> { return invoke("revise_event", { request }); }
+  getInvestmentWorkspace(request: { asOfDate: string }): Promise<InvestmentWorkspace> { return invoke("get_overview", { request: { ...request, view: "investments" } }); }
+  getOverview(request: { asOfDate: string }): Promise<Overview> { return invoke("get_overview", { request: { ...request, view: "summary" } }); }
   getDataQuality(request: { asOfDate: string }): Promise<DataQualityReport> { return invoke("get_data_quality", { request }); }
+  createBackup(request: CreateBackupRequest): Promise<BackupResult> { return invoke("create_backup", { request }); }
+  restoreBackup(request: RestoreBackupRequest): Promise<RestoreResult> { return invoke("restore_backup", { request }); }
+  getBackupStatus(): Promise<BackupStatus> { return invoke("get_backup_status"); }
+  exportData(request: { format: ExportFormat }): Promise<ExportResult> { return invoke("export_data", { request }); }
 }
 
 export const ledgerKitCommands: LedgerKitCommands = new TauriLedgerKitCommands();

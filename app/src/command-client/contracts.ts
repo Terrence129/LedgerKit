@@ -251,6 +251,27 @@ export type DataQualityReport = {
   issues: DataQualityIssue[]; eventWatermark: number; calculationVersion: string;
 };
 
+export type CreateBackupRequest = { password: string; configureExternalTarget: boolean };
+export type RestoreBackupRequest = { password: string };
+export type ExportFormat = "xlsx" | "csv" | "reconciliation" | "diagnostics";
+export type BackupResult = {
+  fileName: string; backupId: string; createdAtUtc: string; schemaVersion: number;
+  verified: true; protectionState: LedgerStatus["backupProtectionState"];
+};
+export type RestoreResult = {
+  backupId: string; ledgerId: string; schemaVersion: number; eventWatermark: number;
+  settingsLocale: SupportedLocale; preRestoreBackupVerified: boolean;
+};
+export type BackupStatus = {
+  protectionState: LedgerStatus["backupProtectionState"];
+  externalTargetConfigured: boolean; externalTargetLabel: string | null;
+  lastAttemptAtUtc: string | null; lastSuccessAtUtc: string | null;
+  lastVerifiedSchemaVersion: number | null; lastErrorCode: string | null;
+  deviceLossProtected: boolean; recoverySecretState: "locked" | "unlocked-for-session";
+  dailyRetention: number; weeklyRetention: number;
+};
+export type ExportResult = { fileName: string; format: ExportFormat; rowCount: number; contentSha256: string };
+
 export interface LedgerKitCommands {
   createLedger(request: CreateLedgerRequest): Promise<LedgerStatus>;
   openLedger(): Promise<LedgerStatus>;
@@ -277,4 +298,8 @@ export interface LedgerKitCommands {
   getInvestmentWorkspace(request: { asOfDate: string }): Promise<InvestmentWorkspace>;
   getOverview(request: { asOfDate: string }): Promise<Overview>;
   getDataQuality(request: { asOfDate: string }): Promise<DataQualityReport>;
+  createBackup(request: CreateBackupRequest): Promise<BackupResult>;
+  restoreBackup(request: RestoreBackupRequest): Promise<RestoreResult>;
+  getBackupStatus(): Promise<BackupStatus>;
+  exportData(request: { format: ExportFormat }): Promise<ExportResult>;
 }

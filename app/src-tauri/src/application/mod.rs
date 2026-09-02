@@ -8,5 +8,6 @@ pub mod facade;
 pub mod import;
 pub mod investment;
 pub mod ledger;
+pub mod safety;
 pub mod settings;
 pub mod valuation;

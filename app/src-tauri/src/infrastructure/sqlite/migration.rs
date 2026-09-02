@@ -237,18 +237,25 @@ fn migrate_to_current(transaction: &Transaction<'_>, source_version: u32) -> App
             migrate_v1_to_v2(transaction)?;
             migrate_v2_to_v3(transaction)?;
             migrate_v3_to_v4(transaction)?;
-            migrate_v4_to_v5(transaction)
+            migrate_v4_to_v5(transaction)?;
+            migrate_v5_to_v6(transaction)
         }
         2 => {
             migrate_v2_to_v3(transaction)?;
             migrate_v3_to_v4(transaction)?;
-            migrate_v4_to_v5(transaction)
+            migrate_v4_to_v5(transaction)?;
+            migrate_v5_to_v6(transaction)
         }
         3 => {
             migrate_v3_to_v4(transaction)?;
-            migrate_v4_to_v5(transaction)
+            migrate_v4_to_v5(transaction)?;
+            migrate_v5_to_v6(transaction)
         }
-        4 => migrate_v4_to_v5(transaction),
+        4 => {
+            migrate_v4_to_v5(transaction)?;
+            migrate_v5_to_v6(transaction)
+        }
+        5 => migrate_v5_to_v6(transaction),
         _ => Err(ApplicationError::MigrationFailed),
     }
 }
@@ -582,7 +589,37 @@ fn migrate_v4_to_v5(transaction: &Transaction<'_>) -> ApplicationResult<()> {
         )
         .map_err(|_| ApplicationError::MigrationFailed)?;
     transaction
-        .execute_batch(&format!("PRAGMA user_version = {SCHEMA_VERSION};"))
+        .execute_batch("PRAGMA user_version = 5;")
+        .map_err(|_| ApplicationError::MigrationFailed)?;
+    transaction
+        .execute(
+            "INSERT INTO migration_history(schema_version,applied_at_utc,application_version,schema_hash) VALUES(?1,CURRENT_TIMESTAMP,?2,?3)",
+            rusqlite::params![5, env!("CARGO_PKG_VERSION"), "superseded-by-v6"],
+        )
+        .map_err(|_| ApplicationError::MigrationFailed)?;
+    Ok(())
+}
+
+fn migrate_v5_to_v6(transaction: &Transaction<'_>) -> ApplicationResult<()> {
+    transaction
+        .execute_batch(
+            "ALTER TABLE backup_status RENAME TO backup_status_v5;
+             CREATE TABLE backup_status (
+                singleton_id INTEGER PRIMARY KEY CHECK (singleton_id = 1),
+                protection_state TEXT NOT NULL CHECK (protection_state IN ('not-configured', 'pending', 'protected', 'failed')),
+                last_attempt_at_utc TEXT,
+                last_success_at_utc TEXT,
+                last_verified_schema_version INTEGER,
+                last_error_code TEXT,
+                external_target_configured INTEGER NOT NULL DEFAULT 0 CHECK (external_target_configured IN (0, 1)),
+                external_target_path TEXT,
+                CHECK ((external_target_configured = 0 AND external_target_path IS NULL) OR (external_target_configured = 1 AND external_target_path IS NOT NULL AND length(trim(external_target_path)) > 0))
+             ) STRICT;
+             INSERT INTO backup_status(singleton_id,protection_state,last_attempt_at_utc,last_success_at_utc,last_verified_schema_version,last_error_code,external_target_configured,external_target_path)
+             SELECT singleton_id,'not-configured',last_attempt_at_utc,last_success_at_utc,last_verified_schema_version,last_error_code,0,NULL FROM backup_status_v5;
+             DROP TABLE backup_status_v5;
+             PRAGMA user_version = 6;",
+        )
         .map_err(|_| ApplicationError::MigrationFailed)?;
     transaction
         .execute(
@@ -712,6 +749,8 @@ mod tests {
             .execute_batch(
                 "INSERT INTO cash_accounts(account_id,business_id,name,purpose,currency,enabled,created_at_utc,updated_at_utc)
                  VALUES('v1-account','v1-account','V1 account','test','CNY',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
+                 INSERT INTO backup_status(singleton_id,protection_state,external_target_configured,external_target_path)
+                 VALUES(1,'not-configured',0,NULL);
                  INSERT INTO business_events(event_id,event_type,effective_date,sequence,status,revision,created_at_utc,calculation_version)
                  VALUES('v1-event','Expense','2026-09-01',1,'posted',1,CURRENT_TIMESTAMP,'ledger-calculation-v1');
                  INSERT INTO ledger_postings(posting_id,event_id,posting_ordinal,posting_kind,account_id,quantity_delta,currency,base_value,base_currency,calculation_version)
@@ -729,6 +768,19 @@ mod tests {
                  DROP TABLE monthly_cash_flow_projection;
                  DROP INDEX idx_cash_event_fees_event;
                  DROP TABLE cash_event_fees;
+                 ALTER TABLE backup_status RENAME TO backup_status_current;
+                 CREATE TABLE backup_status (
+                    singleton_id INTEGER PRIMARY KEY CHECK (singleton_id = 1),
+                    protection_state TEXT NOT NULL CHECK (protection_state IN ('not-configured', 'pending', 'protected', 'failed')),
+                    last_attempt_at_utc TEXT,
+                    last_success_at_utc TEXT,
+                    last_verified_schema_version INTEGER,
+                    last_error_code TEXT,
+                    external_target_configured INTEGER NOT NULL DEFAULT 0 CHECK (external_target_configured IN (0, 1))
+                 ) STRICT;
+                 INSERT INTO backup_status(singleton_id,protection_state,last_attempt_at_utc,last_success_at_utc,last_verified_schema_version,last_error_code,external_target_configured)
+                 SELECT singleton_id,protection_state,last_attempt_at_utc,last_success_at_utc,last_verified_schema_version,last_error_code,external_target_configured FROM backup_status_current;
+                 DROP TABLE backup_status_current;
                  PRAGMA application_id = {APPLICATION_ID};
                  PRAGMA user_version = 1;"
             ))
@@ -736,7 +788,7 @@ mod tests {
     }
 
     #[test]
-    fn v1_is_backed_up_and_forward_migrated_to_v2() {
+    fn v1_is_backed_up_and_forward_migrated_to_current() {
         let directory = tempdir().unwrap();
         let database = directory.path().join("ledger.sqlite3");
         v1_database(&database);
@@ -755,6 +807,22 @@ mod tests {
             )
             .unwrap();
         assert_eq!(migrated, 1);
+        let current: i64 = connection
+            .query_row(
+                "SELECT COUNT(*) FROM migration_history WHERE schema_version=?1",
+                [SCHEMA_VERSION],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(current, 1);
+        assert!(
+            connection
+                .execute(
+                    "UPDATE backup_status SET external_target_configured=1 WHERE singleton_id=1",
+                    [],
+                )
+                .is_err()
+        );
         let preserved: String = connection
             .query_row(
                 "SELECT posting_kind FROM ledger_postings WHERE posting_id='v1-posting'",

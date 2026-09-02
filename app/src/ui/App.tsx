@@ -19,6 +19,7 @@ import { HealthHome, type WorkspaceView } from "./HealthHome";
 import { ImportWizard } from "./ImportWizard";
 import { DataQualityPage } from "./DataQualityPage";
 import { OverviewPage } from "./OverviewPage";
+import { SafetyPanel } from "./SafetyPanel";
 import { applyDocumentLocale, localeFromSystemHint, systemLocaleHint, type SupportedLocale } from "./i18n";
 import "./styles.css";
 
@@ -157,6 +158,15 @@ export function App() {
       /> : null}
       assetsContent={status?.ledgerState === "open" ? <AssetsPage locale={locale} status={status} onLoad={(request) => ledgerKitCommands.getInvestmentWorkspace(request)} /> : null}
       qualityContent={status?.ledgerState === "open" ? <DataQualityPage locale={locale} asOfDate={asOfDate} onLoad={(request) => ledgerKitCommands.getDataQuality(request)} onFix={openQualityFix} /> : null}
+      safetyContent={status && status.ledgerState !== "blocked" ? <SafetyPanel
+        locale={locale}
+        busy={busy}
+        ledgerOpen={status.ledgerState === "open"}
+        onGetStatus={() => ledgerKitCommands.getBackupStatus()}
+        onCreateBackup={(request) => execute(() => ledgerKitCommands.createBackup(request))}
+        onRestoreBackup={(request) => execute(() => ledgerKitCommands.restoreBackup(request))}
+        onExportData={(request) => execute(() => ledgerKitCommands.exportData(request), false)}
+      /> : null}
       importContent={<ImportWizard
         locale={locale}
         busy={busy}

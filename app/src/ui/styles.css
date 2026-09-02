@@ -201,6 +201,14 @@ td code { overflow-wrap: anywhere; }
 .table-link { min-height: auto; border: 0; padding: 0; color: var(--color-accent); background: transparent; text-align: left; text-decoration: underline; }
 button.danger { border-color: var(--color-error); color: white; background: var(--color-error); }
 .reversal-panel { display: grid; gap: 0.8rem; }
+.safety-panel { display: grid; gap: 1rem; margin-block: 1.2rem; border: 1px solid var(--color-line); border-radius: var(--radius-large); padding: clamp(1rem, 3vw, 1.4rem); background: var(--color-surface); box-shadow: var(--shadow-card); }
+.safety-status { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.65rem; margin: 0; }
+.safety-status div { border: 1px solid var(--color-line); border-radius: var(--radius-small); padding: 0.7rem; }
+.safety-status dt { color: var(--color-muted); font-size: 0.78rem; font-weight: 700; }
+.safety-status dd { margin: 0.25rem 0 0; overflow-wrap: anywhere; }
+.safety-actions, .export-actions { display: grid; gap: 0.65rem; border-top: 1px solid var(--color-line); padding-top: 1rem; }
+.safety-actions > label:not(.checkbox-field), .export-actions > label:not(.checkbox-field) { display: grid; gap: 0.25rem; max-width: 32rem; color: var(--color-muted); font-size: 0.8rem; font-weight: 700; }
+.success-banner { border-left: 0.3rem solid var(--color-accent); padding: 0.7rem 0.9rem; color: var(--color-ink); background: var(--color-accent-soft); }
 
 @media (max-width: 45rem) {
   .shell { padding: 1rem; }
