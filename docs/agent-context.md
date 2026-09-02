@@ -26,6 +26,7 @@ LedgerKit 是单用户、本地优先、隐私友好的多币种现金、投资�
 - 活库放操作系统本地应用数据目录，不直接运行在同步盘或网络盘。
 - Excel 是一次性初始迁移源和标准化导出格式，不是运行时计算引擎或持续双向同步源。
 - 真实财务数据不得进入公开仓库、日志、遥测、截图或 fixture。
+- 1.0 应用自有 UI 仅支持简体中文（`zh-CN`）和英文（`en-US`）；首次跟随 Windows 显示语言，非中文回退英文，用户可即时切换并持久化。语言切换不得翻译或改写业务数据、稳定标识、错误码或财务 canonical hash。
 - P0 支出分析沿用 v1.3.0 的产品意图，但使用动态分类、明确缺 FX 和稳定语义修正规则缺口。
 - M0 已接受模块化单体/本地 SQLite、类型化事件/确定性 posting/可重建投影、`decimal-contract-v1`、逐笔移动加权平均、修订/冲正、逐账户/组合迁移策略、冻结交易 FX/动态估值和 `expense-analysis-query/v1`；权威内容见 [`docs/adr/README.md`](adr/README.md)。
 - M0 黄金基线包含开发计划书 14.2 的 31 组技术栈无关合成 fixture、六类 JSON Schema、规范序列化/哈希和跨栈消费说明；验证入口为 [`tools/check-m0-fixtures.ps1`](../tools/check-m0-fixtures.ps1)。

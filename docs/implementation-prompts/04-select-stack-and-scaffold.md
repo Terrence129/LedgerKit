@@ -21,7 +21,7 @@
    - ADR-0010：P0 不自动联网更新；签名和自动更新留到 P1，Beta 明确未签名。
 4. 从胜出样机提炼最终 `app`，不得把实验代码未经整理直接当生产架构。依赖固定为 UI → Application → Domain，Infrastructure 只实现端口。
 5. 删除两套 spike 源码但保留 benchmark、fixture、选择报告和 Git 历史。
-6. 建立锁文件、固定工具链、严格 lint/nullable、最小 `unsafe` 策略、中文本地化入口、设计 token 和最小健康首页。
+6. 建立锁文件、固定工具链、严格 lint/nullable、最小 `unsafe` 策略、`zh-CN`/`en-US` 本地化资源入口和键一致性检查、首次按 Windows 语言选择/英文回退、可持久化即时语言切换、设计 token 和最小健康首页。
 7. 建立 `tools/check.ps1`、`tools/test.ps1`、`tools/build.ps1`，并建立 CI 的格式、静态检查、单测、隐私扫描和生产依赖预算。
 8. 建立生产依赖清单，逐项记录用途、体积、许可证、安全、维护和替代成本。
 9. 更新 README、ADR 索引和 `agent-context.md` 为 M1 完成、Ready for M2。
@@ -32,6 +32,7 @@
 - 最小应用可安装、启动和关闭。
 - 无数据库服务器、本地 HTTP 服务、sidecar、图表库或重复状态框架。
 - Tauri 时 capability/IPC 为显式最小集合。
+- 最小健康首页分别以 `zh-CN`/`en-US` 启动通过；切换无需重启、重启后保持，缺失资源键使检查失败。
 - 生产依赖和 M1 轻量基线满足预算。
 
 通过后提交、合并并推送 `main`，创建并推送 annotated tag `m1-stack-selected`。任一候选栈都未通过时不得提交虚假选择。
