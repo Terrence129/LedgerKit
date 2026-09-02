@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use rusqlite::{Connection, OpenFlags, OptionalExtension, params};
 use serde_json::json;
 
-use crate::application::cash::{CashEventInput, EventInputType};
+use crate::application::cash::{CashEventInput, EventInputType, FxOverrideInput};
 use crate::application::catalog::{
     CashAccount, Category, FxRateRevision, Institution, Portfolio, SecurityInstrument,
     SecurityPriceRevision,
@@ -789,7 +789,21 @@ fn build_event_inputs(
                 fee_amount: optional_decimal(value(row, "fee_amount"))?,
                 cutover_date: None,
                 migration_policy: None,
-                fx_overrides: Vec::new(),
+                fx_overrides: parse_fx_overrides(
+                    row,
+                    &[
+                        (
+                            "fx_override_currency",
+                            "fx_override_value",
+                            "fx_override_reason",
+                        ),
+                        (
+                            "fee_fx_override_currency",
+                            "fee_fx_override_value",
+                            "fee_fx_override_reason",
+                        ),
+                    ],
+                )?,
                 currency_precision_confirmed: true,
             })
         })();
@@ -992,7 +1006,14 @@ fn build_investment_inputs(
                     row,
                     "settlement_override_reason",
                 )),
-                fx_overrides: Vec::new(),
+                fx_overrides: parse_fx_overrides(
+                    row,
+                    &[(
+                        "fx_override_currency",
+                        "fx_override_value",
+                        "fx_override_reason",
+                    )],
+                )?,
             })
         })();
         match result {
@@ -1110,7 +1131,14 @@ fn transfer_input(
         fee_amount: None,
         cutover_date: None,
         migration_policy: None,
-        fx_overrides: Vec::new(),
+        fx_overrides: parse_fx_overrides(
+            row,
+            &[(
+                "fx_override_currency",
+                "fx_override_value",
+                "fx_override_reason",
+            )],
+        )?,
         currency_precision_confirmed: true,
     })
 }
@@ -1147,7 +1175,26 @@ fn exchange_input(
         fee_amount: optional_decimal(value(row, "fee_amount"))?,
         cutover_date: None,
         migration_policy: None,
-        fx_overrides: Vec::new(),
+        fx_overrides: parse_fx_overrides(
+            row,
+            &[
+                (
+                    "from_fx_override_currency",
+                    "from_fx_override_value",
+                    "from_fx_override_reason",
+                ),
+                (
+                    "to_fx_override_currency",
+                    "to_fx_override_value",
+                    "to_fx_override_reason",
+                ),
+                (
+                    "fee_fx_override_currency",
+                    "fee_fx_override_value",
+                    "fee_fx_override_reason",
+                ),
+            ],
+        )?,
         currency_precision_confirmed: true,
     })
 }
@@ -2168,6 +2215,35 @@ fn optional_fee_scope(value: &str) -> ApplicationResult<Option<FeeScope>> {
     }
 }
 
+fn parse_fx_overrides(
+    row: &ParsedRow,
+    fields: &[(&str, &str, &str)],
+) -> ApplicationResult<Vec<FxOverrideInput>> {
+    let mut overrides = Vec::new();
+    let mut currencies = BTreeSet::new();
+    for (currency_field, value_field, reason_field) in fields {
+        let currency = value(row, currency_field);
+        let override_value = value(row, value_field);
+        let reason = value(row, reason_field);
+        if currency.is_empty() && override_value.is_empty() && reason.is_empty() {
+            continue;
+        }
+        if currency.is_empty() || override_value.is_empty() || reason.trim().is_empty() {
+            return Err(ApplicationError::ImportFileInvalid);
+        }
+        let currency = Currency::parse(currency)?;
+        if !currencies.insert(currency) {
+            return Err(ApplicationError::ImportFileInvalid);
+        }
+        overrides.push(FxOverrideInput {
+            currency,
+            value: Decimal::parse(override_value, DecimalUse::FxRate)?,
+            reason: reason.to_owned(),
+        });
+    }
+    Ok(overrides)
+}
+
 fn optional_string(value: &str) -> Option<String> {
     (!value.is_empty()).then(|| value.to_owned())
 }
@@ -2209,6 +2285,7 @@ mod tests {
 
     use tempfile::tempdir;
 
+    use crate::application::cash::{ActivityQuery, CashPort};
     use crate::application::investment::InvestmentPort;
     use crate::application::valuation::ValuationPort;
 
@@ -2224,6 +2301,49 @@ mod tests {
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("../../fixtures/sanitized/m5")
             .join(name)
+    }
+
+    fn parsed_row(fields: &[(&str, &str)]) -> ParsedRow {
+        ParsedRow {
+            sheet: "测试".to_owned(),
+            row: 2,
+            raw: fields
+                .iter()
+                .map(|(key, value)| ((*key).to_owned(), (*value).to_owned()))
+                .collect(),
+            formulas: Vec::new(),
+            content_sha256: "sha256:test".to_owned(),
+            issues: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn fx_override_triplets_fail_closed_when_incomplete_or_duplicated() {
+        let fields = &[("currency", "value", "reason")];
+        let incomplete = parsed_row(&[("currency", "USD"), ("value", "7")]);
+        assert_eq!(
+            parse_fx_overrides(&incomplete, fields),
+            Err(ApplicationError::ImportFileInvalid)
+        );
+
+        let duplicate = parsed_row(&[
+            ("currency", "USD"),
+            ("value", "7"),
+            ("reason", "Reviewed source override"),
+            ("fee_currency", "USD"),
+            ("fee_value", "7.1"),
+            ("fee_reason", "Reviewed fee override"),
+        ]);
+        assert_eq!(
+            parse_fx_overrides(
+                &duplicate,
+                &[
+                    ("currency", "value", "reason"),
+                    ("fee_currency", "fee_value", "fee_reason"),
+                ],
+            ),
+            Err(ApplicationError::ImportFileInvalid)
+        );
     }
 
     #[test]
@@ -2391,6 +2511,26 @@ mod tests {
         assert_eq!(overview.valued_net_assets, "7140");
         assert_eq!(overview.mtd_expense, "35");
         assert!(overview.unvalued_assets.is_empty());
+        let activity = manager
+            .get_activity(&ActivityQuery {
+                start_date: LocalDate::parse("2026-01-01").unwrap(),
+                end_date: LocalDate::parse("2026-03-15").unwrap(),
+                context: None,
+                event_type: None,
+                account_id: None,
+                category_id: None,
+                search: None,
+                cursor: None,
+                limit: 10,
+            })
+            .unwrap();
+        assert!(activity.items.iter().any(|item| {
+            item.fx_resolutions.iter().any(|resolution| {
+                resolution.override_value.as_deref() == Some("7")
+                    && resolution.override_reason.as_deref() == Some("Synthetic migration override")
+                    && resolution.final_rate == "7"
+            })
+        }));
     }
 
     #[test]

@@ -11,7 +11,7 @@ use sha2::{Digest, Sha256};
 use crate::application::error::{ApplicationError, ApplicationResult};
 use crate::application::import::ImportIssue;
 
-pub(super) const TEMPLATE_VERSION: &str = "ledgerkit-workbook-v1.3";
+pub(super) const TEMPLATE_VERSION: &str = "ledgerkit-workbook-v1.4";
 const MAX_SOURCE_BYTES: u64 = 5 * 1024 * 1024;
 const MAX_ROWS: usize = 20_000;
 const MAX_COLUMNS: usize = 32;
@@ -70,6 +70,12 @@ const CASH_SHEETS: &[SheetContract] = &[
             "derived_base_value",
             "status",
             "display_label",
+            "fx_override_currency",
+            "fx_override_value",
+            "fx_override_reason",
+            "fee_fx_override_currency",
+            "fee_fx_override_value",
+            "fee_fx_override_reason",
         ],
     ),
     SheetContract::new(
@@ -81,6 +87,9 @@ const CASH_SHEETS: &[SheetContract] = &[
             "to_account_legacy_id",
             "amount",
             "note",
+            "fx_override_currency",
+            "fx_override_value",
+            "fx_override_reason",
         ],
     ),
     SheetContract::new(
@@ -95,6 +104,15 @@ const CASH_SHEETS: &[SheetContract] = &[
             "fee_account_legacy_id",
             "fee_amount",
             "note",
+            "from_fx_override_currency",
+            "from_fx_override_value",
+            "from_fx_override_reason",
+            "to_fx_override_currency",
+            "to_fx_override_value",
+            "to_fx_override_reason",
+            "fee_fx_override_currency",
+            "fee_fx_override_value",
+            "fee_fx_override_reason",
         ],
     ),
 ];
@@ -146,6 +164,9 @@ const INVESTMENT_SHEETS: &[SheetContract] = &[
             "amount",
             "fee_scope",
             "settlement_override_reason",
+            "fx_override_currency",
+            "fx_override_value",
+            "fx_override_reason",
         ],
     ),
     SheetContract::new(

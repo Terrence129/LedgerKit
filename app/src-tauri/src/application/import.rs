@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use super::error::ApplicationResult;
 
-pub const IMPORTER_VERSION: &str = "ledgerkit-xlsx-full-v2";
+pub const IMPORTER_VERSION: &str = "ledgerkit-xlsx-full-v3";
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]

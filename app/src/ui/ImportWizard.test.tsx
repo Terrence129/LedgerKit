@@ -6,7 +6,7 @@ import { ImportWizard } from "./ImportWizard";
 const analysis: ImportAnalysis = {
   batchId: "019d0000-0000-7000-8000-000000000001",
   sourceSha256: `sha256:${"a".repeat(64)}`,
-  templateVersion: "ledgerkit-workbook-v1.3",
+  templateVersion: "ledgerkit-workbook-v1.4",
   importerVersion: "ledgerkit-xlsx-cash-v1",
   targetSchemaVersion: 3,
   status: "needs-review",

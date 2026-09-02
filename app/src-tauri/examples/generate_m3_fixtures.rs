@@ -57,6 +57,12 @@ const HEADERS: &[(&str, &[&str])] = &[
             "derived_base_value",
             "status",
             "display_label",
+            "fx_override_currency",
+            "fx_override_value",
+            "fx_override_reason",
+            "fee_fx_override_currency",
+            "fee_fx_override_value",
+            "fee_fx_override_reason",
         ],
     ),
     (
@@ -68,6 +74,9 @@ const HEADERS: &[(&str, &[&str])] = &[
             "to_account_legacy_id",
             "amount",
             "note",
+            "fx_override_currency",
+            "fx_override_value",
+            "fx_override_reason",
         ],
     ),
     (
@@ -82,6 +91,15 @@ const HEADERS: &[(&str, &[&str])] = &[
             "fee_account_legacy_id",
             "fee_amount",
             "note",
+            "from_fx_override_currency",
+            "from_fx_override_value",
+            "from_fx_override_reason",
+            "to_fx_override_currency",
+            "to_fx_override_value",
+            "to_fx_override_reason",
+            "fee_fx_override_currency",
+            "fee_fx_override_value",
+            "fee_fx_override_reason",
         ],
     ),
 ];
@@ -129,7 +147,7 @@ fn write_common(workbook: &mut Workbook, kind: FixtureKind) -> Result<(), XlsxEr
     write_row(
         workbook.worksheet_from_name("设置")?,
         1,
-        &["ledgerkit-workbook-v1.3", "CNY", "zh-CN"],
+        &["ledgerkit-workbook-v1.4", "CNY", "zh-CN"],
     )?;
     write_row(
         workbook.worksheet_from_name("机构")?,
