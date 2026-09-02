@@ -16,17 +16,24 @@ use super::catalog::{
 };
 use super::error::{ApplicationError, ApplicationResult};
 use super::import::{ImportAnalysis, ImportCommitResult, ImportPort};
+use super::investment::{
+    InvestmentEventInput, InvestmentEventPreview, InvestmentPort, InvestmentRevisionInput,
+    InvestmentWorkspace, PostedInvestmentEvent,
+};
 use super::ledger::{
     CreateLedgerCommand, LedgerPort, LedgerState, LedgerStatus, UpdateLedgerSettingsCommand,
 };
 use super::settings::{SettingsError, SettingsRepository};
 
-pub struct ApplicationFacade<L: LedgerPort + CatalogPort + CashPort, S: SettingsRepository> {
+pub struct ApplicationFacade<
+    L: LedgerPort + CatalogPort + CashPort + InvestmentPort,
+    S: SettingsRepository,
+> {
     ledger: L,
     shell_settings: S,
 }
 
-impl<L: LedgerPort + CatalogPort + CashPort + ImportPort, S: SettingsRepository>
+impl<L: LedgerPort + CatalogPort + CashPort + InvestmentPort + ImportPort, S: SettingsRepository>
     ApplicationFacade<L, S>
 {
     /// Stages and analyzes one user-selected workbook without mutating the live ledger.
@@ -52,7 +59,9 @@ impl<L: LedgerPort + CatalogPort + CashPort + ImportPort, S: SettingsRepository>
     }
 }
 
-impl<L: LedgerPort + CatalogPort + CashPort, S: SettingsRepository> ApplicationFacade<L, S> {
+impl<L: LedgerPort + CatalogPort + CashPort + InvestmentPort, S: SettingsRepository>
+    ApplicationFacade<L, S>
+{
     pub const fn new(ledger: L, shell_settings: S) -> Self {
         Self {
             ledger,
@@ -392,6 +401,55 @@ impl<L: LedgerPort + CatalogPort + CashPort, S: SettingsRepository> ApplicationF
     /// Returns stable target, validation, or transaction errors.
     pub fn reverse_event(&mut self, input: &ReversalInput) -> ApplicationResult<PostedEvent> {
         self.ledger.reverse_event(input)
+    }
+
+    /// Previews an authoritative investment command without mutation.
+    ///
+    /// # Errors
+    ///
+    /// Returns stable catalog, valuation, or investment invariant errors.
+    pub fn preview_investment_event(
+        &self,
+        input: &InvestmentEventInput,
+    ) -> ApplicationResult<InvestmentEventPreview> {
+        self.ledger.preview_investment_event(input)
+    }
+
+    /// Posts a trade, dividend, or investment expense atomically.
+    ///
+    /// # Errors
+    ///
+    /// Returns stable validation or transaction errors.
+    pub fn post_investment_event(
+        &mut self,
+        input: &InvestmentEventInput,
+    ) -> ApplicationResult<PostedInvestmentEvent> {
+        self.ledger.post_investment_event(input)
+    }
+
+    /// Appends a replacement investment event and deterministically replays holdings.
+    ///
+    /// # Errors
+    ///
+    /// Returns stable target, validation, or transaction errors.
+    pub fn revise_investment_event(
+        &mut self,
+        input: &InvestmentRevisionInput,
+    ) -> ApplicationResult<PostedInvestmentEvent> {
+        self.ledger.revise_investment_event(input)
+    }
+
+    /// Returns holdings and valuation evidence for one explicit as-of date.
+    ///
+    /// # Errors
+    ///
+    /// Returns stable date, catalog, valuation, or storage errors.
+    pub fn get_investment_workspace(
+        &self,
+        as_of_date: &str,
+    ) -> ApplicationResult<InvestmentWorkspace> {
+        self.ledger
+            .get_investment_workspace(&LocalDate::parse(as_of_date)?)
     }
 
     /// Returns the versioned P0 expense query result from one SQLite snapshot.

@@ -1,6 +1,6 @@
 # Agent Context
 
-> 状态：M3 Excel 现金迁移完成，Ready for M4
+> 状态：M4 投资纵切完成，Ready for M5
 >
 > M0 状态：完成
 >
@@ -62,22 +62,23 @@ LedgerKit 是单用户、本地优先、隐私友好的多币种现金、投资�
 ## 当前工作区
 
 - 已有完整开发计划书和 agent 工作区规范。
-- 已有 [`implementation-prompts/README.md`](implementation-prompts/README.md) 索引的 14 阶段串行实现提示词包，覆盖 M0 决策、M1 双栈门禁、M2–M6 实现和 Beta 候选审计；任务 01–09 已完成，任务 10–14 尚未执行。
+- 已有 [`implementation-prompts/README.md`](implementation-prompts/README.md) 索引的 14 阶段串行实现提示词包，覆盖 M0 决策、M1 双栈门禁、M2–M6 实现和 Beta 候选审计；任务 01–10 已完成，任务 11–14 尚未执行。
 - GitHub 公开仓库为 `Terrence129/LedgerKit`，默认分支为 `main`。
-- 已创建十四份 Accepted ADR、31 组正式合成黄金 fixture、JSON Schema、确定性生成器和 M0 检查命令；当前生产 [`Schema v3`](persistence-schema-v1.md) 已覆盖设置、主数据、typed event detail、市场修订/FxResolution、posting/audit、带目标 schema/分析快照的 import staging、估值快照、备份状态，以及现金/支出可重建投影。
-- 已建立 `app` 生产骨架、锁文件、固定 Node/Rust 工具链、严格 TypeScript/Clippy、最小 unsafe allowlist、两套键一致本地化资源、持久化即时语言切换，以及首次设置/设置与数据页面。当前共有十九项已实现具名 IPC，现金预览/过账/修订/冲正、支出分析、活动分页和一次性初始导入均通过同一 typed Facade；它们不接受任意数据库路径、SQL、posting、事件状态或前端伪造的财务派生字段。
+- 已创建十四份 Accepted ADR、31 组正式合成黄金 fixture、JSON Schema、确定性生成器和 M0 检查命令；当前生产 [`Schema v4`](persistence-schema-v1.md) 已覆盖设置、主数据、typed event detail、市场修订/FxResolution、posting/audit、带目标 schema/分析快照的 import staging、估值快照、备份状态，以及现金、支出和持仓可重建投影。
+- 已建立 `app` 生产骨架、锁文件、固定 Node/Rust 工具链、严格 TypeScript/Clippy、最小 unsafe allowlist、两套键一致本地化资源、持久化即时语言切换，以及首次设置/设置与数据页面。当前共有二十三项已实现具名 IPC，现金与投资预览/过账/修订/冲正、支出分析、活动分页和一次性初始导入均通过同一 typed Facade；它们不接受任意数据库路径、SQL、posting、事件状态或前端伪造的财务派生字段。
 - [`Catalog 与市场数据契约 v1`](catalog-and-market-data-v1.md) 已实现机构、现金账户、分类、组合、证券稳定 ID 与允许字段更新，非零账户停用阻断、组合/结算机构一致性、不可变汇率/价格修订、事务化 active 切换、非未来 as-of 解析及带稳定修复上下文的数据质量基础结果。
 - Rust Core 已实现 ADR-0004 Decimal/Money/Currency、LocalDate、UUIDv7、Sequence、CalculationVersion、ProjectionWatermark 和稳定 DomainError；SQLite 已实现只读识别、备份端口、单事务只前进 migration、事务协调器、规范 posting/hash 与现金投影清空重建框架。活库固定在 OS 本地应用数据目录，本位币及有依赖的账户/标的币种由 Domain/Schema 双重阻断原地重解释。
 - M2 Cash Core 已实现 OpeningBalance、Income/Expense、Adjustment、Transfer、CurrencyExchange 的高层命令，冻结交易/费用 FX resolution、修订/冲正、现金余额/月度收支/数据质量投影，以及 `expense-analysis-query/v1` 和有界游标活动下钻。生产事实扫描未达到 10 万事件门禁后，项目所有者接受 ADR-0015；可删除重建的日聚合投影两次复测为冷查询 0–1 ms、warm P95 0 ms、查询加序列化 0 ms、响应 2,457 bytes。
 - M2 UI 已建立总览、流水、资产、数据质量、设置与数据五个稳定顶级入口；流水页完整支持收入、支出、余额调整、同币种调拨、换汇及费用的 Core 权威预览和写入。通用活动查询提供日期、类型、账户、分类、搜索和最多 100 条的游标分页，并一次有界水合业务内容、posting、冻结 FxResolution、修订/冲正关系及脱敏审计元数据；修订和冲正保留旧版本，冲正确认展示 Core 根据既有 posting 推导的反向影响。
 - M3 已接入 ADR-0007 的 `calamine`/`rust_xlsxwriter` 隔离适配器和一次性 native 文件选择器。已知 8 表现金模板在 blocking worker 上只读解析到候选库 staging，逐行保存原始/规范化/公式缓存/hash 证据；dry-run 使用现有 Cash Core 生成 posting 和原币对账。用户确认后仅在无活库时单事务过账并重建投影，经完整性、对账和 SQLite backup 验证后同卷原子切换；同字节重跑幂等，修改文件禁止 merge。程序生成的三份 [`M3 合成 XLSX`](../fixtures/sanitized/m3/README.md) 覆盖正常、缺公式缓存、坏引用/日期、重复、方向错误、缺 FX 和修改文件。
+- M4 已实现 SecurityTrade、Dividend 和 InvestmentExpense 的 Core 权威纵切；买卖手续费、移动加权平均、精确清仓、重开仓、股息净额和两级独立费用遵循 Accepted 规则。SQLite 按 `(portfolio_id,instrument_id)` 和稳定日期/sequence 重放持仓，历史插入、修订与通用冲正原子重建现金、posting、收益和水位；资产页展示 as-of 价格/FX 证据、陈旧警告和明确未估值原因，流水页提供四类投资录入和 typed 详情。
 - 已建立统一 `tools/check.ps1`、`tools/test.ps1`、`tools/build.ps1` 和 Windows CI；生产依赖清单见 [`production-dependencies.md`](production-dependencies.md)。一次性 `spikes/` 源码已从当前树删除，仍保留在 Git 历史。
 
 ## 下一步建议
 
-1. 按串行协议执行任务 10，基于既有 typed event/posting/投影框架实现投资纵切和可重建持仓。
-2. 后续 M4 必须复用现有 Decimal、冻结市场选择、revision/reversal 和 transaction coordinator，不在 UI、导入器或 SQL 复制投资财务规则。
-3. 任务 11 扩展完整 Excel 迁移时复用当前 batch/row/hash/候选切换边界，并增加组合、标的、数量、成本、历史业绩和净资产闭环；不得把修改文件作为增量 merge。
+1. 按串行协议执行任务 11，复用当前 batch/row/hash/候选切换边界扩展完整 Excel 迁移，并增加组合、标的、数量、成本、历史业绩和净资产闭环；不得把修改文件作为增量 merge。
+2. M5 估值与质量查询必须继续使用明确 valuation date、非未来 as-of 市场修订和同一 SQLite snapshot；缺价格/FX 不得按零或 1:1 静默替代。
+3. 任务 12 在现有资产、流水和 typed Facade 上完成总览、支出分析、质量修复下钻，不在 React 复制 Core 财务规则。
 
 ## 更新规则
 

@@ -102,7 +102,12 @@ impl ApplicationError {
             Self::Domain(DomainError::SemanticRoleInvalid) => Some("semanticRole"),
             Self::Domain(DomainError::SortOrderInvalid) => Some("sortOrder"),
             Self::Domain(DomainError::PositiveValueRequired) => Some("value"),
-            Self::Domain(DomainError::PortfolioInstitutionMismatch) => Some("settlementAccountId"),
+            Self::Domain(DomainError::PriceMustBePositive) => Some("price"),
+            Self::Domain(
+                DomainError::PortfolioInstitutionMismatch
+                | DomainError::TradeCurrencyMismatch
+                | DomainError::SettlementInstitutionMismatch,
+            ) => Some("settlementAccountId"),
             Self::Domain(DomainError::AccountBalanceNonzero) => Some("enabled"),
             Self::Domain(DomainError::RevisionImmutable) => Some("revisionId"),
             Self::Domain(DomainError::AmountMustBePositive | DomainError::AdjustmentZero) => {
@@ -112,6 +117,15 @@ impl ApplicationError {
             Self::Domain(
                 DomainError::RevisionReasonRequired | DomainError::ReversalReasonRequired,
             ) => Some("reason"),
+            Self::Domain(DomainError::NegativeHoldingNotAllowed) => Some("quantity"),
+            Self::Domain(DomainError::SettlementOverrideReasonRequired) => {
+                Some("settlementOverrideReason")
+            }
+            Self::Domain(
+                DomainError::InstrumentRequiredForFeeScope
+                | DomainError::PortfolioFeeInstrumentForbidden,
+            ) => Some("instrumentId"),
+            Self::Domain(DomainError::DividendDeductionsExceedGross) => Some("grossCashAmount"),
             Self::ActivityLimitInvalid => Some("limit"),
             Self::ActivityCursorInvalid => Some("cursor"),
             Self::ActivityFilterInvalid => Some("search"),

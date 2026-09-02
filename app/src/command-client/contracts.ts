@@ -98,7 +98,7 @@ export type FxResolutionResult = {
   calculationVersion: string;
   valuationState: "valued" | "unvalued";
 };
-export type PostingPreview = { accountId: string; quantityDelta: string; currency: string; baseValue: string | null; baseCurrency: string; role: string };
+export type PostingPreview = { accountId: string | null; quantityDelta: string; currency: string; baseValue: string | null; baseCurrency: string; role: string };
 export type EventPreview = { eventType: string; effectiveDate: string; sequence: number; categoryId: string | null; semanticRole: string; feeAccountId: string | null; feeAmount: string | null; postings: PostingPreview[]; fxResolutions: FxResolutionResult[]; qualityIssueCodes: string[] };
 export type PostedEvent = { eventId: string; eventWatermark: number; revision: number; preview: EventPreview };
 export type DrilldownContext = { start_date: string; end_date: string; event_watermark: number; calculation_version: string; expense_policy_version: string; bucket_id?: string; semantic_role?: string; member_rank_gt?: number; valuation_state: "valued" | "unvalued" | "all" };
@@ -118,7 +118,7 @@ export type ExpenseAnalysis = {
   canonicalization: string;
   canonical_hash: string;
 };
-export type ActivityPosting = { postingKind: string; accountId: string | null; quantityDelta: string; currency: string; baseValue: string | null; baseCurrency: string };
+export type ActivityPosting = { postingKind: string; accountId: string | null; portfolioId?: string | null; instrumentId?: string | null; quantityDelta: string; currency: string; baseValue: string | null; baseCurrency: string };
 export type ActivityFxResolution = {
   purpose: string; currency: string; baseCurrency: string; targetDate: string;
   automaticCandidateRevisionId: string | null; overrideValue: string | null;
@@ -130,6 +130,11 @@ export type ActivityEventContent = {
   semanticRole: string; merchant: string | null; note: string | null;
   feeAccountId: string | null; feeAmount: string | null;
   cutoverDate: string | null; migrationPolicy: string | null;
+  portfolioId?: string | null; instrumentId?: string | null; settlementAccountId?: string | null;
+  tradeType?: "BUY" | "SELL" | null; quantity?: string | null; unitPrice?: string | null;
+  tradeFee?: string | null; grossCashAmount?: string | null; withholdingTax?: string | null;
+  investmentFeeAmount?: string | null; investmentExpenseAmount?: string | null;
+  feeScope?: "instrument" | "portfolio" | null; settlementOverrideReason?: string | null;
 };
 export type ActivityItem = {
   eventId: string; eventOrder: number; eventType: string; effectiveDate: string;
@@ -142,7 +147,7 @@ export type ActivityItem = {
 export type ActivityPage = { items: ActivityItem[]; nextCursor: number | null };
 export type ActivityRequest = {
   startDate: string; endDate: string; context?: DrilldownContext;
-  eventType?: CashEventRequest["eventType"] | "Reversal";
+  eventType?: CashEventRequest["eventType"] | "SecurityBuy" | "SecuritySell" | "Dividend" | "InvestmentExpense" | "Reversal";
   accountId?: string; categoryId?: string; search?: string;
   cursor?: number; limit: number;
 };
@@ -182,6 +187,43 @@ export type ImportCommitResult = {
   eventWatermark: number; canonicalPostingSha256: string; alreadyCommitted: boolean;
 };
 
+export type InvestmentEventRequest = {
+  effectiveDate: string; sequence: number;
+  eventType: "SecurityBuy" | "SecuritySell" | "Dividend" | "InvestmentExpense";
+  portfolioId: string; instrumentId?: string; settlementAccountId: string;
+  quantity?: string; unitPrice?: string; tradeFee?: string;
+  grossCashAmount?: string; withholdingTax?: string; feeAmount?: string;
+  amount?: string; feeScope?: "instrument" | "portfolio";
+  settlementOverrideReason?: string; fxOverrides?: FxOverrideRequest[];
+};
+export type InvestmentPostingPreview = {
+  postingKind: string; accountId: string | null; portfolioId: string;
+  instrumentId: string | null; quantityDelta: string; currency: string;
+  baseValue: string | null; baseCurrency: string;
+};
+export type InvestmentEventPreview = {
+  eventType: InvestmentEventRequest["eventType"]; effectiveDate: string; sequence: number;
+  postings: InvestmentPostingPreview[]; quantityAfter: string | null;
+  carryingCostAfter: string | null; averageCostAfter: string | null;
+  realizedTradePnlAfter: string | null; qualityIssueCodes: string[];
+};
+export type PostedInvestmentEvent = { eventId: string; eventWatermark: number; revision: number; preview: InvestmentEventPreview };
+export type HoldingPosition = {
+  portfolioId: string; portfolioName: string; instrumentId: string; instrumentName: string;
+  currency: string; asOfDate: string; quantity: string; carryingCost: string;
+  averageCost: string | null; realizedTradePnl: string; netDividend: string;
+  independentExpense: string; marketPrice: string | null; priceRevisionId: string | null;
+  priceDate: string | null; priceAgeDays: number | null; marketValue: string | null;
+  fxRate: string | null; fxRevisionId: string | null; baseMarketValue: string | null;
+  unrealizedPnl: string | null; totalReturn: string | null;
+  valuationState: "valued" | "unvalued"; unvaluedReason: string | null; warningCodes: string[];
+};
+export type InvestmentWorkspace = {
+  asOfDate: string; baseCurrency: string; holdings: HoldingPosition[];
+  portfolioExpenses: { portfolioId: string; portfolioName: string; amount: string; currency: string }[];
+  eventWatermark: number; projectionVersion: string; calculationVersion: string;
+};
+
 export interface LedgerKitCommands {
   createLedger(request: CreateLedgerRequest): Promise<LedgerStatus>;
   openLedger(): Promise<LedgerStatus>;
@@ -202,4 +244,8 @@ export interface LedgerKitCommands {
   getActivity(request: ActivityRequest): Promise<ActivityPage>;
   analyzeImport(): Promise<ImportAnalysis>;
   commitImport(request: { batchId: string; confirmed: boolean }): Promise<ImportCommitResult>;
+  previewInvestmentEvent(request: InvestmentEventRequest): Promise<InvestmentEventPreview>;
+  postInvestmentEvent(request: InvestmentEventRequest): Promise<PostedInvestmentEvent>;
+  reviseInvestmentEvent(request: { targetEventId: string; reason: string; replacement: InvestmentEventRequest }): Promise<PostedInvestmentEvent>;
+  getInvestmentWorkspace(request: { asOfDate: string }): Promise<InvestmentWorkspace>;
 }

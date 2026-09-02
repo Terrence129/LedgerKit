@@ -13,6 +13,10 @@ pub enum PostingKind {
     RealizedTradePnl,
     NetDividend,
     IndependentExpense,
+    SettlementCash,
+    HoldingCost,
+    RealizedPnl,
+    PortfolioIndependentExpense,
 }
 
 impl PostingKind {
@@ -26,6 +30,10 @@ impl PostingKind {
             Self::RealizedTradePnl => "realized-trade-pnl",
             Self::NetDividend => "net-dividend",
             Self::IndependentExpense => "independent-expense",
+            Self::SettlementCash => "settlement-cash",
+            Self::HoldingCost => "holding-cost",
+            Self::RealizedPnl => "realized-pnl",
+            Self::PortfolioIndependentExpense => "portfolio-independent-expense",
         }
     }
 
@@ -43,6 +51,10 @@ impl PostingKind {
             "realized-trade-pnl" => Ok(Self::RealizedTradePnl),
             "net-dividend" => Ok(Self::NetDividend),
             "independent-expense" => Ok(Self::IndependentExpense),
+            "settlement-cash" => Ok(Self::SettlementCash),
+            "holding-cost" => Ok(Self::HoldingCost),
+            "realized-pnl" => Ok(Self::RealizedPnl),
+            "portfolio-independent-expense" => Ok(Self::PortfolioIndependentExpense),
             _ => Err(DomainError::PostingInvariantViolation),
         }
     }

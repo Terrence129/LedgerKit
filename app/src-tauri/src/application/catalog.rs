@@ -119,7 +119,7 @@ impl SecurityPriceRevision {
     ///
     /// # Errors
     ///
-    /// Returns the Decimal contract error or `POSITIVE_VALUE_REQUIRED`.
+    /// Returns the Decimal contract error or `PRICE_MUST_BE_POSITIVE`.
     pub fn new(
         revision_id: UuidV7,
         instrument_id: UuidV7,
@@ -131,7 +131,7 @@ impl SecurityPriceRevision {
     ) -> Result<Self, DomainError> {
         let price = Decimal::parse(price, DecimalUse::UnitPrice)?;
         if !price.is_positive() {
-            return Err(DomainError::PositiveValueRequired);
+            return Err(DomainError::PriceMustBePositive);
         }
         Ok(Self {
             revision_id,
@@ -227,4 +227,23 @@ pub trait CatalogPort: Send {
         instrument_id: UuidV7,
         target_date: &LocalDate,
     ) -> ApplicationResult<Option<MarketSelection>>;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn zero_security_price_uses_the_golden_error_contract() {
+        let result = SecurityPriceRevision::new(
+            UuidV7::from_parts(1_777_000_000_000, [7; 10]).unwrap(),
+            UuidV7::from_parts(1_777_000_000_001, [8; 10]).unwrap(),
+            LocalDate::parse("2026-02-11").unwrap(),
+            "0",
+            Currency::parse("USD").unwrap(),
+            CatalogText::parse("synthetic").unwrap(),
+            true,
+        );
+        assert_eq!(result, Err(DomainError::PriceMustBePositive));
+    }
 }

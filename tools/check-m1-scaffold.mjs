@@ -69,11 +69,15 @@ const expectedPermissions = [
   "allow-get-activity",
   "allow-get-expense-analysis",
   "allow-get-ledger-status",
+  "allow-get-investment-workspace",
   "allow-open-ledger",
   "allow-post-event",
+  "allow-post-investment-event",
   "allow-preview-event",
+  "allow-preview-investment-event",
   "allow-reverse-event",
   "allow-revise-event",
+  "allow-revise-investment-event",
   "allow-save-cash-account",
   "allow-save-category",
   "allow-save-fx-revision",
@@ -84,7 +88,7 @@ const expectedPermissions = [
   "allow-update-settings",
 ];
 if (JSON.stringify(privilegedPermissions.sort()) !== JSON.stringify(expectedPermissions.sort())) {
-  fail("reviewed capability set differs from the nineteen named operations");
+  fail("reviewed capability set differs from the twenty-three named operations");
 }
 
 const sourceFiles = walkFiles(join(appRoot, "src")).filter((path) => /\.(ts|tsx)$/.test(path));

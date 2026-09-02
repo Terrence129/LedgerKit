@@ -336,7 +336,7 @@ impl LedgerStore {
         commit(transaction)
     }
 
-    fn resolve_fx_rate(
+    pub(super) fn resolve_fx_rate(
         &self,
         currency: Currency,
         target_date: &LocalDate,
@@ -369,7 +369,7 @@ impl LedgerStore {
             .transpose()
     }
 
-    fn resolve_price(
+    pub(super) fn resolve_price(
         &self,
         instrument_id: UuidV7,
         target_date: &LocalDate,
@@ -445,7 +445,7 @@ impl LedgerStore {
         })
     }
 
-    fn base_currency(&self) -> ApplicationResult<Currency> {
+    pub(super) fn base_currency(&self) -> ApplicationResult<Currency> {
         let value: String = self
             .connection
             .query_row(

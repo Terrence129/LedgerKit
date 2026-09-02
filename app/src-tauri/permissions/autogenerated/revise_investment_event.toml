@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-revise-investment-event"
+description = "Enables the revise_investment_event command without any pre-configured scope."
+commands.allow = ["revise_investment_event"]
+
+[[permission]]
+identifier = "deny-revise-investment-event"
+description = "Denies the revise_investment_event command without any pre-configured scope."
+commands.deny = ["revise_investment_event"]

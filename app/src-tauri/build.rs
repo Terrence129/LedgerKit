@@ -17,6 +17,10 @@ fn main() {
         "reverse_event",
         "get_expense_analysis",
         "get_activity",
+        "preview_investment_event",
+        "post_investment_event",
+        "revise_investment_event",
+        "get_investment_workspace",
         "analyze_import",
         "commit_import",
     ];

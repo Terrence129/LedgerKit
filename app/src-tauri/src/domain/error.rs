@@ -26,6 +26,7 @@ pub enum DomainError {
     SemanticRoleInvalid,
     SortOrderInvalid,
     PositiveValueRequired,
+    PriceMustBePositive,
     FxSelfRateImmutable,
     PortfolioInstitutionMismatch,
     AccountBalanceNonzero,
@@ -43,6 +44,13 @@ pub enum DomainError {
     ReversalReasonRequired,
     EventAlreadyReversed,
     RevisionChainCycle,
+    TradeCurrencyMismatch,
+    NegativeHoldingNotAllowed,
+    SettlementOverrideReasonRequired,
+    SettlementInstitutionMismatch,
+    InstrumentRequiredForFeeScope,
+    PortfolioFeeInstrumentForbidden,
+    DividendDeductionsExceedGross,
 }
 
 impl DomainError {
@@ -73,6 +81,7 @@ impl DomainError {
             Self::SemanticRoleInvalid => "SEMANTIC_ROLE_INVALID",
             Self::SortOrderInvalid => "SORT_ORDER_INVALID",
             Self::PositiveValueRequired => "POSITIVE_VALUE_REQUIRED",
+            Self::PriceMustBePositive => "PRICE_MUST_BE_POSITIVE",
             Self::FxSelfRateImmutable => "FX_SELF_RATE_IMMUTABLE",
             Self::PortfolioInstitutionMismatch => "PORTFOLIO_INSTITUTION_MISMATCH",
             Self::AccountBalanceNonzero => "ACCOUNT_BALANCE_NONZERO",
@@ -90,6 +99,13 @@ impl DomainError {
             Self::ReversalReasonRequired => "REVERSAL_REASON_REQUIRED",
             Self::EventAlreadyReversed => "EVENT_ALREADY_REVERSED",
             Self::RevisionChainCycle => "REVISION_CHAIN_CYCLE",
+            Self::TradeCurrencyMismatch => "TRADE_CURRENCY_MISMATCH",
+            Self::NegativeHoldingNotAllowed => "NEGATIVE_HOLDING_NOT_ALLOWED",
+            Self::SettlementOverrideReasonRequired => "SETTLEMENT_OVERRIDE_REASON_REQUIRED",
+            Self::SettlementInstitutionMismatch => "SETTLEMENT_INSTITUTION_MISMATCH",
+            Self::InstrumentRequiredForFeeScope => "INSTRUMENT_REQUIRED_FOR_FEE_SCOPE",
+            Self::PortfolioFeeInstrumentForbidden => "PORTFOLIO_FEE_INSTRUMENT_FORBIDDEN",
+            Self::DividendDeductionsExceedGross => "DIVIDEND_DEDUCTIONS_EXCEED_GROSS",
         }
     }
 }

@@ -472,7 +472,7 @@ fn build_plan(candidate: &mut LedgerStore, parsed: &ParsedWorkbook) -> ImportPla
                         .postings
                         .into_iter()
                         .map(|posting| ImportPosting {
-                            account_id: posting.account_id,
+                            account_id: posting.account_id.unwrap_or_default(),
                             quantity_delta: posting.quantity_delta,
                             currency: posting.currency,
                             base_value: posting.base_value,

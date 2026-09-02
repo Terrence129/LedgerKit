@@ -6,5 +6,6 @@ pub mod catalog;
 pub mod error;
 pub mod facade;
 pub mod import;
+pub mod investment;
 pub mod ledger;
 pub mod settings;

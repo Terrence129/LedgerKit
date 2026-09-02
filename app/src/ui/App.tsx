@@ -12,6 +12,7 @@ import type {
   SavePriceRevisionRequest,
 } from "../command-client/contracts";
 import { ActivityPage } from "./ActivityPage";
+import { AssetsPage } from "./AssetsPage";
 import { HealthHome, type WorkspaceView } from "./HealthHome";
 import { ImportWizard } from "./ImportWizard";
 import { applyDocumentLocale, localeFromSystemHint, systemLocaleHint, type SupportedLocale } from "./i18n";
@@ -114,7 +115,10 @@ export function App() {
         onPost={(request) => execute(() => ledgerKitCommands.postEvent(request))}
         onRevise={(request) => execute(() => ledgerKitCommands.reviseEvent(request))}
         onReverse={(request) => execute(() => ledgerKitCommands.reverseEvent(request))}
+        onPreviewInvestment={(request) => execute(() => ledgerKitCommands.previewInvestmentEvent(request), false)}
+        onPostInvestment={(request) => execute(() => ledgerKitCommands.postInvestmentEvent(request))}
       /> : null}
+      assetsContent={status?.ledgerState === "open" ? <AssetsPage locale={locale} status={status} onLoad={(request) => ledgerKitCommands.getInvestmentWorkspace(request)} /> : null}
       importContent={<ImportWizard
         locale={locale}
         busy={busy}

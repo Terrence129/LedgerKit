@@ -156,6 +156,15 @@ td code { overflow-wrap: anywhere; }
 .relation-list li { display: grid; grid-template-columns: 12rem 1fr; gap: 0.6rem; border-top: 1px solid var(--color-line); padding-block: 0.5rem; }
 .relation-list code { overflow-wrap: anywhere; }
 .audit-line { border-top: 1px solid var(--color-line); margin-top: 1rem; padding-top: 0.8rem; color: var(--color-muted); }
+.investment-preview { margin-top: 1rem; }
+.asset-reference-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.2rem; }
+.asset-reference-grid article { border: 1px solid var(--color-line); border-radius: var(--radius-large); padding: 1rem; background: var(--color-surface); box-shadow: var(--shadow-card); }
+.asset-reference-grid ul { display: grid; gap: 0.55rem; margin: 0; padding: 0; list-style: none; }
+.asset-reference-grid li { display: grid; border-top: 1px solid var(--color-line); padding-top: 0.5rem; }
+.asset-reference-grid small, .asset-reference-grid span { color: var(--color-muted); }
+.assets-page .activity-heading form { display: flex; gap: 0.6rem; align-items: end; }
+.assets-page .activity-heading label { display: grid; gap: 0.25rem; color: var(--color-muted); font-size: 0.8rem; font-weight: 700; }
+.table-link { min-height: auto; border: 0; padding: 0; color: var(--color-accent); background: transparent; text-align: left; text-decoration: underline; }
 button.danger { border-color: var(--color-error); color: white; background: var(--color-error); }
 .reversal-panel { display: grid; gap: 0.8rem; }
 
@@ -165,7 +174,7 @@ button.danger { border-color: var(--color-error); color: white; background: var(
   .brand small { display: none; }
   .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .next-card { grid-template-columns: 1fr; }
-  .catalog-grid, .protection-card, .editor-grid, .filter-grid, .preview-facts { grid-template-columns: 1fr 1fr; }
+  .catalog-grid, .protection-card, .editor-grid, .filter-grid, .preview-facts, .asset-reference-grid { grid-template-columns: 1fr 1fr; }
   .issue-list li { grid-template-columns: 1fr; }
   .override-row { grid-template-columns: 1fr 1fr; }
 }
@@ -174,7 +183,8 @@ button.danger { border-color: var(--color-error); color: white; background: var(
   .masthead { flex-direction: column; }
   .language-control, .language-control select { width: 100%; }
   .status-grid { grid-template-columns: 1fr; }
-  .compact-form, .catalog-card form, .editor-grid, .filter-grid, .detail-grid, .override-row, .preview-facts { grid-template-columns: 1fr; }
+  .compact-form, .catalog-card form, .editor-grid, .filter-grid, .detail-grid, .override-row, .preview-facts, .asset-reference-grid { grid-template-columns: 1fr; }
+  .assets-page .activity-heading form { display: grid; width: 100%; }
   .compact-form button, .compact-form label, .compact-form small { grid-column: 1; grid-row: auto; }
   .activity-heading { display: grid; }
   .primary-link { width: 100%; text-align: center; }

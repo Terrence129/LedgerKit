@@ -13,7 +13,8 @@ use tauri::Manager;
 
 use crate::ipc::{
     AppState, analyze_import, commit_import, create_ledger, get_activity, get_expense_analysis,
-    get_ledger_status, open_ledger, post_event, preview_event, reverse_event, revise_event,
+    get_investment_workspace, get_ledger_status, open_ledger, post_event, post_investment_event,
+    preview_event, preview_investment_event, reverse_event, revise_event, revise_investment_event,
     save_cash_account, save_category, save_fx_revision, save_institution, save_instrument,
     save_portfolio, save_price_revision, update_settings,
 };
@@ -61,6 +62,10 @@ pub fn run() {
             reverse_event,
             get_expense_analysis,
             get_activity,
+            preview_investment_event,
+            post_investment_event,
+            revise_investment_event,
+            get_investment_workspace,
             analyze_import,
             commit_import
         ])

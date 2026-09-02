@@ -3,7 +3,7 @@
 use sha2::{Digest, Sha256};
 
 pub const APPLICATION_ID: u32 = 1_280_002_388;
-pub const SCHEMA_VERSION: u32 = 3;
+pub const SCHEMA_VERSION: u32 = 4;
 
 pub const REQUIRED_TABLES: &[&str] = &[
     "app_settings",
@@ -279,7 +279,8 @@ CREATE TABLE dividend_details (
     settlement_account_id TEXT NOT NULL REFERENCES cash_accounts(account_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
     gross_cash_amount TEXT NOT NULL,
     withholding_tax TEXT NOT NULL,
-    fee_amount TEXT NOT NULL
+    fee_amount TEXT NOT NULL,
+    settlement_override_reason TEXT
 ) STRICT;
 
 CREATE TABLE investment_expense_details (
@@ -289,6 +290,7 @@ CREATE TABLE investment_expense_details (
     settlement_account_id TEXT NOT NULL REFERENCES cash_accounts(account_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
     amount TEXT NOT NULL,
     fee_scope TEXT NOT NULL CHECK (fee_scope IN ('instrument', 'portfolio')),
+    settlement_override_reason TEXT,
     CHECK ((fee_scope = 'instrument' AND instrument_id IS NOT NULL) OR (fee_scope = 'portfolio' AND instrument_id IS NULL))
 ) STRICT;
 
@@ -375,7 +377,8 @@ CREATE TABLE ledger_postings (
     posting_ordinal INTEGER NOT NULL CHECK (posting_ordinal > 0),
     posting_kind TEXT NOT NULL CHECK (posting_kind IN (
         'cash', 'cash-reversal', 'security-quantity', 'security-cost', 'realized-trade-pnl',
-        'net-dividend', 'independent-expense'
+        'net-dividend', 'independent-expense', 'settlement-cash', 'holding-cost',
+        'realized-pnl', 'portfolio-independent-expense'
     )),
     account_id TEXT REFERENCES cash_accounts(account_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
     portfolio_id TEXT REFERENCES portfolios(portfolio_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
@@ -385,7 +388,7 @@ CREATE TABLE ledger_postings (
     base_value TEXT,
     base_currency TEXT NOT NULL CHECK (length(base_currency) = 3 AND base_currency = upper(base_currency)),
     calculation_version TEXT NOT NULL,
-    CHECK (account_id IS NOT NULL OR instrument_id IS NOT NULL),
+    CHECK (account_id IS NOT NULL OR portfolio_id IS NOT NULL OR instrument_id IS NOT NULL),
     UNIQUE (event_id, posting_ordinal)
 ) STRICT;
 

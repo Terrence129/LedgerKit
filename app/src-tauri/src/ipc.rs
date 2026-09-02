@@ -16,11 +16,16 @@ use crate::application::catalog::{
 use crate::application::error::ApplicationError;
 use crate::application::facade::ApplicationFacade;
 use crate::application::import::{ImportAnalysis, ImportCommitResult};
+use crate::application::investment::{
+    InvestmentEventInput, InvestmentEventPreview, InvestmentEventType, InvestmentRevisionInput,
+    InvestmentWorkspace, PostedInvestmentEvent,
+};
 use crate::application::ledger::{LedgerState, LedgerStatus};
 use crate::application::settings::PRIVILEGED_OPERATION_COUNT;
 use crate::domain::catalog::SemanticRole;
 use crate::domain::decimal::{Decimal, DecimalUse};
 use crate::domain::error::DomainError;
+use crate::domain::investment::FeeScope;
 use crate::domain::types::{Currency, LocalDate, Sequence, UuidV7};
 use crate::infrastructure::file_settings::FileSettingsRepository;
 use crate::infrastructure::sqlite::SqliteLedgerManager;
@@ -331,6 +336,86 @@ pub struct CashEventRequest {
     currency_precision_confirmed: bool,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct InvestmentEventRequest {
+    effective_date: String,
+    sequence: u64,
+    event_type: String,
+    portfolio_id: String,
+    instrument_id: Option<String>,
+    settlement_account_id: String,
+    quantity: Option<String>,
+    unit_price: Option<String>,
+    trade_fee: Option<String>,
+    gross_cash_amount: Option<String>,
+    withholding_tax: Option<String>,
+    fee_amount: Option<String>,
+    amount: Option<String>,
+    fee_scope: Option<String>,
+    settlement_override_reason: Option<String>,
+    #[serde(default)]
+    fx_overrides: Vec<FxOverrideRequest>,
+}
+
+impl InvestmentEventRequest {
+    fn into_application(self) -> Result<InvestmentEventInput, CommandError> {
+        Ok(InvestmentEventInput {
+            effective_date: LocalDate::parse(&self.effective_date)?,
+            sequence: Sequence::new(self.sequence)?,
+            event_type: InvestmentEventType::parse(&self.event_type)?,
+            portfolio_id: UuidV7::parse(&self.portfolio_id)?,
+            instrument_id: parse_optional_id(self.instrument_id.as_deref())?,
+            settlement_account_id: UuidV7::parse(&self.settlement_account_id)?,
+            quantity: parse_optional_decimal_use(self.quantity.as_deref(), DecimalUse::Quantity)?,
+            unit_price: parse_optional_decimal_use(
+                self.unit_price.as_deref(),
+                DecimalUse::UnitPrice,
+            )?,
+            trade_fee: parse_optional_decimal(self.trade_fee.as_deref())?,
+            gross_cash_amount: parse_optional_decimal(self.gross_cash_amount.as_deref())?,
+            withholding_tax: parse_optional_decimal(self.withholding_tax.as_deref())?,
+            fee_amount: parse_optional_decimal(self.fee_amount.as_deref())?,
+            amount: parse_optional_decimal(self.amount.as_deref())?,
+            fee_scope: self
+                .fee_scope
+                .as_deref()
+                .map(|value| match value {
+                    "instrument" => Ok(FeeScope::Instrument),
+                    "portfolio" => Ok(FeeScope::Portfolio),
+                    _ => Err(CommandError::from(DomainError::EventInvariantViolation)),
+                })
+                .transpose()?,
+            settlement_override_reason: self.settlement_override_reason,
+            fx_overrides: self
+                .fx_overrides
+                .into_iter()
+                .map(|item| {
+                    Ok(FxOverrideInput {
+                        currency: Currency::parse(&item.currency)?,
+                        value: Decimal::parse(&item.value, DecimalUse::FxRate)?,
+                        reason: item.reason,
+                    })
+                })
+                .collect::<Result<Vec<_>, CommandError>>()?,
+        })
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ReviseInvestmentEventRequest {
+    target_event_id: String,
+    reason: String,
+    replacement: InvestmentEventRequest,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct InvestmentWorkspaceRequest {
+    as_of_date: String,
+}
+
 impl CashEventRequest {
     fn into_application(self) -> Result<CashEventInput, CommandError> {
         Ok(CashEventInput {
@@ -608,6 +693,57 @@ pub fn reverse_event(
 
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
+pub fn preview_investment_event(
+    request: InvestmentEventRequest,
+    state: State<'_, AppState>,
+) -> Result<InvestmentEventPreview, CommandError> {
+    let input = request.into_application()?;
+    lock_facade(&state)?
+        .preview_investment_event(&input)
+        .map_err(Into::into)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn post_investment_event(
+    request: InvestmentEventRequest,
+    state: State<'_, AppState>,
+) -> Result<PostedInvestmentEvent, CommandError> {
+    let input = request.into_application()?;
+    lock_facade(&state)?
+        .post_investment_event(&input)
+        .map_err(Into::into)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn revise_investment_event(
+    request: ReviseInvestmentEventRequest,
+    state: State<'_, AppState>,
+) -> Result<PostedInvestmentEvent, CommandError> {
+    let input = InvestmentRevisionInput {
+        target_event_id: UuidV7::parse(&request.target_event_id)?,
+        reason: request.reason,
+        replacement: request.replacement.into_application()?,
+    };
+    lock_facade(&state)?
+        .revise_investment_event(&input)
+        .map_err(Into::into)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn get_investment_workspace(
+    request: InvestmentWorkspaceRequest,
+    state: State<'_, AppState>,
+) -> Result<InvestmentWorkspace, CommandError> {
+    lock_facade(&state)?
+        .get_investment_workspace(&request.as_of_date)
+        .map_err(Into::into)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn get_expense_analysis(
     request: ExpenseAnalysisRequest,
     state: State<'_, AppState>,
@@ -661,6 +797,13 @@ pub fn get_activity(
         .map(|value| -> Result<String, CommandError> {
             if value == "Reversal" {
                 Ok(value)
+            } else if let Ok(investment) = InvestmentEventType::parse(&value) {
+                Ok(match investment {
+                    InvestmentEventType::SecurityBuy | InvestmentEventType::SecuritySell => {
+                        "SecurityTrade".to_owned()
+                    }
+                    _ => investment.as_str().to_owned(),
+                })
             } else {
                 Ok(EventInputType::parse(&value)?.as_str().to_owned())
             }
@@ -725,6 +868,16 @@ fn parse_optional_id(value: Option<&str>) -> Result<Option<UuidV7>, CommandError
 fn parse_optional_decimal(value: Option<&str>) -> Result<Option<Decimal>, CommandError> {
     value
         .map(|item| Decimal::parse(item, DecimalUse::Amount))
+        .transpose()
+        .map_err(Into::into)
+}
+
+fn parse_optional_decimal_use(
+    value: Option<&str>,
+    usage: DecimalUse,
+) -> Result<Option<Decimal>, CommandError> {
+    value
+        .map(|item| Decimal::parse(item, usage))
         .transpose()
         .map_err(Into::into)
 }

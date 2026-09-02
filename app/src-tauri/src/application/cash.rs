@@ -96,7 +96,7 @@ pub struct FxResolutionResult {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PostingPreview {
-    pub account_id: String,
+    pub account_id: Option<String>,
     pub quantity_delta: String,
     pub currency: String,
     pub base_value: Option<String>,
@@ -274,6 +274,8 @@ pub struct ActivityQuery {
 pub struct ActivityPosting {
     pub posting_kind: String,
     pub account_id: Option<String>,
+    pub portfolio_id: Option<String>,
+    pub instrument_id: Option<String>,
     pub quantity_delta: String,
     pub currency: String,
     pub base_value: Option<String>,
@@ -310,6 +312,19 @@ pub struct ActivityEventContent {
     pub fee_amount: Option<String>,
     pub cutover_date: Option<String>,
     pub migration_policy: Option<String>,
+    pub portfolio_id: Option<String>,
+    pub instrument_id: Option<String>,
+    pub settlement_account_id: Option<String>,
+    pub trade_type: Option<String>,
+    pub quantity: Option<String>,
+    pub unit_price: Option<String>,
+    pub trade_fee: Option<String>,
+    pub gross_cash_amount: Option<String>,
+    pub withholding_tax: Option<String>,
+    pub investment_fee_amount: Option<String>,
+    pub investment_expense_amount: Option<String>,
+    pub fee_scope: Option<String>,
+    pub settlement_override_reason: Option<String>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]

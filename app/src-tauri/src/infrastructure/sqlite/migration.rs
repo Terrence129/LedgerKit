@@ -235,9 +235,14 @@ fn migrate_to_current(transaction: &Transaction<'_>, source_version: u32) -> App
         0 => migrate_legacy_to_current(transaction),
         1 => {
             migrate_v1_to_v2(transaction)?;
-            migrate_v2_to_v3(transaction)
+            migrate_v2_to_v3(transaction)?;
+            migrate_v3_to_v4(transaction)
         }
-        2 => migrate_v2_to_v3(transaction),
+        2 => {
+            migrate_v2_to_v3(transaction)?;
+            migrate_v3_to_v4(transaction)
+        }
+        3 => migrate_v3_to_v4(transaction),
         _ => Err(ApplicationError::MigrationFailed),
     }
 }
@@ -306,7 +311,8 @@ fn migrate_v1_to_v2(transaction: &Transaction<'_>) -> ApplicationResult<()> {
                 posting_ordinal INTEGER NOT NULL CHECK (posting_ordinal > 0),
                 posting_kind TEXT NOT NULL CHECK (posting_kind IN (
                     'cash', 'cash-reversal', 'security-quantity', 'security-cost', 'realized-trade-pnl',
-                    'net-dividend', 'independent-expense'
+                    'net-dividend', 'independent-expense', 'settlement-cash', 'holding-cost',
+                    'realized-pnl', 'portfolio-independent-expense'
                 )),
                 account_id TEXT REFERENCES cash_accounts(account_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
                 portfolio_id TEXT REFERENCES portfolios(portfolio_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
@@ -442,6 +448,74 @@ fn migrate_v2_to_v3(transaction: &Transaction<'_>) -> ApplicationResult<()> {
             .map_err(|_| ApplicationError::MigrationFailed)?;
     }
     transaction
+        .execute_batch("PRAGMA user_version = 3;")
+        .map_err(|_| ApplicationError::MigrationFailed)?;
+    transaction
+        .execute(
+            "INSERT INTO migration_history(schema_version,applied_at_utc,application_version,schema_hash) VALUES(?1,CURRENT_TIMESTAMP,?2,?3)",
+            rusqlite::params![3, env!("CARGO_PKG_VERSION"), "superseded-by-v4"],
+        )
+        .map_err(|_| ApplicationError::MigrationFailed)?;
+    Ok(())
+}
+
+#[allow(clippy::too_many_lines)]
+fn migrate_v3_to_v4(transaction: &Transaction<'_>) -> ApplicationResult<()> {
+    add_optional_column(
+        transaction,
+        "dividend_details",
+        "settlement_override_reason",
+    )?;
+    add_optional_column(
+        transaction,
+        "investment_expense_details",
+        "settlement_override_reason",
+    )?;
+    transaction
+        .execute_batch(
+            "DROP TRIGGER trg_freeze_cash_account_currency;
+             DROP INDEX idx_ledger_postings_event_kind;
+             ALTER TABLE ledger_postings RENAME TO ledger_postings_v3;
+             CREATE TABLE ledger_postings (
+                posting_id TEXT PRIMARY KEY,
+                event_id TEXT NOT NULL REFERENCES business_events(event_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
+                posting_ordinal INTEGER NOT NULL CHECK (posting_ordinal > 0),
+                posting_kind TEXT NOT NULL CHECK (posting_kind IN (
+                    'cash', 'cash-reversal', 'security-quantity', 'security-cost', 'realized-trade-pnl',
+                    'net-dividend', 'independent-expense', 'settlement-cash', 'holding-cost',
+                    'realized-pnl', 'portfolio-independent-expense'
+                )),
+                account_id TEXT REFERENCES cash_accounts(account_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
+                portfolio_id TEXT REFERENCES portfolios(portfolio_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
+                instrument_id TEXT REFERENCES security_instruments(instrument_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
+                quantity_delta TEXT NOT NULL,
+                currency TEXT NOT NULL CHECK (length(currency) = 3 AND currency = upper(currency)),
+                base_value TEXT,
+                base_currency TEXT NOT NULL CHECK (length(base_currency) = 3 AND base_currency = upper(base_currency)),
+                calculation_version TEXT NOT NULL,
+                CHECK (account_id IS NOT NULL OR portfolio_id IS NOT NULL OR instrument_id IS NOT NULL),
+                UNIQUE (event_id, posting_ordinal)
+             ) STRICT;
+             INSERT INTO ledger_postings(
+                posting_id,event_id,posting_ordinal,posting_kind,account_id,portfolio_id,instrument_id,
+                quantity_delta,currency,base_value,base_currency,calculation_version
+             )
+             SELECT posting_id,event_id,posting_ordinal,posting_kind,account_id,portfolio_id,instrument_id,
+                    quantity_delta,currency,base_value,base_currency,calculation_version
+             FROM ledger_postings_v3;
+             DROP TABLE ledger_postings_v3;
+             CREATE INDEX idx_ledger_postings_event_kind ON ledger_postings(event_id, posting_kind);
+             CREATE TRIGGER trg_freeze_cash_account_currency
+             BEFORE UPDATE OF currency ON cash_accounts
+             WHEN OLD.currency <> NEW.currency AND EXISTS (
+                SELECT 1 FROM ledger_postings WHERE account_id = OLD.account_id LIMIT 1
+             )
+             BEGIN
+                SELECT RAISE(ABORT, 'CASH_ACCOUNT_CURRENCY_FROZEN');
+             END;",
+        )
+        .map_err(|_| ApplicationError::MigrationFailed)?;
+    transaction
         .execute_batch(&format!("PRAGMA user_version = {SCHEMA_VERSION};"))
         .map_err(|_| ApplicationError::MigrationFailed)?;
     transaction
@@ -450,6 +524,37 @@ fn migrate_v2_to_v3(transaction: &Transaction<'_>) -> ApplicationResult<()> {
             rusqlite::params![SCHEMA_VERSION, env!("CARGO_PKG_VERSION"), schema_hash()],
         )
         .map_err(|_| ApplicationError::MigrationFailed)?;
+    Ok(())
+}
+
+fn add_optional_column(
+    transaction: &Transaction<'_>,
+    table: &str,
+    column: &str,
+) -> ApplicationResult<()> {
+    if !matches!(
+        (table, column),
+        (
+            "dividend_details" | "investment_expense_details",
+            "settlement_override_reason"
+        )
+    ) {
+        return Err(ApplicationError::MigrationFailed);
+    }
+    let mut statement = transaction
+        .prepare(&format!("PRAGMA table_info({table})"))
+        .map_err(|_| ApplicationError::MigrationFailed)?;
+    let columns = statement
+        .query_map([], |row| row.get::<_, String>(1))
+        .map_err(|_| ApplicationError::MigrationFailed)?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| ApplicationError::MigrationFailed)?;
+    drop(statement);
+    if !columns.iter().any(|name| name == column) {
+        transaction
+            .execute_batch(&format!("ALTER TABLE {table} ADD COLUMN {column} TEXT;"))
+            .map_err(|_| ApplicationError::MigrationFailed)?;
+    }
     Ok(())
 }
 

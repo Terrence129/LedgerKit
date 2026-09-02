@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-post-investment-event"
+description = "Enables the post_investment_event command without any pre-configured scope."
+commands.allow = ["post_investment_event"]
+
+[[permission]]
+identifier = "deny-post-investment-event"
+description = "Denies the post_investment_event command without any pre-configured scope."
+commands.deny = ["post_investment_event"]

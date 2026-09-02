@@ -23,6 +23,7 @@ use crate::domain::types::{Currency, LocalDate, UuidV7};
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use rust_decimal::Decimal as RustDecimal;
 
+use super::investment_store::rebuild_investment_derived;
 use super::store::{CALCULATION_VERSION, LedgerStore, SqliteLedgerManager, map_sqlite_error};
 
 pub const EXPENSE_POLICY_VERSION: &str = "expense-policy-v1";
@@ -192,6 +193,7 @@ impl LedgerStore {
         )
     }
 
+    #[allow(clippy::too_many_lines)] // One transaction reverses both cash and investment postings.
     fn reverse_cash_event(&mut self, input: &ReversalInput) -> ApplicationResult<PostedEvent> {
         if input.reason.trim().is_empty() {
             return Err(DomainError::ReversalReasonRequired.into());
@@ -230,21 +232,21 @@ impl LedgerStore {
         let mut preview_postings = Vec::with_capacity(rows.len());
         let mut reversed_rows = Vec::with_capacity(rows.len());
         for row in rows {
-            let delta = row.1.checked_neg(DecimalUse::Internal)?;
+            let delta = row.quantity_delta.checked_neg(DecimalUse::Internal)?;
             let base_value = row
-                .3
+                .base_value
                 .as_ref()
                 .map(|value| value.checked_neg(DecimalUse::Internal))
                 .transpose()?;
             preview_postings.push(PostingPreview {
-                account_id: row.0.clone(),
+                account_id: row.account_id.clone(),
                 quantity_delta: delta.as_str().to_owned(),
-                currency: row.2.to_string(),
+                currency: row.currency.to_string(),
                 base_value: base_value.as_ref().map(|value| value.as_str().to_owned()),
                 base_currency: base_currency.to_string(),
                 role: "reversal",
             });
-            reversed_rows.push((row.0, delta, row.2, base_value));
+            reversed_rows.push((row, delta, base_value));
         }
         let preview = EventPreview {
             event_type: "Reversal",
@@ -269,17 +271,23 @@ impl LedgerStore {
                 params![event_id.to_string(), input.effective_date.as_str(), sequence_i64(input.sequence.get())?, target, input.reason, CALCULATION_VERSION],
             )
             .map_err(map_sqlite_error)?;
-        for (index, (account_id, delta, currency, base_value)) in reversed_rows.iter().enumerate() {
+        for (index, (source, delta, base_value)) in reversed_rows.iter().enumerate() {
+            let posting_kind = if source.posting_kind == "cash" {
+                "cash-reversal"
+            } else {
+                source.posting_kind.as_str()
+            };
             transaction
                 .execute(
-                    "INSERT INTO ledger_postings(posting_id,event_id,posting_ordinal,posting_kind,account_id,quantity_delta,currency,base_value,base_currency,calculation_version)
-                     VALUES(?1,?2,?3,'cash-reversal',?4,?5,?6,?7,?8,?9)",
-                    params![UuidV7::new()?.to_string(), event_id.to_string(), index_i64(index)?, account_id, delta.as_str(), currency.as_str(), base_value.as_ref().map(Decimal::as_str), base_currency.as_str(), CALCULATION_VERSION],
+                    "INSERT INTO ledger_postings(posting_id,event_id,posting_ordinal,posting_kind,account_id,portfolio_id,instrument_id,quantity_delta,currency,base_value,base_currency,calculation_version)
+                     VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12)",
+                    params![UuidV7::new()?.to_string(), event_id.to_string(), index_i64(index)?, posting_kind, source.account_id, source.portfolio_id, source.instrument_id, delta.as_str(), source.currency.as_str(), base_value.as_ref().map(Decimal::as_str), base_currency.as_str(), CALCULATION_VERSION],
                 )
                 .map_err(map_sqlite_error)?;
         }
         insert_audit(&transaction, event_id, "reverse", 1, Some(&input.reason))?;
         let watermark = event_order(&transaction, event_id)?;
+        rebuild_investment_derived(&transaction, watermark)?;
         rebuild_cash_derived(&transaction, watermark)?;
         transaction
             .commit()
@@ -334,7 +342,7 @@ impl LedgerStore {
             }
             let role = if purpose == "fee" { "fee" } else { "principal" };
             previews.push(PostingPreview {
-                account_id: draft.account_id.to_string(),
+                account_id: Some(draft.account_id.to_string()),
                 quantity_delta: draft.quantity_delta.as_str().to_owned(),
                 currency: draft.currency.to_string(),
                 base_value: base_value.as_ref().map(|value| value.as_str().to_owned()),
@@ -879,7 +887,15 @@ fn event_order(transaction: &Transaction<'_>, event_id: UuidV7) -> ApplicationRe
         .map_err(|_| ApplicationError::TransactionFailed)
 }
 
-type StoredPostingRow = (String, Decimal, Currency, Option<Decimal>);
+struct StoredPostingRow {
+    posting_kind: String,
+    account_id: Option<String>,
+    portfolio_id: Option<String>,
+    instrument_id: Option<String>,
+    quantity_delta: Decimal,
+    currency: Currency,
+    base_value: Option<Decimal>,
+}
 
 fn load_posting_rows(
     connection: &Connection,
@@ -887,30 +903,37 @@ fn load_posting_rows(
 ) -> ApplicationResult<Vec<StoredPostingRow>> {
     let mut statement = connection
         .prepare(
-            "SELECT account_id,quantity_delta,currency,base_value FROM ledger_postings WHERE event_id=?1 ORDER BY posting_ordinal",
+            "SELECT posting_kind,account_id,portfolio_id,instrument_id,quantity_delta,currency,base_value FROM ledger_postings WHERE event_id=?1 ORDER BY posting_ordinal",
         )
         .map_err(|_| ApplicationError::TransactionFailed)?;
     statement
         .query_map([event_id], |row| {
             Ok((
                 row.get::<_, String>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
+                row.get::<_, Option<String>>(1)?,
+                row.get::<_, Option<String>>(2)?,
                 row.get::<_, Option<String>>(3)?,
+                row.get::<_, String>(4)?,
+                row.get::<_, String>(5)?,
+                row.get::<_, Option<String>>(6)?,
             ))
         })
         .map_err(|_| ApplicationError::TransactionFailed)?
         .map(|row| {
             let row = row.map_err(|_| ApplicationError::TransactionFailed)?;
-            Ok((
-                row.0,
-                Decimal::parse(&row.1, DecimalUse::Internal)?,
-                Currency::parse(&row.2)?,
-                row.3
+            Ok(StoredPostingRow {
+                posting_kind: row.0,
+                account_id: row.1,
+                portfolio_id: row.2,
+                instrument_id: row.3,
+                quantity_delta: Decimal::parse(&row.4, DecimalUse::Internal)?,
+                currency: Currency::parse(&row.5)?,
+                base_value: row
+                    .6
                     .as_deref()
                     .map(|value| Decimal::parse(value, DecimalUse::Internal))
                     .transpose()?,
-            ))
+            })
         })
         .collect()
 }
@@ -935,7 +958,7 @@ pub(super) fn rebuild_cash_derived(
             .prepare(
                 "SELECT p.account_id,p.quantity_delta,p.currency,p.base_value,e.event_id,e.event_type,e.effective_date,p.posting_ordinal
                  FROM ledger_postings p JOIN business_events e ON e.event_id=p.event_id
-                 WHERE p.posting_kind IN ('cash','cash-reversal')
+                 WHERE p.posting_kind IN ('cash','cash-reversal','settlement-cash')
                    AND e.event_order<=?1 AND e.event_type<>'Reversal'
                    AND NOT EXISTS(SELECT 1 FROM business_events n WHERE n.supersedes_event_id=e.event_id AND n.event_order<=?1)
                    AND NOT EXISTS(SELECT 1 FROM business_events r WHERE r.reverses_event_id=e.event_id AND r.event_order<=?1)
@@ -2021,6 +2044,24 @@ struct ContributionRow {
     currency: String,
 }
 
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct InvestmentActivityContent {
+    portfolio_id: Option<String>,
+    instrument_id: Option<String>,
+    settlement_account_id: Option<String>,
+    trade_type: Option<String>,
+    quantity: Option<String>,
+    unit_price: Option<String>,
+    trade_fee: Option<String>,
+    gross_cash_amount: Option<String>,
+    withholding_tax: Option<String>,
+    investment_fee_amount: Option<String>,
+    investment_expense_amount: Option<String>,
+    fee_scope: Option<String>,
+    settlement_override_reason: Option<String>,
+}
+
 fn load_general_activity_ids(
     connection: &Connection,
     query: &ActivityQuery,
@@ -2056,6 +2097,9 @@ fn load_general_activity_ids(
              LEFT JOIN income_expense_details d ON d.event_id=e.event_id
              LEFT JOIN cash_event_fees f ON f.event_id=e.event_id
              LEFT JOIN currency_exchange_details x ON x.event_id=e.event_id
+             LEFT JOIN security_trade_details st ON st.event_id=e.event_id
+             LEFT JOIN dividend_details dv ON dv.event_id=e.event_id
+             LEFT JOIN investment_expense_details ie ON ie.event_id=e.event_id
              WHERE e.effective_date BETWEEN ?1 AND ?2
                AND e.event_order<=?3 AND e.event_order<?4 AND e.status='posted'
                AND (?5 IS NULL OR e.event_type=?5)
@@ -2070,7 +2114,9 @@ fn load_general_activity_ids(
                     OR (?7='system:fx-fee' AND x.fee_amount IS NOT NULL))
                AND (?8 IS NULL OR lower(
                      e.event_type||' '||e.event_id||' '||
-                     COALESCE(d.merchant,'')||' '||COALESCE(d.note,'')
+                     COALESCE(d.merchant,'')||' '||COALESCE(d.note,'')||' '||
+                     COALESCE(st.portfolio_id,dv.portfolio_id,ie.portfolio_id,'')||' '||
+                     COALESCE(st.instrument_id,dv.instrument_id,ie.instrument_id,'')
                    ) LIKE lower(?8) ESCAPE '!')
              ORDER BY e.event_order DESC
              LIMIT ?9",
@@ -2122,6 +2168,16 @@ fn load_activity_items(
                     x.to_amount,d.category_id,COALESCE(d.semantic_role,'normal'),d.merchant,d.note,
                     COALESCE(f.fee_account_id,x.fee_account_id),COALESCE(f.fee_amount,x.fee_amount),
                     ob.cutover_date,ob.migration_policy,
+                    json_object(
+                      'portfolioId',COALESCE(st.portfolio_id,dv.portfolio_id,ie.portfolio_id),
+                      'instrumentId',COALESCE(st.instrument_id,dv.instrument_id,ie.instrument_id),
+                      'settlementAccountId',COALESCE(st.settlement_account_id,dv.settlement_account_id,ie.settlement_account_id),
+                      'tradeType',st.trade_type,'quantity',st.quantity,'unitPrice',st.unit_price,
+                      'tradeFee',st.trade_fee,'grossCashAmount',dv.gross_cash_amount,
+                      'withholdingTax',dv.withholding_tax,'investmentFeeAmount',dv.fee_amount,
+                      'investmentExpenseAmount',ie.amount,'feeScope',ie.fee_scope,
+                      'settlementOverrideReason',COALESCE(st.settlement_override_reason,dv.settlement_override_reason,ie.settlement_override_reason)
+                    ),
                     e.supersedes_event_id,e.reverses_event_id,
                     (SELECT n.event_id FROM business_events n WHERE n.supersedes_event_id=e.event_id ORDER BY n.event_order LIMIT 1),
                     (SELECT r.event_id FROM business_events r WHERE r.reverses_event_id=e.event_id ORDER BY r.event_order LIMIT 1),
@@ -2132,12 +2188,14 @@ fn load_activity_items(
                       SELECT json_group_array(json_object(
                         'postingKind',ordered.posting_kind,
                         'accountId',ordered.account_id,
+                        'portfolioId',ordered.portfolio_id,
+                        'instrumentId',ordered.instrument_id,
                         'quantityDelta',ordered.quantity_delta,
                         'currency',ordered.currency,
                         'baseValue',ordered.base_value,
                         'baseCurrency',ordered.base_currency
                       )) FROM (
-                        SELECT posting_kind,account_id,quantity_delta,currency,base_value,base_currency
+                        SELECT posting_kind,account_id,portfolio_id,instrument_id,quantity_delta,currency,base_value,base_currency
                         FROM ledger_postings WHERE event_id=e.event_id ORDER BY posting_ordinal
                       ) ordered
                     ),'[]'),
@@ -2165,6 +2223,9 @@ fn load_activity_items(
              LEFT JOIN cash_event_fees f ON f.event_id=e.event_id
              LEFT JOIN transfer_details t ON t.event_id=e.event_id
              LEFT JOIN currency_exchange_details x ON x.event_id=e.event_id
+             LEFT JOIN security_trade_details st ON st.event_id=e.event_id
+             LEFT JOIN dividend_details dv ON dv.event_id=e.event_id
+             LEFT JOIN investment_expense_details ie ON ie.event_id=e.event_id
              WHERE e.event_id IN (SELECT value FROM json_each(?1))
              ORDER BY e.event_order DESC",
         )
@@ -2191,15 +2252,16 @@ fn load_activity_items(
                 row.get::<_, Option<String>>(16)?,
                 row.get::<_, Option<String>>(17)?,
                 row.get::<_, Option<String>>(18)?,
-                row.get::<_, Option<String>>(19)?,
+                row.get::<_, String>(19)?,
                 row.get::<_, Option<String>>(20)?,
                 row.get::<_, Option<String>>(21)?,
                 row.get::<_, Option<String>>(22)?,
-                row.get::<_, String>(23)?,
+                row.get::<_, Option<String>>(23)?,
                 row.get::<_, String>(24)?,
-                row.get::<_, Option<String>>(25)?,
-                row.get::<_, String>(26)?,
+                row.get::<_, String>(25)?,
+                row.get::<_, Option<String>>(26)?,
                 row.get::<_, String>(27)?,
+                row.get::<_, String>(28)?,
             ))
         })
         .map_err(|_| ApplicationError::TransactionFailed)?
@@ -2208,9 +2270,11 @@ fn load_activity_items(
     raw.into_iter()
         .map(|row| {
             let postings: Vec<ActivityPosting> =
-                serde_json::from_str(&row.26).map_err(|_| ApplicationError::TransactionFailed)?;
-            let fx_resolutions: Vec<ActivityFxResolution> =
                 serde_json::from_str(&row.27).map_err(|_| ApplicationError::TransactionFailed)?;
+            let fx_resolutions: Vec<ActivityFxResolution> =
+                serde_json::from_str(&row.28).map_err(|_| ApplicationError::TransactionFailed)?;
+            let investment: InvestmentActivityContent =
+                serde_json::from_str(&row.19).map_err(|_| ApplicationError::TransactionFailed)?;
             let reversal_preview = if row.2 == "Reversal" {
                 Vec::new()
             } else {
@@ -2218,8 +2282,14 @@ fn load_activity_items(
                     .iter()
                     .map(|posting| {
                         Ok(ActivityPosting {
-                            posting_kind: "cash-reversal".to_owned(),
+                            posting_kind: if posting.posting_kind == "cash" {
+                                "cash-reversal".to_owned()
+                            } else {
+                                posting.posting_kind.clone()
+                            },
                             account_id: posting.account_id.clone(),
+                            portfolio_id: posting.portfolio_id.clone(),
+                            instrument_id: posting.instrument_id.clone(),
                             quantity_delta: Decimal::parse(
                                 &posting.quantity_delta,
                                 DecimalUse::Internal,
@@ -2267,17 +2337,30 @@ fn load_activity_items(
                     fee_amount: row.16,
                     cutover_date: row.17,
                     migration_policy: row.18,
+                    portfolio_id: investment.portfolio_id,
+                    instrument_id: investment.instrument_id,
+                    settlement_account_id: investment.settlement_account_id,
+                    trade_type: investment.trade_type,
+                    quantity: investment.quantity,
+                    unit_price: investment.unit_price,
+                    trade_fee: investment.trade_fee,
+                    gross_cash_amount: investment.gross_cash_amount,
+                    withholding_tax: investment.withholding_tax,
+                    investment_fee_amount: investment.investment_fee_amount,
+                    investment_expense_amount: investment.investment_expense_amount,
+                    fee_scope: investment.fee_scope,
+                    settlement_override_reason: investment.settlement_override_reason,
                 },
                 relations: ActivityRelations {
-                    supersedes_event_id: row.19,
-                    reverses_event_id: row.20,
-                    superseded_by_event_id: row.21,
-                    reversed_by_event_id: row.22,
+                    supersedes_event_id: row.20,
+                    reverses_event_id: row.21,
+                    superseded_by_event_id: row.22,
+                    reversed_by_event_id: row.23,
                 },
                 audit: ActivityAudit {
-                    action: row.23,
-                    occurred_at_utc: row.24,
-                    reason: row.25,
+                    action: row.24,
+                    occurred_at_utc: row.25,
+                    reason: row.26,
                 },
                 postings,
                 reversal_preview,
