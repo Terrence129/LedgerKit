@@ -45,6 +45,12 @@ pub fn run() {
                             platform::webview::handle_focus_change(&webview_window, *focused);
                         }
                     }
+                    tauri::WindowEvent::Resized(_) => {
+                        if let Some(webview_window) = window.app_handle().get_webview_window("main")
+                        {
+                            platform::webview::refresh_memory_level(&webview_window);
+                        }
+                    }
                     tauri::WindowEvent::Destroyed => {
                         window.state::<AppState>().create_exit_backup();
                     }

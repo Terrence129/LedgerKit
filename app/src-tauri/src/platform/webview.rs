@@ -44,3 +44,8 @@ pub fn handle_focus_change(window: &tauri::WebviewWindow, focused: bool) {
         || window.is_minimized().is_ok_and(|minimized| minimized);
     let _ = set_memory_level(window, low);
 }
+
+pub fn refresh_memory_level(window: &tauri::WebviewWindow) {
+    let focused = window.is_focused().unwrap_or(true);
+    handle_focus_change(window, focused);
+}

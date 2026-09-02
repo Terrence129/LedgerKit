@@ -47,8 +47,8 @@ export function DataQualityPage(props: DataQualityPageProps) {
     void load();
   }
 
-  return <section className="quality-page">
-    <header className="dashboard-heading"><div><p className="eyebrow">{t("quality.eyebrow")}</p><h1>{t("quality.title")}</h1><p>{t("quality.description")}</p></div></header>
+  return <section className="quality-page" aria-labelledby="quality-page-title">
+    <header className="dashboard-heading"><div><p className="eyebrow">{t("quality.eyebrow")}</p><h1 id="quality-page-title">{t("quality.title")}</h1><p>{t("quality.description")}</p></div></header>
     <form className="date-toolbar" onSubmit={submit}><label htmlFor="qualityAsOfDate">{t("assets.valuationDate")}<input id="qualityAsOfDate" required type="date" value={asOfDate} onChange={(event) => setAsOfDate(event.currentTarget.value)} /></label><button type="submit" disabled={loading}>{t("quality.refresh")}</button></form>
     <div className="sr-status" role="status" aria-live="polite">{loading ? t("common.loading") : failure ? t("quality.failed") : t("quality.updated")}</div>
     {failure ? <p className="inline-error" role="alert">{t("quality.failed")}: <code>{failure}</code></p> : null}

@@ -1,6 +1,6 @@
 # Agent Context
 
-> 状态：M6 数据安全、恢复、导出与隐私硬化完成，Ready for M6 Beta Gate
+> 状态：`1.0.0-beta.1` 自动化硬门禁完成，Beta Candidate；私人 v1.3.0 最终对账/cut-over、代码签名、至少四周双录与一个完整月周期、用户最终切换确认仍为人工发布门禁
 >
 > M0 状态：完成
 >
@@ -62,9 +62,9 @@ LedgerKit 是单用户、本地优先、隐私友好的多币种现金、投资�
 ## 当前工作区
 
 - 已有完整开发计划书和 agent 工作区规范。
-- 已有 [`implementation-prompts/README.md`](implementation-prompts/README.md) 索引的 14 阶段串行实现提示词包，覆盖 M0 决策、M1 双栈门禁、M2–M6 实现和 Beta 候选审计；任务 01–13 已完成，任务 14 尚未执行。
+- 已有 [`implementation-prompts/README.md`](implementation-prompts/README.md) 索引的 14 阶段串行实现提示词包，覆盖 M0 决策、M1 双栈门禁、M2–M6 实现和 Beta 候选审计；任务 01–14 已全部完成。
 - GitHub 公开仓库为 `Terrence129/LedgerKit`，默认分支为 `main`。
-- 已创建十五份 Accepted ADR、31 组正式合成黄金 fixture、JSON Schema、确定性生成器和 M0 检查命令；当前生产 [`Schema v6`](persistence-schema-v1.md) 已覆盖设置、主数据、typed event detail、OpeningPosition/OpeningPerformance、市场修订/FxResolution、posting/audit、带目标 schema/分析快照的 import staging、不可变估值快照、外部备份目标状态，以及现金、支出和持仓可重建投影。
+- 已创建十五份 Accepted ADR、31 组正式合成黄金 fixture、JSON Schema、确定性生成器和 M0 检查命令；当前生产 [`Schema v7`](persistence-schema-v1.md) 已覆盖设置、主数据、typed event detail、OpeningPosition/OpeningPerformance、市场修订/FxResolution、posting/audit、带目标 schema/分析快照的 import staging、不可变估值快照、外部备份目标状态，以及现金、支出和持仓可重建投影；v7 只移除 Beta 性能审计确认冗余的三个索引，不改变财务事实。
 - 已建立 `app` 生产骨架、锁文件、固定 Node/Rust 工具链、严格 TypeScript/Clippy、最小 unsafe allowlist、两套键一致本地化资源、持久化即时语言切换，以及首次设置/设置与数据页面。当前共有二十五项已实现具名 IPC，现金与投资预览/过账/修订/冲正、概览、支出分析、数据质量、活动分页和一次性初始导入均通过同一 typed Facade；它们不接受任意数据库路径、SQL、posting、事件状态或前端伪造的财务派生字段。
 - [`Catalog 与市场数据契约 v1`](catalog-and-market-data-v1.md) 已实现机构、现金账户、分类、组合、证券稳定 ID 与允许字段更新，非零账户停用阻断、组合/结算机构一致性、不可变汇率/价格修订、事务化 active 切换、非未来 as-of 解析及带稳定修复上下文的数据质量基础结果。
 - Rust Core 已实现 ADR-0004 Decimal/Money/Currency、LocalDate、UUIDv7、Sequence、CalculationVersion、ProjectionWatermark 和稳定 DomainError；SQLite 已实现只读识别、备份端口、单事务只前进 migration、事务协调器、规范 posting/hash 与现金投影清空重建框架。活库固定在 OS 本地应用数据目录，本位币及有依赖的账户/标的币种由 Domain/Schema 双重阻断原地重解释。
@@ -75,13 +75,14 @@ LedgerKit 是单用户、本地优先、隐私友好的多币种现金、投资�
 - M5 Core 已把全量迁移扩展到组合、标的、价格、投资流水、持仓基线、检查与支出证据；完整历史和日末显式 cut-over 均在隔离候选中通过同一 Core 原子处理现金/数量腿，并以账户、持仓、映射、事件、币种、净资产和支出差异矩阵阻断不可解释差异。`get_overview` 与 `get_data_quality` 使用明确估值日、非未来 as-of 价格/FX 和同一 SQLite snapshot；缺数据进入未估值集合，陈旧价格与稳定修复上下文可定位。已确认估值快照不可变，启动时现金/持仓投影版本或水位不匹配会先标记不可用并统一重建。
 - M5 UI 已在“概览”内完成资产概览与支出分析两个页内标签；已估值净资产、构成、MTD、未估值待办、KPI、最多 11 行 Top 10 + 其他横条和完整语义表格均消费同一 Core 结果。分类占比和条宽由 Core 以整数基点跨 IPC，非法日期清空旧结果，迟到请求被丢弃；KPI/分类下钻携带版本化 `DrilldownContext`，数据质量异常可跳转到活动、汇率、价格或导入修复位置。
 - M6 已按 ADR-0008/0013 实现一致性 SQLite 快照、Argon2id v19 `m=65536,t=3,p=4`、随机 data key 与双层 AES-256-GCM 的 `ledgerkit-portable-backup/v1`。创建会重新解密并核对数据库/设置/manifest/hash 后才原子发布；恢复支持空白新设备和现有活库，切换前验证认证、schema、完整性、外键、投影、水位与 canonical posting hash，并保留可打开的恢复前快照。外部每日/每周保留 7/4 个，密码只在可清零的当前进程内存中解锁；未配置、超过 UTC 24 小时或最近失败都不能宣称设备丢失受保护。
-- 设置页通过一次性 native picker 提供备份、恢复、XLSX/CSV/对账导出和隐私诊断；WebView 不接收路径。CSV/XLSX 有公式注入防护，诊断只含 ID、版本、错误类别和计数。投资操作复用通用 event/overview IPC，加入四项安全入口后总数仍为 25；生产直接依赖为 20、Tauri 插件为 0。M6 Windows x64 安装包为 4,013,966 bytes，首屏 HTML/CSS/JS 为 92,789 gzip bytes。
-- 已建立统一 `tools/check.ps1`、`tools/test.ps1`、`tools/build.ps1` 和 Windows CI；生产依赖清单见 [`production-dependencies.md`](production-dependencies.md)。一次性 `spikes/` 源码已从当前树删除，仍保留在 Git 历史。
+- 设置页通过一次性 native picker 提供备份、恢复、XLSX/CSV/对账导出和隐私诊断；WebView 不接收路径。CSV/XLSX 有公式注入防护，诊断只含 ID、版本、错误类别和计数。投资操作复用通用 event/overview IPC，加入四项安全入口后总数仍为 25；生产直接依赖为 20、Tauri 插件为 0。Beta Windows x64 标准薄安装包为 4,016,436 bytes，安装后应用载荷为 15,054,105 bytes，首屏 HTML/CSS/JS 为 92,781 gzip bytes。
+- 任务 14 已完成 P0、安全、隐私、双语/无障碍、10 万合成事件、安装生命周期和运行时审计。候选冷启动 30 次 P95 为 912.588 ms，失焦空闲五分钟末段完整进程树 RSS P95 为 132,734,976 bytes，默认远程端点和退出残留均为 0；干净克隆恢复依赖、完整检查/测试与 NSIS 打包为 562.775 秒。证据见 [`release/beta-audit-1.0.0-beta.1.md`](release/beta-audit-1.0.0-beta.1.md) 与 [`release/performance-and-size-1.0.0-beta.1.md`](release/performance-and-size-1.0.0-beta.1.md)。
+- 已建立统一 `tools/check.ps1`、`tools/test.ps1`、`tools/build.ps1` 和 Windows CI；标准检查复用同一 Release 构建执行完整 Rust 测试、10 万事件门禁、Clippy 和确定性 fixture 生成。生产依赖清单见 [`production-dependencies.md`](production-dependencies.md)。一次性 `spikes/` 源码已从当前树删除，仍保留在 Git 历史。
 
 ## 下一步建议
 
-1. 按串行协议执行任务 14，完成 Beta 发布门禁、安装/卸载/升级/恢复演练和隐私审计。
-2. 公开 Beta 实现完成后，在仓库外对真实 v1.3.0 执行最终转换、逐账户/组合策略确认、对账和本机 cut-over；不得用真实数据替换 M5 合成自动测试或写入公开 Git 历史。
+1. 在仓库外对真实 v1.3.0 执行最终转换、逐账户/组合策略确认、dry-run 与对账；不得用真实数据替换 M5 合成自动测试或写入公开 Git 历史。
+2. 完成代码签名证书、至少四周人工双录和一个完整月周期；只有用户最终确认后才执行本机 cut-over，并另行决定是否发布安装包。
 
 ## 更新规则
 

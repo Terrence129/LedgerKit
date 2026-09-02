@@ -18,6 +18,8 @@ import { translate, type SupportedLocale } from "./i18n";
 import { InvestmentEditor } from "./InvestmentEditor";
 import { LatestRequestGate } from "./queryGate";
 
+const ACTIVITY_PAGE_SIZE = 10;
+
 type CashEventType = CashEventRequest["eventType"];
 type FxOverrideDraft = { currency: string; value: string; reason: string };
 
@@ -220,7 +222,7 @@ export function ActivityPage(props: ActivityPageProps) {
       ...(categoryId ? { categoryId } : {}),
       ...(search.trim() ? { search: search.trim() } : {}),
       ...(cursor === undefined ? {} : { cursor }),
-      limit: 25,
+      limit: ACTIVITY_PAGE_SIZE,
     };
   }
 
@@ -265,7 +267,7 @@ export function ActivityPage(props: ActivityPageProps) {
     const generation = queryGate.current.begin();
     setLoading(true);
     setListError(null);
-    void props.onLoad({ startDate: context.start_date, endDate: context.end_date, context, limit: 25 })
+    void props.onLoad({ startDate: context.start_date, endDate: context.end_date, context, limit: ACTIVITY_PAGE_SIZE })
       .then((next) => {
         if (queryGate.current.isLatest(generation)) setPage(next);
       })

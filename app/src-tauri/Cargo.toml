@@ -1,6 +1,6 @@
 [package]
 name = "ledgerkit-desktop"
-version = "0.1.0"
+version = "1.0.0-beta.1"
 description = "LedgerKit local-first personal finance desktop application"
 authors = ["LedgerKit contributors"]
 edition = "2024"

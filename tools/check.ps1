@@ -19,11 +19,12 @@ Invoke-Checked { npm --prefix $appRoot ci } 'npm ci failed.'
 & (Join-Path $PSScriptRoot 'check-m0-fixtures.ps1')
 Invoke-Checked { npm --prefix $appRoot run check } 'Frontend build or tests failed.'
 Invoke-Checked { cargo fmt --manifest-path (Join-Path $appRoot 'src-tauri/Cargo.toml') --all -- --check } 'rustfmt check failed.'
-Invoke-Checked { cargo clippy --manifest-path (Join-Path $appRoot 'src-tauri/Cargo.toml') --all-targets --all-features -- -D warnings } 'Clippy failed.'
-Invoke-Checked { cargo test --manifest-path (Join-Path $appRoot 'src-tauri/Cargo.toml') --all-targets --all-features } 'Rust tests failed.'
+Invoke-Checked { cargo test --release --manifest-path (Join-Path $appRoot 'src-tauri/Cargo.toml') --all-targets --all-features -- --include-ignored --nocapture } 'Rust tests or the 100k performance gate failed.'
+Invoke-Checked { cargo clippy --release --manifest-path (Join-Path $appRoot 'src-tauri/Cargo.toml') --all-targets --all-features --no-deps -- -D warnings } 'Clippy failed.'
 & (Join-Path $PSScriptRoot 'check-m3-fixtures.ps1')
 & (Join-Path $PSScriptRoot 'check-m5-fixtures.ps1')
 Invoke-Checked { node (Join-Path $PSScriptRoot 'check-m1-scaffold.mjs') } 'M1 scaffold contract check failed.'
+Invoke-Checked { node (Join-Path $PSScriptRoot 'check-beta.mjs') } 'Beta release contract check failed.'
 & (Join-Path $PSScriptRoot 'check-privacy.ps1')
 Invoke-Checked { git -C $repositoryRoot diff --check } 'git diff --check failed.'
 

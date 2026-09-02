@@ -9,7 +9,7 @@ const secondAccountId = "019d0000-0000-7000-8000-000000000002";
 const categoryId = "019d0000-0000-7000-8000-000000000003";
 
 const status: LedgerStatus = {
-  appVersion: "0.1.0",
+  appVersion: "1.0.0-beta.1",
   uiLocale: "en-US",
   ledgerState: "open",
   ledgerId: "019d0000-0000-7000-8000-000000000004",

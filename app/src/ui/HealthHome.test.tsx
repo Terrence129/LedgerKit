@@ -5,7 +5,7 @@ import { HealthHome } from "./HealthHome";
 import { translate } from "./i18n";
 
 const status: LedgerStatus = {
-  appVersion: "0.1.0",
+  appVersion: "1.0.0-beta.1",
   uiLocale: "en-US",
   ledgerState: "not-created",
   ledgerId: null,

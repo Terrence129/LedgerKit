@@ -1,6 +1,6 @@
-# LedgerKit Persistence Schema v1–v6
+# LedgerKit Persistence Schema v1–v7
 
-> 状态：Schema v1 基线、M2 Cash Schema v2、M3 Import Schema v3、M4 Investment Schema v4、M5 Opening/Valuation Schema v5 与 M6 Backup Status Schema v6 前向迁移已实现
+> 状态：Schema v1 基线、M2 Cash Schema v2、M3 Import Schema v3、M4 Investment Schema v4、M5 Opening/Valuation Schema v5、M6 Backup Status Schema v6 与 Beta 性能 Schema v7 前向迁移已实现
 >
 > 权威边界：受 ADR-0002、ADR-0003、ADR-0004、ADR-0006、ADR-0011 和 ADR-0012 约束；本文记录物理实现，不改变财务口径。
 
@@ -32,6 +32,8 @@ Schema v4 扩展投资 detail 的结算账户覆盖原因，并允许组合级�
 Schema v5 为显式 cut-over 固化 `OpeningPosition` 与 `OpeningPerformance` typed detail，并把 `opening-cash`、`opening-quantity`、`opening-cost`、`opening-realized-pnl`、`opening-net-dividend`、`opening-independent-expense` 和 `opening-portfolio-independent-expense` 纳入 posting 约束。v4→v5 在一致性备份后重建 posting 约束；既有事件和分录逐行保留。已确认估值写入不可变 `valuation_snapshots` 与 `valuation_snapshot_lines`，每行冻结估值日、价格修订、FX 修订/最终汇率、原币值、本位币值、未估值原因、计算版本和事件/市场水位；同日重新确认创建新快照并指向被替代快照，不覆盖历史。
 
 Schema v6 为 `backup_status` 增加只由 Core 使用的 `external_target_path`，并约束它与 `external_target_configured` 同时为空/存在。路径永不通过 IPC 返回；UI 只获得末级目录标签和验证状态。v5→v6 只前进迁移先创建并验证 SQLite backup，不改变业务事件、posting、投影或估值事实。
+
+Schema v7 不改变任何业务事实、posting、投影或备份格式，只移除三个已由主键或有界 rowid 查询覆盖的冗余索引：`idx_business_events_activity`、`idx_cash_event_fees_event` 和 `idx_income_expense_category`。v6→v7 仍先创建并验证 migration backup，再在单个 transaction 中删除索引并写入当前 schema hash；10 万合成事件数据库因此保持在 100 MB 硬门禁内。
 
 Schema 使用外键、业务 ID/自然键唯一约束、日期与枚举状态检查。汇率和价格由 partial unique index 保证同一业务键至多一个 active 修订。活动、修订/冲正、费用分类、posting、持仓、as-of 市场数据、导入和估值均有对应查询索引。
 

@@ -9,9 +9,9 @@ $firstRoot = Join-Path $temporaryRoot 'first'
 $secondRoot = Join-Path $temporaryRoot 'second'
 
 try {
-    & cargo run --quiet --manifest-path $manifest --example generate_m5_fixtures -- $firstRoot
+    & cargo run --quiet --release --manifest-path $manifest --example generate_m5_fixtures -- $firstRoot
     if ($LASTEXITCODE -ne 0) { throw 'First M5 fixture generation failed.' }
-    & cargo run --quiet --manifest-path $manifest --example generate_m5_fixtures -- $secondRoot
+    & cargo run --quiet --release --manifest-path $manifest --example generate_m5_fixtures -- $secondRoot
     if ($LASTEXITCODE -ne 0) { throw 'Second M5 fixture generation failed.' }
 
     $names = @('full-import-history.xlsx', 'full-import-cutover.xlsx', 'full-import-invalid.xlsx')

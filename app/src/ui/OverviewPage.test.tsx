@@ -99,6 +99,31 @@ describe("expense analysis UI contract", () => {
     expect(markup).toContain("10.00%");
   });
 
+  it.each([
+    ["zh-CN", "支出分类排行"],
+    ["en-US", "Top categories"],
+  ] as const)("renders the authoritative expense result accessibly in %s", (locale, heading) => {
+    const result = expenseResult({ bucketCount: 12 });
+    const before = JSON.stringify(result);
+    const markup = renderToStaticMarkup(<ExpenseAnalysisView locale={locale} result={result} state="normal" onDrilldown={() => undefined} onOpenQuality={() => undefined} />);
+    expect(markup).toContain(heading);
+    expect(markup).toContain('aria-hidden="true"');
+    expect(markup).toContain('scope="col"');
+    expect(JSON.stringify(result)).toBe(before);
+  });
+
+  it("keeps the bounded expense view render P95 below the interaction gate", () => {
+    const result = expenseResult({ bucketCount: 12 });
+    const samples = Array.from({ length: 30 }, () => {
+      const started = performance.now();
+      renderToStaticMarkup(<ExpenseAnalysisView locale="en-US" result={result} state="normal" onDrilldown={() => undefined} onOpenQuality={() => undefined} />);
+      return performance.now() - started;
+    }).sort((left, right) => left - right);
+    const p95 = samples[28]!;
+    console.info(`beta-ui-expense-render-p95-ms=${p95.toFixed(3)}`);
+    expect(p95).toBeLessThanOrEqual(200);
+  });
+
   it("formats Core-provided integer basis points without parsing Decimal strings", () => {
     expect(formatBasisPoints(0)).toBe("0.00%");
     expect(formatBasisPoints(9091)).toBe("90.91%");

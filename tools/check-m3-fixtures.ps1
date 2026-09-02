@@ -9,9 +9,9 @@ $firstRoot = Join-Path $temporaryRoot 'first'
 $secondRoot = Join-Path $temporaryRoot 'second'
 
 try {
-    & cargo run --quiet --manifest-path $manifest --example generate_m3_fixtures -- $firstRoot
+    & cargo run --quiet --release --manifest-path $manifest --example generate_m3_fixtures -- $firstRoot
     if ($LASTEXITCODE -ne 0) { throw 'First M3 fixture generation failed.' }
-    & cargo run --quiet --manifest-path $manifest --example generate_m3_fixtures -- $secondRoot
+    & cargo run --quiet --release --manifest-path $manifest --example generate_m3_fixtures -- $secondRoot
     if ($LASTEXITCODE -ne 0) { throw 'Second M3 fixture generation failed.' }
 
     $names = @('cash-import-valid.xlsx', 'cash-import-invalid.xlsx', 'cash-import-modified.xlsx')

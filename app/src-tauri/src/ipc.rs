@@ -670,6 +670,7 @@ pub fn open_ledger(state: State<'_, AppState>) -> Result<LedgerStatusResponse, C
 pub fn get_ledger_status(
     request: LedgerStatusRequest,
     state: State<'_, AppState>,
+    window: tauri::WebviewWindow,
 ) -> Result<LedgerStatusResponse, CommandError> {
     let facade = lock_facade(&state)?;
     let status = facade.get_ledger_status(request.system_locale.as_deref())?;
@@ -682,6 +683,7 @@ pub fn get_ledger_status(
     } else {
         None
     };
+    crate::platform::webview::refresh_memory_level(&window);
     Ok(LedgerStatusResponse::new(status, catalog))
 }
 

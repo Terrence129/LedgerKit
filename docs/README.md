@@ -22,6 +22,9 @@
 | [`operations/backup-restore.md`](operations/backup-restore.md) | 一致性备份、恢复和升级安全顺序 | 数据安全与发布任务 |
 | [`local/README.md`](local/README.md) | 本机私有源文件定位规则；实际路径保存在 Git 忽略文件中 | 真实源调查、微调、最终迁移与 cut-over |
 | [`production-dependencies.md`](production-dependencies.md) | 已锁定生产依赖、预算与延期适配器 | 新增/升级依赖或发布审计 |
+| [`user-guide.md`](user-guide.md) | Beta 安装、日常记账、修订、备份与故障处理 | 用户使用与验收 |
+| [`import-guide.md`](import-guide.md) | 公开规范化导入与私有 v1.3.0 迁移边界 | 导入准备与 dry-run |
+| [`release/1.0.0-beta.1.md`](release/1.0.0-beta.1.md) | Beta 发布说明、审计、性能、SBOM 和已知问题入口 | 候选复核与发布 |
 | [`persistence-schema-v1.md`](persistence-schema-v1.md) | Schema v1 基线、v2/v3 前向迁移、事务、staging、路径和重建边界 | Core/SQLite、迁移与后续 ledger 阶段 |
 | [`catalog-and-market-data-v1.md`](catalog-and-market-data-v1.md) | 首次设置、主数据、市场修订、as-of 与质量修复契约 | Catalog、市场数据、估值与设置 UI |
 | [`../fixtures/sanitized/README.md`](../fixtures/sanitized/README.md) | 脱敏黄金样例格式和变更规则 | 测试与财务实现任务 |

@@ -1,10 +1,10 @@
 # Production dependency inventory
 
-> Baseline: M6 Data Safety and Export, 2026-09-03. Exact versions are locked in `app/package-lock.json` and `app/src-tauri/Cargo.lock`.
+> Baseline: `1.0.0-beta.1` candidate, 2026-09-03. Exact versions are locked in `app/package-lock.json` and `app/src-tauri/Cargo.lock`.
 
 The current application has **20 direct production dependencies** (3 npm + 17 Rust, including Windows-targeted crates), below the hard budget of 25. Build/test-only dependencies are excluded from that number and never ship as Node or Python sidecars. Rust crates are statically linked, so size evidence is recorded at the aggregate binary/package level rather than as misleading per-crate deltas.
 
-The verified M6 Windows x64 release build produced a 14,995,968-byte application executable and a 4,013,966-byte standard thin NSIS installer. First-load HTML/CSS/JS is 92,789 gzip bytes. Compared with the verified task-12 package, the installer adds 460,022 bytes and first-load assets add 2,363 gzip bytes for encrypted backup/restore/export and their settings UI. The installer remains below the M1 hard budget and continues to reuse the system Evergreen WebView2 runtime.
+The verified Beta Windows x64 release build produced a 14,974,976-byte application executable, a 4,016,436-byte standard thin NSIS installer, and a 15,054,105-byte installed application payload. First-load HTML/CSS/JS is 92,781 gzip bytes. The installer remains below the M1 hard budget and continues to reuse the system Evergreen WebView2 runtime; the separately measured optional offline-runtime NSIS is 265,918,362 bytes and never substitutes for the thin metric.
 
 | Dependency | Purpose and boundary | Size evidence | License | Security and maintenance | Cost of not using it |
 |---|---|---|---|---|---|

@@ -3,7 +3,7 @@
 use sha2::{Digest, Sha256};
 
 pub const APPLICATION_ID: u32 = 1_280_002_388;
-pub const SCHEMA_VERSION: u32 = 6;
+pub const SCHEMA_VERSION: u32 = 7;
 
 pub const REQUIRED_TABLES: &[&str] = &[
     "app_settings",
@@ -46,14 +46,11 @@ pub const REQUIRED_TABLES: &[&str] = &[
 ];
 
 pub const REQUIRED_INDEXES: &[&str] = &[
-    "idx_business_events_activity",
     "idx_business_events_revision_target",
     "idx_business_events_reversal_target",
-    "idx_cash_event_fees_event",
     "idx_expense_daily_bucket",
     "idx_expense_daily_event_bucket",
     "idx_fx_rate_as_of",
-    "idx_income_expense_category",
     "idx_ledger_postings_event_kind",
     "idx_price_as_of",
     "idx_security_trade_holding",
@@ -237,8 +234,6 @@ CREATE TABLE cash_event_fees (
     fee_account_id TEXT NOT NULL REFERENCES cash_accounts(account_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
     fee_amount TEXT NOT NULL
 ) STRICT;
-
-CREATE INDEX idx_cash_event_fees_event ON cash_event_fees(event_id, fee_account_id);
 
 CREATE TABLE transfer_details (
     event_id TEXT PRIMARY KEY REFERENCES business_events(event_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
@@ -550,14 +545,10 @@ CREATE TABLE migration_history (
     schema_hash TEXT NOT NULL
 ) STRICT;
 
-CREATE INDEX idx_business_events_activity
-    ON business_events(effective_date DESC, status, sequence DESC, event_id DESC);
 CREATE INDEX idx_business_events_revision_target
     ON business_events(supersedes_event_id) WHERE supersedes_event_id IS NOT NULL;
 CREATE INDEX idx_business_events_reversal_target
     ON business_events(reverses_event_id) WHERE reverses_event_id IS NOT NULL;
-CREATE INDEX idx_income_expense_category
-    ON income_expense_details(event_id, category_id);
 CREATE INDEX idx_ledger_postings_event_kind
     ON ledger_postings(event_id, posting_kind);
 CREATE INDEX idx_security_trade_holding

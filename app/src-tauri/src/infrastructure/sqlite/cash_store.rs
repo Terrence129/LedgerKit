@@ -156,7 +156,11 @@ impl LedgerStore {
             revision,
             reason,
         )?;
-        rebuild_cash_derived(&transaction, watermark)?;
+        if supersedes.is_some() {
+            rebuild_cash_derived(&transaction, watermark)?;
+        } else {
+            apply_cash_derived_incremental(&transaction, event_id, watermark, input, &prepared)?;
+        }
         transaction
             .commit()
             .map_err(|_| ApplicationError::TransactionFailed)?;
@@ -941,6 +945,267 @@ fn load_posting_rows(
             })
         })
         .collect()
+}
+
+#[derive(Clone)]
+struct IncrementalExpenseAggregate {
+    amount: Decimal,
+}
+
+impl IncrementalExpenseAggregate {
+    fn new() -> Self {
+        Self {
+            amount: Decimal::zero(DecimalUse::Internal),
+        }
+    }
+
+    fn add(&mut self, amount: &Decimal) -> ApplicationResult<()> {
+        self.amount = self.amount.checked_add(amount, DecimalUse::Internal)?;
+        Ok(())
+    }
+}
+
+#[allow(clippy::too_many_lines)] // One-event projection updates must remain in the posting transaction.
+fn apply_cash_derived_incremental(
+    transaction: &Transaction<'_>,
+    event_id: UuidV7,
+    watermark: u64,
+    input: &CashEventInput,
+    prepared: &PreparedWrite,
+) -> ApplicationResult<()> {
+    let watermark_i64 =
+        i64::try_from(watermark).map_err(|_| ApplicationError::TransactionFailed)?;
+    for (index, posting) in prepared.postings.iter().enumerate() {
+        let current: Option<String> = transaction
+            .query_row(
+                "SELECT balance FROM cash_balance_projection WHERE account_id=?1",
+                [&posting.account_id],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|_| ApplicationError::TransactionFailed)?;
+        let current = current
+            .as_deref()
+            .map(|value| Decimal::parse(value, DecimalUse::Internal))
+            .transpose()?
+            .unwrap_or_else(|| Decimal::zero(DecimalUse::Internal));
+        let balance = current.checked_add(&posting.quantity_delta, DecimalUse::Internal)?;
+        transaction
+            .execute(
+                "INSERT INTO cash_balance_projection(account_id,balance,currency,event_watermark,calculation_version)
+                 VALUES(?1,?2,?3,?4,?5)
+                 ON CONFLICT(account_id) DO UPDATE SET balance=excluded.balance,currency=excluded.currency,event_watermark=excluded.event_watermark,calculation_version=excluded.calculation_version",
+                params![posting.account_id,balance.as_str(),posting.currency.as_str(),watermark_i64,CALCULATION_VERSION],
+            )
+            .map_err(map_sqlite_error)?;
+
+        let contributes_to_month = matches!(
+            input.event_type,
+            EventInputType::Income | EventInputType::Expense
+        ) || input.event_type == EventInputType::CurrencyExchange
+            && index == 2;
+        if contributes_to_month {
+            let month = &input.effective_date.as_str()[..7];
+            let current: Option<(String, String)> = transaction
+                .query_row(
+                    "SELECT income,expense FROM monthly_cash_flow_projection WHERE month=?1 AND currency=?2",
+                    params![month,posting.currency.as_str()],
+                    |row| Ok((row.get(0)?, row.get(1)?)),
+                )
+                .optional()
+                .map_err(|_| ApplicationError::TransactionFailed)?;
+            let (income, expense) = current.unwrap_or_else(|| ("0".to_owned(), "0".to_owned()));
+            let mut income = Decimal::parse(&income, DecimalUse::Internal)?;
+            let mut expense = Decimal::parse(&expense, DecimalUse::Internal)?;
+            if posting.quantity_delta.is_positive() {
+                income = income.checked_add(&posting.quantity_delta, DecimalUse::Internal)?;
+            } else if posting.quantity_delta.is_negative() {
+                expense = expense.checked_add(
+                    &posting.quantity_delta.checked_neg(DecimalUse::Internal)?,
+                    DecimalUse::Internal,
+                )?;
+            }
+            transaction
+                .execute(
+                    "INSERT INTO monthly_cash_flow_projection(month,currency,income,expense,event_watermark,calculation_version)
+                     VALUES(?1,?2,?3,?4,?5,?6)
+                     ON CONFLICT(month,currency) DO UPDATE SET income=excluded.income,expense=excluded.expense,event_watermark=excluded.event_watermark,calculation_version=excluded.calculation_version",
+                    params![month,posting.currency.as_str(),income.as_str(),expense.as_str(),watermark_i64,CALCULATION_VERSION],
+                )
+                .map_err(map_sqlite_error)?;
+        }
+
+        if posting.base_value.is_none() {
+            transaction
+                .execute(
+                    "INSERT INTO cash_data_quality_projection(event_id,issue_code,currency,target_date,event_watermark,calculation_version)
+                     VALUES(?1,'MISSING_FX_RATE',?2,?3,?4,?5)
+                     ON CONFLICT(event_id,issue_code,currency) DO UPDATE SET target_date=excluded.target_date,event_watermark=excluded.event_watermark,calculation_version=excluded.calculation_version",
+                    params![event_id.to_string(),posting.currency.as_str(),input.effective_date.as_str(),watermark_i64,CALCULATION_VERSION],
+                )
+                .map_err(map_sqlite_error)?;
+        }
+    }
+
+    let mut summaries = BTreeMap::<(String, String), IncrementalExpenseAggregate>::new();
+    let mut buckets = BTreeMap::<(String, String), IncrementalExpenseAggregate>::new();
+    for (index, posting) in prepared.postings.iter().enumerate() {
+        let contribution = match (input.event_type, prepared.domain.postings[index].role) {
+            (EventInputType::Expense, CashContributionRole::Principal) => Some((
+                "expense",
+                Some(
+                    input
+                        .category_id
+                        .map_or_else(|| "system:uncategorized".to_owned(), |id| id.to_string()),
+                ),
+            )),
+            (EventInputType::Income, CashContributionRole::Principal)
+                if input.semantic_role != SemanticRole::Normal =>
+            {
+                Some((input.semantic_role.as_str(), None))
+            }
+            (EventInputType::Income | EventInputType::Expense, CashContributionRole::Fee) => {
+                Some(("expense", Some("system:ordinary-fee".to_owned())))
+            }
+            (EventInputType::CurrencyExchange, CashContributionRole::Fee) => {
+                Some(("expense", Some("system:fx-fee".to_owned())))
+            }
+            _ => None,
+        };
+        let Some((measure_role, bucket_id)) = contribution else {
+            continue;
+        };
+        let valuation_state = if posting.base_value.is_some() {
+            "valued"
+        } else {
+            "unvalued"
+        };
+        let amount = posting
+            .base_value
+            .as_ref()
+            .map(|value| {
+                if measure_role == "expense" {
+                    value.checked_neg(DecimalUse::Internal)
+                } else {
+                    Ok(value.clone())
+                }
+            })
+            .transpose()?
+            .unwrap_or_else(|| Decimal::zero(DecimalUse::Internal));
+        summaries
+            .entry((measure_role.to_owned(), valuation_state.to_owned()))
+            .or_insert_with(IncrementalExpenseAggregate::new)
+            .add(&amount)?;
+        if let Some(bucket_id) = bucket_id {
+            buckets
+                .entry((bucket_id, valuation_state.to_owned()))
+                .or_insert_with(IncrementalExpenseAggregate::new)
+                .add(&amount)?;
+        }
+    }
+    for ((role, valuation_state), aggregate) in summaries {
+        upsert_daily_summary(
+            transaction,
+            input.effective_date.as_str(),
+            &role,
+            &valuation_state,
+            &aggregate.amount,
+            watermark_i64,
+        )?;
+    }
+    for ((bucket_id, valuation_state), aggregate) in buckets {
+        upsert_daily_bucket(
+            transaction,
+            input.effective_date.as_str(),
+            &bucket_id,
+            &valuation_state,
+            &aggregate.amount,
+            watermark_i64,
+        )?;
+        transaction
+            .execute(
+                "INSERT INTO expense_daily_event_bucket_projection(effective_date,event_id,bucket_id,valuation_state,event_watermark,calculation_version)
+                 VALUES(?1,?2,?3,?4,?5,?6)",
+                params![input.effective_date.as_str(),event_id.to_string(),bucket_id,valuation_state,watermark_i64,CALCULATION_VERSION],
+            )
+            .map_err(map_sqlite_error)?;
+    }
+    for name in [
+        "cash-balance",
+        "monthly-cash-flow",
+        "cash-data-quality",
+        "expense-daily",
+    ] {
+        transaction
+            .execute(
+                "UPDATE projection_metadata SET event_watermark=?1,calculation_version=?2,
+                 projection_version=CASE WHEN ?3='expense-daily' THEN ?4 ELSE projection_version END,
+                 available=1,rebuilt_at_utc=CURRENT_TIMESTAMP WHERE projection_name=?3",
+                params![watermark_i64,CALCULATION_VERSION,name,EXPENSE_DAILY_PROJECTION_VERSION],
+            )
+            .map_err(map_sqlite_error)?;
+    }
+    Ok(())
+}
+
+fn upsert_daily_summary(
+    transaction: &Transaction<'_>,
+    date: &str,
+    role: &str,
+    valuation_state: &str,
+    delta: &Decimal,
+    watermark: i64,
+) -> ApplicationResult<()> {
+    let current: Option<(String, i64)> = transaction
+        .query_row(
+            "SELECT amount,distinct_event_count FROM expense_daily_summary_projection WHERE effective_date=?1 AND measure_role=?2 AND valuation_state=?3",
+            params![date,role,valuation_state],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .optional()
+        .map_err(|_| ApplicationError::TransactionFailed)?;
+    let (amount, count) = current.unwrap_or_else(|| ("0".to_owned(), 0));
+    let amount =
+        Decimal::parse(&amount, DecimalUse::Internal)?.checked_add(delta, DecimalUse::Internal)?;
+    transaction
+        .execute(
+            "INSERT INTO expense_daily_summary_projection(effective_date,measure_role,valuation_state,amount,distinct_event_count,event_watermark,calculation_version)
+             VALUES(?1,?2,?3,?4,?5,?6,?7)
+             ON CONFLICT(effective_date,measure_role,valuation_state) DO UPDATE SET amount=excluded.amount,distinct_event_count=excluded.distinct_event_count,event_watermark=excluded.event_watermark,calculation_version=excluded.calculation_version",
+            params![date,role,valuation_state,amount.as_str(),count.saturating_add(1),watermark,CALCULATION_VERSION],
+        )
+        .map_err(map_sqlite_error)?;
+    Ok(())
+}
+
+fn upsert_daily_bucket(
+    transaction: &Transaction<'_>,
+    date: &str,
+    bucket_id: &str,
+    valuation_state: &str,
+    delta: &Decimal,
+    watermark: i64,
+) -> ApplicationResult<()> {
+    let current: Option<(String, i64)> = transaction
+        .query_row(
+            "SELECT amount,distinct_event_count FROM expense_daily_projection WHERE effective_date=?1 AND bucket_id=?2 AND semantic_role='normal' AND valuation_state=?3",
+            params![date,bucket_id,valuation_state],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .optional()
+        .map_err(|_| ApplicationError::TransactionFailed)?;
+    let (amount, count) = current.unwrap_or_else(|| ("0".to_owned(), 0));
+    let amount =
+        Decimal::parse(&amount, DecimalUse::Internal)?.checked_add(delta, DecimalUse::Internal)?;
+    transaction
+        .execute(
+            "INSERT INTO expense_daily_projection(effective_date,bucket_id,semantic_role,valuation_state,amount,distinct_event_count,event_watermark,calculation_version)
+             VALUES(?1,?2,'normal',?3,?4,?5,?6,?7)
+             ON CONFLICT(effective_date,bucket_id,semantic_role,valuation_state) DO UPDATE SET amount=excluded.amount,distinct_event_count=excluded.distinct_event_count,event_watermark=excluded.event_watermark,calculation_version=excluded.calculation_version",
+            params![date,bucket_id,valuation_state,amount.as_str(),count.saturating_add(1),watermark,CALCULATION_VERSION],
+        )
+        .map_err(map_sqlite_error)?;
+    Ok(())
 }
 
 #[allow(clippy::too_many_lines)] // Keeps the cash-derived rebuild in one transaction boundary.
@@ -2114,13 +2379,7 @@ fn load_general_activity_ids(
     let mut statement = connection
         .prepare(
             "SELECT e.event_id,e.event_order
-             FROM business_events e
-             LEFT JOIN income_expense_details d ON d.event_id=e.event_id
-             LEFT JOIN cash_event_fees f ON f.event_id=e.event_id
-             LEFT JOIN currency_exchange_details x ON x.event_id=e.event_id
-             LEFT JOIN security_trade_details st ON st.event_id=e.event_id
-             LEFT JOIN dividend_details dv ON dv.event_id=e.event_id
-             LEFT JOIN investment_expense_details ie ON ie.event_id=e.event_id
+             FROM business_events e NOT INDEXED
              WHERE e.effective_date BETWEEN ?1 AND ?2
                AND e.event_order<=?3 AND e.event_order<?4 AND e.status='posted'
                AND (?5 IS NULL OR e.event_type=?5)
@@ -2128,17 +2387,30 @@ fn load_general_activity_ids(
                      SELECT 1 FROM ledger_postings p
                      WHERE p.event_id=e.event_id AND p.account_id=?6
                    ))
-               AND (?7 IS NULL
-                    OR d.category_id=?7
-                    OR (?7='system:uncategorized' AND d.entry_type='expense' AND d.category_id IS NULL)
-                    OR (?7='system:ordinary-fee' AND f.event_id IS NOT NULL)
-                    OR (?7='system:fx-fee' AND x.fee_amount IS NOT NULL))
-               AND (?8 IS NULL OR lower(
-                     e.event_type||' '||e.event_id||' '||
-                     COALESCE(d.merchant,'')||' '||COALESCE(d.note,'')||' '||
-                     COALESCE(st.portfolio_id,dv.portfolio_id,ie.portfolio_id,'')||' '||
-                     COALESCE(st.instrument_id,dv.instrument_id,ie.instrument_id,'')
-                   ) LIKE lower(?8) ESCAPE '!')
+                AND (?7 IS NULL OR EXISTS(
+                      SELECT 1 FROM income_expense_details d
+                      WHERE d.event_id=e.event_id AND (
+                        d.category_id=?7
+                        OR (?7='system:uncategorized' AND d.entry_type='expense' AND d.category_id IS NULL)
+                      )
+                    )
+                    OR (?7='system:ordinary-fee' AND EXISTS(
+                      SELECT 1 FROM cash_event_fees f WHERE f.event_id=e.event_id
+                    ))
+                    OR (?7='system:fx-fee' AND EXISTS(
+                      SELECT 1 FROM currency_exchange_details x WHERE x.event_id=e.event_id AND x.fee_amount IS NOT NULL
+                    )))
+                AND (?8 IS NULL OR lower(
+                      e.event_type||' '||e.event_id||' '||
+                      COALESCE((SELECT d.merchant FROM income_expense_details d WHERE d.event_id=e.event_id),'')||' '||
+                      COALESCE((SELECT d.note FROM income_expense_details d WHERE d.event_id=e.event_id),'')||' '||
+                      COALESCE((SELECT st.portfolio_id FROM security_trade_details st WHERE st.event_id=e.event_id),
+                               (SELECT dv.portfolio_id FROM dividend_details dv WHERE dv.event_id=e.event_id),
+                               (SELECT ie.portfolio_id FROM investment_expense_details ie WHERE ie.event_id=e.event_id),'')||' '||
+                      COALESCE((SELECT st.instrument_id FROM security_trade_details st WHERE st.event_id=e.event_id),
+                               (SELECT dv.instrument_id FROM dividend_details dv WHERE dv.event_id=e.event_id),
+                               (SELECT ie.instrument_id FROM investment_expense_details ie WHERE ie.event_id=e.event_id),'')
+                    ) LIKE lower(?8) ESCAPE '!')
              ORDER BY e.event_order DESC
              LIMIT ?9",
         )
@@ -3598,8 +3870,10 @@ mod tests {
 
     #[test]
     #[ignore = "explicit 100k performance gate"]
+    #[allow(clippy::too_many_lines)] // Keeps one synthetic fixture and every Beta threshold together.
     fn synthetic_100k_query_meets_latency_and_response_gates() {
-        let (_dir, mut manager, cny, _usd, category) = setup();
+        let (directory, mut manager, cny, _usd, category) = setup();
+        let load_started = std::time::Instant::now();
         let store = manager.store.as_mut().unwrap();
         let transaction = store.connection.transaction().unwrap();
         {
@@ -3630,6 +3904,17 @@ mod tests {
         }
         rebuild_cash_derived(&transaction, 100_000).unwrap();
         transaction.commit().unwrap();
+        let load = load_started.elapsed();
+        manager
+            .store
+            .as_ref()
+            .unwrap()
+            .connection
+            .execute_batch("PRAGMA wal_checkpoint(TRUNCATE);")
+            .unwrap();
+        let database_bytes = std::fs::metadata(directory.path().join("ledger.sqlite3"))
+            .unwrap()
+            .len();
         let start = LocalDate::parse("2026-02-01").unwrap();
         let end = LocalDate::parse("2026-02-28").unwrap();
         let cold_started = std::time::Instant::now();
@@ -3648,11 +3933,58 @@ mod tests {
         let ipc_result = manager.get_expense_analysis(&start, &end, None).unwrap();
         let size = serde_json::to_vec(&ipc_result).unwrap().len();
         let ipc = ipc_started.elapsed();
+        let activity_query = ActivityQuery {
+            start_date: start,
+            end_date: end,
+            context: None,
+            event_type: Some("Expense".to_owned()),
+            account_id: Some(cny),
+            category_id: Some(category.to_string()),
+            search: None,
+            cursor: None,
+            limit: 10,
+        };
+        let mut filter_samples = Vec::new();
+        let mut page_samples = Vec::new();
+        let mut activity_bytes = 0;
+        for _ in 0..20 {
+            let started = std::time::Instant::now();
+            let page = manager.get_activity(&activity_query).unwrap();
+            filter_samples.push(started.elapsed());
+            activity_bytes = serde_json::to_vec(&page).unwrap().len();
+            let mut next_query = activity_query.clone();
+            next_query.cursor = page.next_cursor;
+            let started = std::time::Instant::now();
+            let next_page = manager.get_activity(&next_query).unwrap();
+            page_samples.push(started.elapsed());
+            assert_eq!(next_page.items.len(), 10);
+        }
+        filter_samples.sort();
+        page_samples.sort();
+        let filter_p95 = filter_samples[18];
+        let page_p95 = page_samples[18];
+
+        let mut save_samples = Vec::new();
+        for index in 0..20_u64 {
+            let mut next = input(EventInputType::Expense, cny, "2.00");
+            next.effective_date = LocalDate::parse("2026-02-11").unwrap();
+            next.sequence = crate::domain::types::Sequence::new(100_001 + index).unwrap();
+            next.category_id = Some(category);
+            let started = std::time::Instant::now();
+            manager.post_event(&next).unwrap();
+            save_samples.push(started.elapsed());
+        }
+        save_samples.sort();
+        let save_p95 = save_samples[18];
         eprintln!(
-            "cash-query-100k cold_ms={} warm_p95_ms={} ipc_ms={} bytes={size}",
+            "beta-100k load_ms={} database_bytes={database_bytes} cold_ms={} warm_p95_ms={} ipc_ms={} expense_bytes={size} filter_p95_ms={} page_p95_ms={} activity_bytes={activity_bytes} save_p95_ms={}",
+            load.as_millis(),
             cold.as_millis(),
             p95.as_millis(),
-            ipc.as_millis()
+            ipc.as_millis(),
+            filter_p95.as_millis(),
+            page_p95.as_millis(),
+            save_p95.as_millis()
         );
         assert!(
             cold.as_millis() <= 150,
@@ -3664,5 +3996,26 @@ mod tests {
             "IPC-equivalent query plus serialization exceeded 200 ms: {ipc:?}"
         );
         assert!(size <= MAX_RESPONSE_BYTES);
+        assert!(
+            filter_p95.as_millis() <= 200,
+            "filter P95 exceeded 200 ms: {filter_p95:?}"
+        );
+        assert!(
+            page_p95.as_millis() <= 200,
+            "page P95 exceeded 200 ms: {page_p95:?}"
+        );
+        assert!(
+            save_p95.as_millis() <= 200,
+            "save P95 exceeded 200 ms: {save_p95:?}"
+        );
+        assert!(activity_bytes <= MAX_RESPONSE_BYTES);
+        assert!(
+            database_bytes <= 100_000_000,
+            "100k database exceeded 100 MB: {database_bytes} bytes"
+        );
+        assert!(
+            load.as_secs_f64() <= 10.0,
+            "100k synthetic load exceeded 10 seconds: {load:?}"
+        );
     }
 }

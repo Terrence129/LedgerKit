@@ -238,24 +238,32 @@ fn migrate_to_current(transaction: &Transaction<'_>, source_version: u32) -> App
             migrate_v2_to_v3(transaction)?;
             migrate_v3_to_v4(transaction)?;
             migrate_v4_to_v5(transaction)?;
-            migrate_v5_to_v6(transaction)
+            migrate_v5_to_v6(transaction)?;
+            migrate_v6_to_v7(transaction)
         }
         2 => {
             migrate_v2_to_v3(transaction)?;
             migrate_v3_to_v4(transaction)?;
             migrate_v4_to_v5(transaction)?;
-            migrate_v5_to_v6(transaction)
+            migrate_v5_to_v6(transaction)?;
+            migrate_v6_to_v7(transaction)
         }
         3 => {
             migrate_v3_to_v4(transaction)?;
             migrate_v4_to_v5(transaction)?;
-            migrate_v5_to_v6(transaction)
+            migrate_v5_to_v6(transaction)?;
+            migrate_v6_to_v7(transaction)
         }
         4 => {
             migrate_v4_to_v5(transaction)?;
-            migrate_v5_to_v6(transaction)
+            migrate_v5_to_v6(transaction)?;
+            migrate_v6_to_v7(transaction)
         }
-        5 => migrate_v5_to_v6(transaction),
+        5 => {
+            migrate_v5_to_v6(transaction)?;
+            migrate_v6_to_v7(transaction)
+        }
+        6 => migrate_v6_to_v7(transaction),
         _ => Err(ApplicationError::MigrationFailed),
     }
 }
@@ -306,6 +314,24 @@ fn migrate_legacy_to_current(transaction: &Transaction<'_>) -> ApplicationResult
         .execute(
             "INSERT INTO backup_status(singleton_id,protection_state,external_target_configured) VALUES(1,'not-configured',0)",
             [],
+        )
+        .map_err(|_| ApplicationError::MigrationFailed)?;
+    Ok(())
+}
+
+fn migrate_v6_to_v7(transaction: &Transaction<'_>) -> ApplicationResult<()> {
+    transaction
+        .execute_batch(
+            "DROP INDEX IF EXISTS idx_business_events_activity;
+             DROP INDEX IF EXISTS idx_cash_event_fees_event;
+             DROP INDEX IF EXISTS idx_income_expense_category;
+             PRAGMA user_version = 7;",
+        )
+        .map_err(|_| ApplicationError::MigrationFailed)?;
+    transaction
+        .execute(
+            "INSERT INTO migration_history(schema_version,applied_at_utc,application_version,schema_hash) VALUES(?1,CURRENT_TIMESTAMP,?2,?3)",
+            rusqlite::params![SCHEMA_VERSION, env!("CARGO_PKG_VERSION"), schema_hash()],
         )
         .map_err(|_| ApplicationError::MigrationFailed)?;
     Ok(())
@@ -624,7 +650,7 @@ fn migrate_v5_to_v6(transaction: &Transaction<'_>) -> ApplicationResult<()> {
     transaction
         .execute(
             "INSERT INTO migration_history(schema_version,applied_at_utc,application_version,schema_hash) VALUES(?1,CURRENT_TIMESTAMP,?2,?3)",
-            rusqlite::params![SCHEMA_VERSION, env!("CARGO_PKG_VERSION"), schema_hash()],
+            rusqlite::params![6, env!("CARGO_PKG_VERSION"), "sha256:2eb7e99c990bf1e4727e472a36bfa718a338ae0e0702d993b7cfa7c333cea805"],
         )
         .map_err(|_| ApplicationError::MigrationFailed)?;
     Ok(())
@@ -766,7 +792,7 @@ mod tests {
                  DROP TABLE expense_daily_projection;
                  DROP TABLE cash_data_quality_projection;
                  DROP TABLE monthly_cash_flow_projection;
-                 DROP INDEX idx_cash_event_fees_event;
+                 DROP INDEX IF EXISTS idx_cash_event_fees_event;
                  DROP TABLE cash_event_fees;
                  ALTER TABLE backup_status RENAME TO backup_status_current;
                  CREATE TABLE backup_status (
