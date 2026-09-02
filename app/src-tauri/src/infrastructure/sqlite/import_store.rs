@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -8,21 +8,28 @@ use rusqlite::{Connection, OpenFlags, OptionalExtension, params};
 use serde_json::json;
 
 use crate::application::cash::{CashEventInput, EventInputType};
-use crate::application::catalog::{CashAccount, Category, FxRateRevision, Institution};
+use crate::application::catalog::{
+    CashAccount, Category, FxRateRevision, Institution, Portfolio, SecurityInstrument,
+    SecurityPriceRevision,
+};
 use crate::application::error::{ApplicationError, ApplicationResult};
 use crate::application::import::{
-    IMPORTER_VERSION, ImportAnalysis, ImportBalance, ImportCommitResult, ImportIssue,
-    ImportMapping, ImportPort, ImportPosting, ImportProposedEvent, ImportReconciliation,
+    IMPORTER_VERSION, ImportAnalysis, ImportBalance, ImportCommitResult, ImportDifference,
+    ImportIssue, ImportMapping, ImportMetric, ImportPort, ImportPosting, ImportProposedEvent,
+    ImportReconciliation,
 };
+use crate::application::investment::{InvestmentEventInput, InvestmentEventType};
 use crate::application::ledger::MigrationBackupPort;
 use crate::domain::catalog::{BusinessId, CatalogText, CategoryKind, SemanticRole, SortOrder};
 use crate::domain::decimal::{Decimal, DecimalUse};
+use crate::domain::investment::FeeScope;
 use crate::domain::settings::UiLocale;
 use crate::domain::types::{Currency, LocalDate, Sequence, UuidV7};
 use crate::infrastructure::excel::{ParsedRow, ParsedWorkbook, parse_workbook, sha256, value};
 
 use super::SqliteLedgerManager;
-use super::cash_store::{insert_prepared_event, rebuild_cash_derived};
+use super::cash_store::rebuild_cash_derived;
+use super::investment_store::rebuild_investment_derived;
 use super::migration::{MigrationRunner, inspect_read_only, validate_schema};
 use super::schema::SCHEMA_VERSION;
 use super::store::LedgerStore;
@@ -39,6 +46,8 @@ struct ImportPlan {
     mappings: Vec<ImportMapping>,
     proposed_events: Vec<ImportProposedEvent>,
     balances: Vec<ImportBalance>,
+    metrics: Vec<ImportMetric>,
+    difference_items: Vec<ImportDifference>,
     issues: Vec<ImportIssue>,
 }
 
@@ -64,11 +73,21 @@ impl ImportPort for SqliteLedgerManager {
         } else {
             "needs-review"
         };
-        let canonical_result_sha256 = reconciliation_hash(&plan.proposed_events, &plan.balances)?;
+        let canonical_result_sha256 = reconciliation_hash(
+            &plan.proposed_events,
+            &plan.balances,
+            &plan.metrics,
+            &plan.difference_items,
+        )?;
         let balanced = plan
             .balances
             .iter()
-            .all(|balance| balance.difference == "0");
+            .all(|balance| balance.difference == "0")
+            && plan.metrics.iter().all(|metric| metric.difference == "0")
+            && plan
+                .difference_items
+                .iter()
+                .all(|item| item.difference == "0" || !item.explanation.is_empty());
         let row_count =
             u32::try_from(parsed.rows.len()).map_err(|_| ApplicationError::ImportFileTooLarge)?;
         let invalid_rows = plan
@@ -76,7 +95,7 @@ impl ImportPort for SqliteLedgerManager {
             .iter()
             .filter(|issue| issue.severity == "blocker" && issue.row > 0)
             .map(|issue| (&issue.sheet, issue.row))
-            .collect::<std::collections::BTreeSet<_>>()
+            .collect::<BTreeSet<_>>()
             .len();
         let valid_row_count = row_count.saturating_sub(
             u32::try_from(invalid_rows).map_err(|_| ApplicationError::ImportFileTooLarge)?,
@@ -97,11 +116,13 @@ impl ImportPort for SqliteLedgerManager {
             proposed_events: plan.proposed_events,
             reconciliation: ImportReconciliation {
                 balances: plan.balances,
+                metrics: plan.metrics,
                 difference_bridge: vec![
                     "opening + income - expense + adjustment + transfers + exchanges - fees"
                         .to_owned(),
                     "derived/status/display formulas are evidence-only".to_owned(),
                 ],
+                difference_items: plan.difference_items,
                 canonical_result_sha256,
                 balanced,
             },
@@ -177,34 +198,27 @@ impl SqliteLedgerManager {
             rows,
             issues: Vec::new(),
         };
-        let events = build_event_inputs(&parsed, &analysis.mappings, &mut Vec::new());
-        let prepared = events
-            .iter()
-            .map(|(_, _, input)| candidate.prepare_write(input))
-            .collect::<ApplicationResult<Vec<_>>>()?;
         let transaction = candidate
             .connection
             .transaction()
             .map_err(|_| ApplicationError::TransactionFailed)?;
-        let mut watermark = 0;
-        for ((_, _, input), prepared_event) in events.iter().zip(&prepared) {
-            let event_id = UuidV7::new()?;
-            watermark = insert_prepared_event(
-                &transaction,
-                event_id,
-                input,
-                prepared_event,
-                None,
-                1,
-                Some("initial-xlsx-import"),
-            )?;
-            transaction
-                .execute(
-                    "UPDATE business_events SET import_batch_id=?1 WHERE event_id=?2",
-                    params![batch_id, event_id.to_string()],
-                )
-                .map_err(|_| ApplicationError::TransactionFailed)?;
-        }
+        transaction
+            .execute(
+                "UPDATE business_events SET import_batch_id=?1 WHERE import_batch_id IS NULL",
+                [batch_id],
+            )
+            .map_err(|_| ApplicationError::TransactionFailed)?;
+        apply_import_account_states(&transaction, &parsed, &analysis.mappings)?;
+        let watermark = transaction
+            .query_row(
+                "SELECT COALESCE(MAX(event_order),0) FROM business_events",
+                [],
+                |row| row.get::<_, i64>(0),
+            )
+            .map_err(|_| ApplicationError::TransactionFailed)?
+            .try_into()
+            .map_err(|_| ApplicationError::TransactionFailed)?;
+        rebuild_investment_derived(&transaction, watermark)?;
         rebuild_cash_derived(&transaction, watermark)?;
         transaction
             .execute(
@@ -217,6 +231,7 @@ impl SqliteLedgerManager {
             .map_err(|_| ApplicationError::TransactionFailed)?;
         validate_schema(&candidate.connection)?;
         verify_balances(&candidate.connection, &analysis.reconciliation.balances)?;
+        verify_metrics(&candidate, &analysis.reconciliation.metrics)?;
         let canonical_posting_sha256 = candidate.canonical_posting_hash()?;
         self.backup
             .create_verified_backup(&candidate_path, SCHEMA_VERSION)
@@ -383,6 +398,8 @@ fn build_plan(candidate: &mut LedgerStore, parsed: &ParsedWorkbook) -> ImportPla
                 purpose: CatalogText::parse(value(row, "purpose"))?,
                 currency: Currency::parse(value(row, "currency"))?,
                 opened_on: optional_date(value(row, "opened_on"))?,
+                // Historical rows are replayed while the account is temporarily
+                // active; commit restores the source lifecycle state atomically.
                 enabled: true,
             };
             candidate.save_cash_account(&account)?;
@@ -397,6 +414,68 @@ fn build_plan(candidate: &mut LedgerStore, parsed: &ParsedWorkbook) -> ImportPla
         })();
         if result.is_err() {
             issues.push(row_issue("IMPORT_FIELD_INVALID", row, "account"));
+        }
+    }
+    for row in parsed.rows.iter().filter(|row| row.sheet == "投资组合") {
+        let result = (|| -> ApplicationResult<()> {
+            let id = UuidV7::new()?;
+            let policy = value(row, "migration_policy");
+            if !matches!(policy, "full_history" | "explicit_cutover") {
+                return Err(ApplicationError::ImportFileInvalid);
+            }
+            if policy == "explicit_cutover" {
+                LocalDate::parse(value(row, "cutover_date"))?;
+            }
+            let portfolio = Portfolio {
+                portfolio_id: id,
+                business_id: BusinessId::parse(value(row, "legacy_id"))?,
+                institution_id: mapped(&ids, "institution", value(row, "institution_legacy_id"))?,
+                settlement_account_id: mapped(
+                    &ids,
+                    "account",
+                    value(row, "settlement_account_legacy_id"),
+                )?,
+                name: CatalogText::parse(value(row, "name"))?,
+                portfolio_type: CatalogText::parse(value(row, "portfolio_type"))?,
+                enabled: parse_bool(value(row, "enabled"))?,
+            };
+            candidate.save_portfolio(&portfolio)?;
+            ids.insert(("portfolio", value(row, "legacy_id").to_owned()), id);
+            mappings.push(ImportMapping {
+                entity_type: "portfolio".to_owned(),
+                legacy_id: value(row, "legacy_id").to_owned(),
+                target_id: id.to_string(),
+                migration_policy: Some(policy.to_owned()),
+            });
+            Ok(())
+        })();
+        if result.is_err() {
+            issues.push(row_issue("IMPORT_FIELD_INVALID", row, "portfolio"));
+        }
+    }
+    for row in parsed.rows.iter().filter(|row| row.sheet == "证券") {
+        let result = (|| -> ApplicationResult<()> {
+            let id = UuidV7::new()?;
+            let instrument = SecurityInstrument {
+                instrument_id: id,
+                business_id: BusinessId::parse(value(row, "legacy_id"))?,
+                code: CatalogText::parse(value(row, "code"))?,
+                name: CatalogText::parse(value(row, "name"))?,
+                trade_currency: Currency::parse(value(row, "trade_currency"))?,
+                enabled: parse_bool(value(row, "enabled"))?,
+            };
+            candidate.save_instrument(&instrument)?;
+            ids.insert(("instrument", value(row, "legacy_id").to_owned()), id);
+            mappings.push(ImportMapping {
+                entity_type: "instrument".to_owned(),
+                legacy_id: value(row, "legacy_id").to_owned(),
+                target_id: id.to_string(),
+                migration_policy: None,
+            });
+            Ok(())
+        })();
+        if result.is_err() {
+            issues.push(row_issue("IMPORT_FIELD_INVALID", row, "instrument"));
         }
     }
     for row in parsed.rows.iter().filter(|row| row.sheet == "分类") {
@@ -443,12 +522,30 @@ fn build_plan(candidate: &mut LedgerStore, parsed: &ParsedWorkbook) -> ImportPla
             issues.push(row_issue("IMPORT_FIELD_INVALID", row, "rate_to_base"));
         }
     }
+    for row in parsed.rows.iter().filter(|row| row.sheet == "证券价格") {
+        let result = (|| -> ApplicationResult<()> {
+            let instrument_id = mapped(&ids, "instrument", value(row, "instrument_legacy_id"))?;
+            let revision = SecurityPriceRevision::new(
+                UuidV7::new()?,
+                instrument_id,
+                LocalDate::parse(value(row, "price_date"))?,
+                value(row, "price"),
+                Currency::parse(value(row, "price_currency"))?,
+                CatalogText::parse(value(row, "source"))?,
+                parse_bool(value(row, "active"))?,
+            )?;
+            candidate.save_price_revision(&revision)
+        })();
+        if result.is_err() {
+            issues.push(row_issue("IMPORT_FIELD_INVALID", row, "price"));
+        }
+    }
     let events = build_event_inputs(parsed, &mappings, &mut issues);
     let mut proposed_events = Vec::new();
     for (sheet, row, input) in &events {
-        match candidate.prepare_write(input) {
-            Ok(prepared) => {
-                if prepared
+        match candidate.post_cash_event(input, None, 1, Some("initial-xlsx-import")) {
+            Ok(posted) => {
+                if posted
                     .preview
                     .quality_issue_codes
                     .contains(&"MISSING_FX_RATE")
@@ -464,19 +561,69 @@ fn build_plan(candidate: &mut LedgerStore, parsed: &ParsedWorkbook) -> ImportPla
                 proposed_events.push(ImportProposedEvent {
                     source_sheet: sheet.clone(),
                     source_row: *row,
-                    event_type: prepared.preview.event_type.to_owned(),
-                    effective_date: prepared.preview.effective_date,
-                    sequence: prepared.preview.sequence,
-                    postings: prepared
+                    event_type: posted.preview.event_type.to_owned(),
+                    effective_date: posted.preview.effective_date,
+                    sequence: posted.preview.sequence,
+                    postings: posted
                         .preview
                         .postings
                         .into_iter()
                         .map(|posting| ImportPosting {
                             account_id: posting.account_id.unwrap_or_default(),
+                            portfolio_id: None,
+                            instrument_id: None,
                             quantity_delta: posting.quantity_delta,
                             currency: posting.currency,
                             base_value: posting.base_value,
                             role: posting.role.to_owned(),
+                        })
+                        .collect(),
+                });
+            }
+            Err(_) => issues.push(ImportIssue {
+                code: "IMPORT_EVENT_INVALID".to_owned(),
+                severity: "blocker".to_owned(),
+                sheet: sheet.clone(),
+                row: *row,
+                field: "event".to_owned(),
+            }),
+        }
+    }
+    let investment_events = build_investment_inputs(parsed, &mappings, &mut issues);
+    for (sheet, row, input) in &investment_events {
+        match candidate.post_investment(input, None, 1, Some("initial-xlsx-import")) {
+            Ok(posted) => {
+                if posted
+                    .preview
+                    .quality_issue_codes
+                    .contains(&"MISSING_FX_RATE")
+                {
+                    issues.push(ImportIssue {
+                        code: "IMPORT_MISSING_FX".to_owned(),
+                        severity: "blocker".to_owned(),
+                        sheet: sheet.clone(),
+                        row: *row,
+                        field: "currency".to_owned(),
+                    });
+                }
+                proposed_events.push(ImportProposedEvent {
+                    source_sheet: sheet.clone(),
+                    source_row: *row,
+                    event_type: posted.preview.event_type.to_owned(),
+                    effective_date: posted.preview.effective_date,
+                    sequence: posted.preview.sequence,
+                    postings: posted
+                        .preview
+                        .postings
+                        .into_iter()
+                        .map(|posting| ImportPosting {
+                            account_id: posting.account_id.unwrap_or_default(),
+                            portfolio_id: Some(posting.portfolio_id),
+                            instrument_id: posting.instrument_id,
+                            quantity_delta: posting.quantity_delta,
+                            currency: posting.currency,
+                            base_value: posting.base_value,
+                            role: posting.posting_kind.to_owned(),
                         })
                         .collect(),
                 });
@@ -500,6 +647,43 @@ fn build_plan(candidate: &mut LedgerStore, parsed: &ParsedWorkbook) -> ImportPla
             field: "cash_balances".to_owned(),
         });
     }
+    let mut metrics = reconcile_investment_metrics(candidate, parsed, &mappings, &mut issues);
+    metrics.extend(reconcile_check_rows(
+        parsed,
+        &mappings,
+        &proposed_events,
+        &mut issues,
+    ));
+    metrics.extend(reconcile_valuation_rows(candidate, parsed, &mut issues));
+    metrics.sort_by(|left, right| {
+        (&left.scope, &left.entity_id, &left.metric).cmp(&(
+            &right.scope,
+            &right.entity_id,
+            &right.metric,
+        ))
+    });
+    if metrics.iter().any(|metric| metric.difference != "0") {
+        issues.push(ImportIssue {
+            code: "IMPORT_RECONCILIATION_DIFFERENCE".to_owned(),
+            severity: "blocker".to_owned(),
+            sheet: "检查".to_owned(),
+            row: 2,
+            field: "investment_metrics".to_owned(),
+        });
+    }
+    let difference_items = build_expense_difference_bridge(parsed, &proposed_events);
+    if difference_items
+        .iter()
+        .any(|item| item.difference != "0" && item.explanation.is_empty())
+    {
+        issues.push(ImportIssue {
+            code: "IMPORT_DIFFERENCE_UNEXPLAINED".to_owned(),
+            severity: "blocker".to_owned(),
+            sheet: "支出分析".to_owned(),
+            row: 2,
+            field: "source_amount".to_owned(),
+        });
+    }
     issues.sort_by(|left, right| {
         (&left.sheet, left.row, &left.field, &left.code).cmp(&(
             &right.sheet,
@@ -512,10 +696,13 @@ fn build_plan(candidate: &mut LedgerStore, parsed: &ParsedWorkbook) -> ImportPla
         mappings,
         proposed_events,
         balances,
+        metrics,
+        difference_items,
         issues,
     }
 }
 
+#[allow(clippy::too_many_lines)] // One ordered pass preserves cash event source-row evidence.
 fn build_event_inputs(
     parsed: &ParsedWorkbook,
     mappings: &[ImportMapping],
@@ -533,7 +720,10 @@ fn build_event_inputs(
     let mut events = Vec::new();
     for row in parsed.rows.iter().filter(|row| row.sheet == "资金子账户") {
         let amount = value(row, "opening_balance");
-        if amount.is_empty() || amount == "0" {
+        if amount.is_empty()
+            || amount == "0"
+            || value(row, "migration_policy") != "explicit_cutover"
+        {
             continue;
         }
         let result = (|| -> ApplicationResult<CashEventInput> {
@@ -562,6 +752,17 @@ fn build_event_inputs(
         push_event_result(row, result, issues, &mut events);
     }
     for row in parsed.rows.iter().filter(|row| row.sheet == "收支流水") {
+        if !cash_row_in_scope(
+            parsed,
+            row,
+            &[
+                value(row, "account_legacy_id"),
+                value(row, "fee_account_legacy_id"),
+            ],
+            issues,
+        ) {
+            continue;
+        }
         let result = (|| -> ApplicationResult<CashEventInput> {
             Ok(CashEventInput {
                 effective_date: LocalDate::parse(value(row, "date"))?,
@@ -595,10 +796,33 @@ fn build_event_inputs(
         push_event_result(row, result, issues, &mut events);
     }
     for row in parsed.rows.iter().filter(|row| row.sheet == "资金调拨") {
+        if !cash_row_in_scope(
+            parsed,
+            row,
+            &[
+                value(row, "from_account_legacy_id"),
+                value(row, "to_account_legacy_id"),
+            ],
+            issues,
+        ) {
+            continue;
+        }
         let result = transfer_input(row, &lookup);
         push_event_result(row, result, issues, &mut events);
     }
     for row in parsed.rows.iter().filter(|row| row.sheet == "换汇流水") {
+        if !cash_row_in_scope(
+            parsed,
+            row,
+            &[
+                value(row, "from_account_legacy_id"),
+                value(row, "to_account_legacy_id"),
+                value(row, "fee_account_legacy_id"),
+            ],
+            issues,
+        ) {
+            continue;
+        }
         let result = exchange_input(row, &lookup);
         push_event_result(row, result, issues, &mut events);
     }
@@ -607,6 +831,254 @@ fn build_event_inputs(
             .cmp(&(right.2.effective_date.as_str(), right.2.sequence.get()))
     });
     events
+}
+
+#[allow(clippy::too_many_lines)]
+fn build_investment_inputs(
+    parsed: &ParsedWorkbook,
+    mappings: &[ImportMapping],
+    issues: &mut Vec<ImportIssue>,
+) -> Vec<(String, u32, InvestmentEventInput)> {
+    let lookup = mappings
+        .iter()
+        .map(|item| {
+            (
+                (item.entity_type.as_str(), item.legacy_id.as_str()),
+                item.target_id.as_str(),
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+    let mut events = Vec::new();
+    for row in parsed.rows.iter().filter(|row| row.sheet == "持仓基线") {
+        let portfolio_legacy_id = value(row, "portfolio_legacy_id");
+        let Some(portfolio_row) = parsed.rows.iter().find(|candidate| {
+            candidate.sheet == "投资组合" && value(candidate, "legacy_id") == portfolio_legacy_id
+        }) else {
+            continue;
+        };
+        if value(portfolio_row, "migration_policy") != "explicit_cutover" {
+            continue;
+        }
+        let result = (|| -> ApplicationResult<Vec<InvestmentEventInput>> {
+            let cutover = LocalDate::parse(value(portfolio_row, "cutover_date"))?;
+            if value(row, "as_of_date") != cutover.as_str() {
+                return Err(ApplicationError::ImportFileInvalid);
+            }
+            let portfolio_id = target(&lookup, "portfolio", portfolio_legacy_id)?;
+            let settlement_account_id = target(
+                &lookup,
+                "account",
+                value(portfolio_row, "settlement_account_legacy_id"),
+            )?;
+            let instrument_id =
+                optional_target(&lookup, "instrument", value(row, "instrument_legacy_id"))?;
+            let currency = Currency::parse(value(row, "currency"))?;
+            let mut opening = Vec::new();
+            if instrument_id.is_some() {
+                opening.push(InvestmentEventInput {
+                    effective_date: cutover.clone(),
+                    sequence: Sequence::new(6_000_000 + u64::from(row.row) * 2)?,
+                    event_type: InvestmentEventType::OpeningPosition,
+                    portfolio_id,
+                    instrument_id,
+                    settlement_account_id,
+                    quantity: Some(Decimal::parse(
+                        value(row, "quantity"),
+                        DecimalUse::Quantity,
+                    )?),
+                    unit_price: None,
+                    trade_fee: None,
+                    gross_cash_amount: None,
+                    withholding_tax: None,
+                    fee_amount: None,
+                    amount: None,
+                    carrying_cost: Some(Decimal::parse(
+                        value(row, "carrying_cost"),
+                        DecimalUse::Internal,
+                    )?),
+                    realized_trade_pnl: None,
+                    net_dividend: None,
+                    independent_expense: None,
+                    cost_currency: Some(currency),
+                    cutover_date: Some(cutover.clone()),
+                    migration_policy: Some("explicit_cutover".to_owned()),
+                    fee_scope: None,
+                    settlement_override_reason: None,
+                    fx_overrides: Vec::new(),
+                });
+            }
+            opening.push(InvestmentEventInput {
+                effective_date: cutover.clone(),
+                sequence: Sequence::new(6_000_001 + u64::from(row.row) * 2)?,
+                event_type: InvestmentEventType::OpeningPerformance,
+                portfolio_id,
+                instrument_id,
+                settlement_account_id,
+                quantity: None,
+                unit_price: None,
+                trade_fee: None,
+                gross_cash_amount: None,
+                withholding_tax: None,
+                fee_amount: None,
+                amount: None,
+                carrying_cost: None,
+                realized_trade_pnl: Some(Decimal::parse(
+                    value(row, "realized_trade_pnl"),
+                    DecimalUse::Internal,
+                )?),
+                net_dividend: Some(Decimal::parse(
+                    value(row, "net_dividend"),
+                    DecimalUse::Internal,
+                )?),
+                independent_expense: Some(Decimal::parse(
+                    value(row, "independent_expense"),
+                    DecimalUse::Internal,
+                )?),
+                cost_currency: Some(currency),
+                cutover_date: Some(cutover),
+                migration_policy: Some("explicit_cutover".to_owned()),
+                fee_scope: None,
+                settlement_override_reason: None,
+                fx_overrides: Vec::new(),
+            });
+            Ok(opening)
+        })();
+        match result {
+            Ok(values) => events.extend(
+                values
+                    .into_iter()
+                    .map(|input| (row.sheet.clone(), row.row, input)),
+            ),
+            Err(_) => issues.push(row_issue("IMPORT_FIELD_INVALID", row, "opening")),
+        }
+    }
+    for row in parsed.rows.iter().filter(|row| row.sheet == "投资流水") {
+        if !investment_row_in_scope(parsed, row, issues) {
+            continue;
+        }
+        let result = (|| -> ApplicationResult<InvestmentEventInput> {
+            let event_type = InvestmentEventType::parse(value(row, "type"))?;
+            Ok(InvestmentEventInput {
+                effective_date: LocalDate::parse(value(row, "date"))?,
+                sequence: Sequence::new(parse_u64(value(row, "sequence"))?)?,
+                event_type,
+                portfolio_id: target(&lookup, "portfolio", value(row, "portfolio_legacy_id"))?,
+                instrument_id: optional_target(
+                    &lookup,
+                    "instrument",
+                    value(row, "instrument_legacy_id"),
+                )?,
+                settlement_account_id: target(
+                    &lookup,
+                    "account",
+                    value(row, "settlement_account_legacy_id"),
+                )?,
+                quantity: optional_decimal_use(value(row, "quantity"), DecimalUse::Quantity)?,
+                unit_price: optional_decimal_use(value(row, "unit_price"), DecimalUse::UnitPrice)?,
+                trade_fee: optional_decimal(value(row, "trade_fee"))?,
+                gross_cash_amount: optional_decimal(value(row, "gross_cash_amount"))?,
+                withholding_tax: optional_decimal(value(row, "withholding_tax"))?,
+                fee_amount: optional_decimal(value(row, "fee_amount"))?,
+                amount: optional_decimal(value(row, "amount"))?,
+                carrying_cost: None,
+                realized_trade_pnl: None,
+                net_dividend: None,
+                independent_expense: None,
+                cost_currency: None,
+                cutover_date: None,
+                migration_policy: None,
+                fee_scope: optional_fee_scope(value(row, "fee_scope"))?,
+                settlement_override_reason: optional_string(value(
+                    row,
+                    "settlement_override_reason",
+                )),
+                fx_overrides: Vec::new(),
+            })
+        })();
+        match result {
+            Ok(input) => events.push((row.sheet.clone(), row.row, input)),
+            Err(_) => issues.push(row_issue("IMPORT_FIELD_INVALID", row, "event")),
+        }
+    }
+    events.sort_by(|left, right| {
+        (left.2.effective_date.as_str(), left.2.sequence.get())
+            .cmp(&(right.2.effective_date.as_str(), right.2.sequence.get()))
+    });
+    events
+}
+
+fn cash_row_in_scope(
+    parsed: &ParsedWorkbook,
+    row: &ParsedRow,
+    account_ids: &[&str],
+    issues: &mut Vec<ImportIssue>,
+) -> bool {
+    let Ok(date) = LocalDate::parse(value(row, "date")) else {
+        return true;
+    };
+    let decisions = account_ids
+        .iter()
+        .filter(|id| !id.is_empty())
+        .filter_map(|id| {
+            parsed.rows.iter().find(|candidate| {
+                candidate.sheet == "资金子账户" && value(candidate, "legacy_id") == *id
+            })
+        })
+        .map(|account| {
+            (
+                value(account, "migration_policy"),
+                value(account, "cutover_date"),
+            )
+        })
+        .collect::<BTreeSet<_>>();
+    if decisions.len() != 1 {
+        issues.push(row_issue(
+            "IMPORT_MIGRATION_POLICY_MISMATCH",
+            row,
+            "migration_policy",
+        ));
+        return false;
+    }
+    let Some((policy, cutover)) = decisions.into_iter().next() else {
+        return true;
+    };
+    policy != "explicit_cutover" || LocalDate::parse(cutover).is_ok_and(|value| date > value)
+}
+
+fn investment_row_in_scope(
+    parsed: &ParsedWorkbook,
+    row: &ParsedRow,
+    issues: &mut Vec<ImportIssue>,
+) -> bool {
+    let portfolio = parsed.rows.iter().find(|candidate| {
+        candidate.sheet == "投资组合"
+            && value(candidate, "legacy_id") == value(row, "portfolio_legacy_id")
+    });
+    let account = parsed.rows.iter().find(|candidate| {
+        candidate.sheet == "资金子账户"
+            && value(candidate, "legacy_id") == value(row, "settlement_account_legacy_id")
+    });
+    let Some((portfolio, account)) = portfolio.zip(account) else {
+        return true;
+    };
+    let policy = value(portfolio, "migration_policy");
+    let cutover = value(portfolio, "cutover_date");
+    if policy != value(account, "migration_policy")
+        || (policy == "explicit_cutover" && cutover != value(account, "cutover_date"))
+    {
+        issues.push(row_issue(
+            "IMPORT_MIGRATION_POLICY_MISMATCH",
+            row,
+            "migration_policy",
+        ));
+        return false;
+    }
+    if policy == "full_history" {
+        return true;
+    }
+    let date = LocalDate::parse(value(row, "date"));
+    let cutover = LocalDate::parse(cutover);
+    matches!((date, cutover), (Ok(date), Ok(cutover)) if date > cutover)
 }
 
 fn transfer_input(
@@ -701,6 +1173,9 @@ fn reconcile_balances(
     let mut proposed = BTreeMap::<(String, String), Decimal>::new();
     for event in events {
         for posting in &event.postings {
+            if posting.account_id.is_empty() {
+                continue;
+            }
             if let Ok(amount) = Decimal::parse(&posting.quantity_delta, DecimalUse::Amount) {
                 let key = (posting.account_id.clone(), posting.currency.clone());
                 add_balance(&mut proposed, key, &amount);
@@ -720,6 +1195,9 @@ fn reconcile_balances(
         .map(|row| (value(row, "legacy_id"), value(row, "currency")))
         .collect::<BTreeMap<_, _>>();
     for row in parsed.rows.iter().filter(|row| row.sheet == "资金子账户") {
+        if value(row, "migration_policy") != "explicit_cutover" {
+            continue;
+        }
         add_source_value(
             &mut source,
             &account_ids,
@@ -730,6 +1208,17 @@ fn reconcile_balances(
         );
     }
     for row in parsed.rows.iter().filter(|row| row.sheet == "收支流水") {
+        if !cash_row_in_scope(
+            parsed,
+            row,
+            &[
+                value(row, "account_legacy_id"),
+                value(row, "fee_account_legacy_id"),
+            ],
+            &mut Vec::new(),
+        ) {
+            continue;
+        }
         let negative = value(row, "type") == "Expense";
         add_source_value(
             &mut source,
@@ -749,6 +1238,17 @@ fn reconcile_balances(
         );
     }
     for row in parsed.rows.iter().filter(|row| row.sheet == "资金调拨") {
+        if !cash_row_in_scope(
+            parsed,
+            row,
+            &[
+                value(row, "from_account_legacy_id"),
+                value(row, "to_account_legacy_id"),
+            ],
+            &mut Vec::new(),
+        ) {
+            continue;
+        }
         add_source_value(
             &mut source,
             &account_ids,
@@ -767,6 +1267,18 @@ fn reconcile_balances(
         );
     }
     for row in parsed.rows.iter().filter(|row| row.sheet == "换汇流水") {
+        if !cash_row_in_scope(
+            parsed,
+            row,
+            &[
+                value(row, "from_account_legacy_id"),
+                value(row, "to_account_legacy_id"),
+                value(row, "fee_account_legacy_id"),
+            ],
+            &mut Vec::new(),
+        ) {
+            continue;
+        }
         add_source_value(
             &mut source,
             &account_ids,
@@ -792,11 +1304,36 @@ fn reconcile_balances(
             true,
         );
     }
+    for row in parsed.rows.iter().filter(|row| row.sheet == "投资流水") {
+        if !investment_row_in_scope(parsed, row, &mut Vec::new()) {
+            continue;
+        }
+        let settlement = value(row, "settlement_account_legacy_id");
+        let amount = match value(row, "type") {
+            "SecurityBuy" => investment_trade_cash(row, true),
+            "SecuritySell" => investment_trade_cash(row, false),
+            "Dividend" => investment_dividend_cash(row),
+            "InvestmentExpense" => Decimal::parse(value(row, "amount"), DecimalUse::Amount)
+                .map_err(ApplicationError::from)
+                .and_then(|value| value.checked_neg(DecimalUse::Amount).map_err(Into::into)),
+            _ => continue,
+        };
+        if let Ok(amount) = amount
+            && let Some((target_id, currency)) =
+                account_ids.get(settlement).zip(currencies.get(settlement))
+        {
+            add_balance(
+                &mut source,
+                ((*target_id).to_owned(), (*currency).to_owned()),
+                &amount,
+            );
+        }
+    }
     let keys = source
         .keys()
         .chain(proposed.keys())
         .cloned()
-        .collect::<std::collections::BTreeSet<_>>();
+        .collect::<BTreeSet<_>>();
     keys.iter()
         .map(|(account_id, currency)| {
             let source_balance = source
@@ -825,6 +1362,361 @@ fn reconcile_balances(
             }
         })
         .collect()
+}
+
+#[allow(clippy::too_many_lines)] // The matrix keeps each source metric adjacent to its canonical comparator.
+fn reconcile_investment_metrics(
+    candidate: &LedgerStore,
+    parsed: &ParsedWorkbook,
+    mappings: &[ImportMapping],
+    issues: &mut Vec<ImportIssue>,
+) -> Vec<ImportMetric> {
+    let lookup = mappings
+        .iter()
+        .map(|item| {
+            (
+                (item.entity_type.as_str(), item.legacy_id.as_str()),
+                item.target_id.as_str(),
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+    let mut metrics = Vec::new();
+    for row in parsed.rows.iter().filter(|row| row.sheet == "持仓基线") {
+        let result = (|| -> ApplicationResult<Vec<ImportMetric>> {
+            let as_of = LocalDate::parse(value(row, "as_of_date"))?;
+            let workspace = candidate.investment_workspace(&as_of)?;
+            let portfolio_id =
+                target(&lookup, "portfolio", value(row, "portfolio_legacy_id"))?.to_string();
+            let instrument_id =
+                optional_target(&lookup, "instrument", value(row, "instrument_legacy_id"))?
+                    .map(|value| value.to_string());
+            let source = |field: &str| {
+                Decimal::parse(value(row, field), DecimalUse::Internal)
+                    .map(|value| value.normalized())
+            };
+            let mut values = Vec::new();
+            if let Some(instrument_id) = instrument_id {
+                let holding = workspace
+                    .holdings
+                    .iter()
+                    .find(|item| {
+                        item.portfolio_id == portfolio_id && item.instrument_id == instrument_id
+                    })
+                    .ok_or(ApplicationError::ImportReconciliationFailed)?;
+                for (name, source_value, proposed_value) in [
+                    ("quantity", source("quantity")?, &holding.quantity),
+                    (
+                        "carrying_cost",
+                        source("carrying_cost")?,
+                        &holding.carrying_cost,
+                    ),
+                    (
+                        "realized_trade_pnl",
+                        source("realized_trade_pnl")?,
+                        &holding.realized_trade_pnl,
+                    ),
+                    (
+                        "net_dividend",
+                        source("net_dividend")?,
+                        &holding.net_dividend,
+                    ),
+                    (
+                        "independent_expense",
+                        source("independent_expense")?,
+                        &holding.independent_expense,
+                    ),
+                ] {
+                    values.push(import_metric(
+                        "holding",
+                        &format!("{portfolio_id}:{instrument_id}"),
+                        name,
+                        &source_value,
+                        proposed_value,
+                        Some(as_of.as_str()),
+                    )?);
+                }
+            } else {
+                let proposed = workspace
+                    .portfolio_expenses
+                    .iter()
+                    .filter(|item| item.portfolio_id == portfolio_id)
+                    .try_fold(Decimal::zero(DecimalUse::Internal), |current, item| {
+                        current.checked_add(
+                            &Decimal::parse(&item.amount, DecimalUse::Internal)?,
+                            DecimalUse::Internal,
+                        )
+                    })?;
+                values.push(import_metric(
+                    "portfolio",
+                    &portfolio_id,
+                    "independent_expense",
+                    &source("independent_expense")?,
+                    proposed.as_str(),
+                    Some(as_of.as_str()),
+                )?);
+            }
+            Ok(values)
+        })();
+        match result {
+            Ok(values) => metrics.extend(values),
+            Err(_) => issues.push(row_issue(
+                "IMPORT_RECONCILIATION_DIFFERENCE",
+                row,
+                "holding_baseline",
+            )),
+        }
+    }
+    metrics.sort_by(|left, right| {
+        (&left.scope, &left.entity_id, &left.metric).cmp(&(
+            &right.scope,
+            &right.entity_id,
+            &right.metric,
+        ))
+    });
+    metrics
+}
+
+fn reconcile_check_rows(
+    parsed: &ParsedWorkbook,
+    mappings: &[ImportMapping],
+    events: &[ImportProposedEvent],
+    issues: &mut Vec<ImportIssue>,
+) -> Vec<ImportMetric> {
+    let mut output = Vec::new();
+    for row in parsed
+        .rows
+        .iter()
+        .filter(|row| row.sheet == "检查" && value(row, "scope") != "valuation")
+    {
+        let result = (|| -> ApplicationResult<ImportMetric> {
+            let scope = value(row, "scope");
+            let entity = value(row, "legacy_id");
+            let metric = value(row, "metric");
+            let proposed = match (scope, metric) {
+                ("mapping", "count") => u64::try_from(
+                    mappings
+                        .iter()
+                        .filter(|item| item.entity_type == entity)
+                        .count(),
+                )
+                .map_err(|_| ApplicationError::ResponseTooLarge)?,
+                ("events", "count") => {
+                    u64::try_from(events.len()).map_err(|_| ApplicationError::ResponseTooLarge)?
+                }
+                ("source", "row_count") => u64::try_from(parsed.rows.len())
+                    .map_err(|_| ApplicationError::ResponseTooLarge)?,
+                ("currency", "count") => u64::try_from(
+                    parsed
+                        .rows
+                        .iter()
+                        .filter_map(|candidate| match candidate.sheet.as_str() {
+                            "资金子账户" => Some(value(candidate, "currency")),
+                            "证券" => Some(value(candidate, "trade_currency")),
+                            _ => None,
+                        })
+                        .filter(|value| !value.is_empty())
+                        .collect::<BTreeSet<_>>()
+                        .len(),
+                )
+                .map_err(|_| ApplicationError::ResponseTooLarge)?,
+                _ => return Err(ApplicationError::ImportFileInvalid),
+            };
+            let source = parse_u64(value(row, "source_value"))?;
+            Ok(ImportMetric {
+                scope: scope.to_owned(),
+                entity_id: entity.to_owned(),
+                metric: metric.to_owned(),
+                source_value: source.to_string(),
+                proposed_value: proposed.to_string(),
+                difference: i128::from(proposed)
+                    .saturating_sub(i128::from(source))
+                    .to_string(),
+                as_of_date: None,
+            })
+        })();
+        match result {
+            Ok(value) => output.push(value),
+            Err(_) => issues.push(row_issue("IMPORT_CHECK_INVALID", row, "metric")),
+        }
+    }
+    output
+}
+
+fn reconcile_valuation_rows(
+    candidate: &LedgerStore,
+    parsed: &ParsedWorkbook,
+    issues: &mut Vec<ImportIssue>,
+) -> Vec<ImportMetric> {
+    let mut output = Vec::new();
+    for row in parsed
+        .rows
+        .iter()
+        .filter(|row| row.sheet == "检查" && value(row, "scope") == "valuation")
+    {
+        let result = (|| -> ApplicationResult<ImportMetric> {
+            if value(row, "metric") != "valued_net_assets" {
+                return Err(ApplicationError::ImportFileInvalid);
+            }
+            let as_of = LocalDate::parse(value(row, "as_of_date"))?;
+            let source = Decimal::parse(value(row, "source_value"), DecimalUse::Internal)?;
+            let overview = candidate.overview(&as_of)?;
+            import_metric(
+                "valuation",
+                value(row, "legacy_id"),
+                "valued_net_assets",
+                &source,
+                &overview.valued_net_assets,
+                Some(as_of.as_str()),
+            )
+        })();
+        match result {
+            Ok(value) => output.push(value),
+            Err(_) => issues.push(row_issue("IMPORT_CHECK_INVALID", row, "valued_net_assets")),
+        }
+    }
+    output
+}
+
+fn import_metric(
+    scope: &str,
+    entity_id: &str,
+    metric: &str,
+    source: &Decimal,
+    proposed: &str,
+    as_of_date: Option<&str>,
+) -> ApplicationResult<ImportMetric> {
+    let proposed = Decimal::parse(proposed, DecimalUse::Internal)?.normalized();
+    let source = source.normalized();
+    let difference = proposed.checked_add(
+        &source.checked_neg(DecimalUse::Internal)?,
+        DecimalUse::Internal,
+    )?;
+    Ok(ImportMetric {
+        scope: scope.to_owned(),
+        entity_id: entity_id.to_owned(),
+        metric: metric.to_owned(),
+        source_value: source.as_str().to_owned(),
+        proposed_value: proposed.as_str().to_owned(),
+        difference: difference.normalized().as_str().to_owned(),
+        as_of_date: as_of_date.map(ToOwned::to_owned),
+    })
+}
+
+fn build_expense_difference_bridge(
+    parsed: &ParsedWorkbook,
+    events: &[ImportProposedEvent],
+) -> Vec<ImportDifference> {
+    let mut items = Vec::new();
+    for row in parsed.rows.iter().filter(|row| row.sheet == "支出分析") {
+        let result = (|| -> ApplicationResult<ImportDifference> {
+            let start = LocalDate::parse(value(row, "start_date"))?;
+            let end = LocalDate::parse(value(row, "end_date"))?;
+            if start > end {
+                return Err(ApplicationError::ExpenseDateRangeInvalid);
+            }
+            let bucket = value(row, "bucket_id");
+            let mut amount = Decimal::zero(DecimalUse::Internal);
+            let mut event_ids = BTreeSet::<(String, u32)>::new();
+            for event in events.iter().filter(|event| {
+                event.source_sheet == "收支流水"
+                    && event.effective_date.as_str() >= start.as_str()
+                    && event.effective_date.as_str() <= end.as_str()
+            }) {
+                let Some(source_row) = parsed.rows.iter().find(|source| {
+                    source.sheet == event.source_sheet && source.row == event.source_row
+                }) else {
+                    continue;
+                };
+                if value(source_row, "semantic_role") != "normal"
+                    || (bucket != "all" && bucket != value(source_row, "category_legacy_id"))
+                {
+                    continue;
+                }
+                let mut contributed = false;
+                for posting in &event.postings {
+                    let included = posting.role == "fee"
+                        || (posting.role == "principal" && event.event_type == "Expense");
+                    if !included {
+                        continue;
+                    }
+                    if let Some(base) = &posting.base_value {
+                        let value = Decimal::parse(base, DecimalUse::Internal)?;
+                        let expense = if value.is_negative() {
+                            value.checked_neg(DecimalUse::Internal)?
+                        } else {
+                            value
+                        };
+                        amount = amount.checked_add(&expense, DecimalUse::Internal)?;
+                        contributed = true;
+                    }
+                }
+                if contributed {
+                    event_ids.insert((event.source_sheet.clone(), event.source_row));
+                }
+            }
+            let source_amount =
+                Decimal::parse(value(row, "source_amount"), DecimalUse::Internal)?.normalized();
+            let difference = amount.checked_add(
+                &source_amount.checked_neg(DecimalUse::Internal)?,
+                DecimalUse::Internal,
+            )?;
+            let application_count =
+                u64::try_from(event_ids.len()).map_err(|_| ApplicationError::ResponseTooLarge)?;
+            let source_count = parse_u64(value(row, "source_count"))?;
+            let count_difference = i128::from(application_count) - i128::from(source_count);
+            Ok(ImportDifference {
+                scope: "expense-bucket".to_owned(),
+                key: format!("{}:{}:{bucket}", start.as_str(), end.as_str()),
+                excel_value: format!("{}|{source_count}", source_amount.as_str()),
+                application_value: format!("{}|{application_count}", amount.normalized().as_str()),
+                difference: if difference.is_zero() && count_difference == 0 {
+                    "0".to_owned()
+                } else {
+                    format!("{}|{count_difference}", difference.normalized().as_str())
+                },
+                explanation: value(row, "explanation").to_owned(),
+            })
+        })();
+        if let Ok(item) = result {
+            items.push(item);
+        }
+    }
+    items
+}
+
+fn investment_trade_cash(row: &ParsedRow, buy: bool) -> ApplicationResult<Decimal> {
+    let quantity = Decimal::parse(value(row, "quantity"), DecimalUse::Quantity)?;
+    let price = Decimal::parse(value(row, "unit_price"), DecimalUse::UnitPrice)?;
+    let gross = quantity.checked_mul_internal(&price)?;
+    let fee = optional_decimal(value(row, "trade_fee"))?
+        .unwrap_or_else(|| Decimal::zero(DecimalUse::Amount));
+    if buy {
+        Ok(gross
+            .checked_add(&fee, DecimalUse::Internal)?
+            .checked_neg(DecimalUse::Internal)?)
+    } else {
+        Ok(gross.checked_add(
+            &fee.checked_neg(DecimalUse::Internal)?,
+            DecimalUse::Internal,
+        )?)
+    }
+}
+
+fn investment_dividend_cash(row: &ParsedRow) -> ApplicationResult<Decimal> {
+    let gross = Decimal::parse(value(row, "gross_cash_amount"), DecimalUse::Amount)?;
+    let tax = optional_decimal(value(row, "withholding_tax"))?
+        .unwrap_or_else(|| Decimal::zero(DecimalUse::Amount));
+    let fee = optional_decimal(value(row, "fee_amount"))?
+        .unwrap_or_else(|| Decimal::zero(DecimalUse::Amount));
+    Ok(gross
+        .checked_add(
+            &tax.checked_neg(DecimalUse::Internal)?,
+            DecimalUse::Internal,
+        )?
+        .checked_add(
+            &fee.checked_neg(DecimalUse::Internal)?,
+            DecimalUse::Internal,
+        )?)
 }
 
 fn add_source_value(
@@ -1026,12 +1918,148 @@ fn verify_balances(connection: &Connection, expected: &[ImportBalance]) -> Appli
     Ok(())
 }
 
+#[allow(clippy::too_many_lines)] // Verification mirrors every supported reconciliation scope explicitly.
+fn verify_metrics(store: &LedgerStore, expected: &[ImportMetric]) -> ApplicationResult<()> {
+    let connection = &store.connection;
+    for metric in expected {
+        let actual = if metric.scope == "holding" {
+            let Some((portfolio_id, instrument_id)) = metric.entity_id.split_once(':') else {
+                return Err(ApplicationError::ImportReconciliationFailed);
+            };
+            let as_of = LocalDate::parse(
+                metric
+                    .as_of_date
+                    .as_deref()
+                    .ok_or(ApplicationError::ImportReconciliationFailed)?,
+            )?;
+            let workspace = store.investment_workspace(&as_of)?;
+            let holding = workspace
+                .holdings
+                .iter()
+                .find(|item| {
+                    item.portfolio_id == portfolio_id && item.instrument_id == instrument_id
+                })
+                .ok_or(ApplicationError::ImportReconciliationFailed)?;
+            match metric.metric.as_str() {
+                "quantity" => holding.quantity.clone(),
+                "carrying_cost" => holding.carrying_cost.clone(),
+                "realized_trade_pnl" => holding.realized_trade_pnl.clone(),
+                "net_dividend" => holding.net_dividend.clone(),
+                "independent_expense" => holding.independent_expense.clone(),
+                _ => return Err(ApplicationError::ImportReconciliationFailed),
+            }
+        } else if metric.scope == "portfolio" && metric.metric == "independent_expense" {
+            let as_of = LocalDate::parse(
+                metric
+                    .as_of_date
+                    .as_deref()
+                    .ok_or(ApplicationError::ImportReconciliationFailed)?,
+            )?;
+            store
+                .investment_workspace(&as_of)?
+                .portfolio_expenses
+                .iter()
+                .filter(|item| item.portfolio_id == metric.entity_id)
+                .try_fold(Decimal::zero(DecimalUse::Internal), |current, item| {
+                    current.checked_add(
+                        &Decimal::parse(&item.amount, DecimalUse::Internal)?,
+                        DecimalUse::Internal,
+                    )
+                })?
+                .normalized()
+                .as_str()
+                .to_owned()
+        } else if metric.scope == "valuation" && metric.metric == "valued_net_assets" {
+            let as_of = LocalDate::parse(
+                metric
+                    .as_of_date
+                    .as_deref()
+                    .ok_or(ApplicationError::ImportReconciliationFailed)?,
+            )?;
+            store.overview(&as_of)?.valued_net_assets
+        } else if metric.scope == "mapping" && metric.metric == "count" {
+            let table = match metric.entity_id.as_str() {
+                "institution" => "institutions",
+                "account" => "cash_accounts",
+                "category" => "categories",
+                "portfolio" => "portfolios",
+                "instrument" => "security_instruments",
+                _ => return Err(ApplicationError::ImportReconciliationFailed),
+            };
+            connection
+                .query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |row| {
+                    row.get::<_, i64>(0)
+                })
+                .map_err(|_| ApplicationError::ImportReconciliationFailed)?
+                .to_string()
+        } else if metric.scope == "events" && metric.metric == "count" {
+            connection
+                .query_row("SELECT COUNT(*) FROM business_events", [], |row| {
+                    row.get::<_, i64>(0)
+                })
+                .map_err(|_| ApplicationError::ImportReconciliationFailed)?
+                .to_string()
+        } else if metric.scope == "currency" && metric.metric == "count" {
+            connection
+                .query_row(
+                    "SELECT COUNT(*) FROM (SELECT currency AS value FROM cash_accounts UNION SELECT trade_currency FROM security_instruments)",
+                    [],
+                    |row| row.get::<_, i64>(0),
+                )
+                .map_err(|_| ApplicationError::ImportReconciliationFailed)?
+                .to_string()
+        } else {
+            return Err(ApplicationError::ImportReconciliationFailed);
+        };
+        if Decimal::parse(&actual, DecimalUse::Internal)?
+            .normalized()
+            .as_str()
+            != Decimal::parse(&metric.proposed_value, DecimalUse::Internal)?
+                .normalized()
+                .as_str()
+        {
+            return Err(ApplicationError::ImportReconciliationFailed);
+        }
+    }
+    Ok(())
+}
+
+fn apply_import_account_states(
+    transaction: &rusqlite::Transaction<'_>,
+    parsed: &ParsedWorkbook,
+    mappings: &[ImportMapping],
+) -> ApplicationResult<()> {
+    let lookup = mappings
+        .iter()
+        .filter(|item| item.entity_type == "account")
+        .map(|item| (item.legacy_id.as_str(), item.target_id.as_str()))
+        .collect::<BTreeMap<_, _>>();
+    for row in parsed.rows.iter().filter(|row| row.sheet == "资金子账户") {
+        let enabled = if value(row, "enabled").is_empty() {
+            true
+        } else {
+            parse_bool(value(row, "enabled"))?
+        };
+        if let Some(account_id) = lookup.get(value(row, "legacy_id")) {
+            transaction
+                .execute(
+                    "UPDATE cash_accounts SET enabled=?1,updated_at_utc=CURRENT_TIMESTAMP WHERE account_id=?2",
+                    params![enabled, account_id],
+                )
+                .map_err(|_| ApplicationError::TransactionFailed)?;
+        }
+    }
+    Ok(())
+}
+
 fn reconciliation_hash(
     events: &[ImportProposedEvent],
     balances: &[ImportBalance],
+    metrics: &[ImportMetric],
+    differences: &[ImportDifference],
 ) -> ApplicationResult<String> {
-    let bytes =
-        serde_json::to_vec(&(events, balances)).map_err(|_| ApplicationError::TransactionFailed)?;
+    let bytes = serde_json::to_vec(&(events, balances, metrics, differences))
+        .map_err(|_| ApplicationError::TransactionFailed)?;
     Ok(sha256(&bytes))
 }
 
@@ -1123,6 +2151,23 @@ fn optional_decimal(value: &str) -> ApplicationResult<Option<Decimal>> {
     }
 }
 
+fn optional_decimal_use(value: &str, usage: DecimalUse) -> ApplicationResult<Option<Decimal>> {
+    if value.is_empty() {
+        Ok(None)
+    } else {
+        Decimal::parse(value, usage).map(Some).map_err(Into::into)
+    }
+}
+
+fn optional_fee_scope(value: &str) -> ApplicationResult<Option<FeeScope>> {
+    match value {
+        "" => Ok(None),
+        "instrument" => Ok(Some(FeeScope::Instrument)),
+        "portfolio" => Ok(Some(FeeScope::Portfolio)),
+        _ => Err(ApplicationError::ImportFileInvalid),
+    }
+}
+
 fn optional_string(value: &str) -> Option<String> {
     (!value.is_empty()).then(|| value.to_owned())
 }
@@ -1164,11 +2209,20 @@ mod tests {
 
     use tempfile::tempdir;
 
+    use crate::application::investment::InvestmentPort;
+    use crate::application::valuation::ValuationPort;
+
     use super::*;
 
     fn fixture(name: &str) -> PathBuf {
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("../../fixtures/sanitized/m3")
+            .join(name)
+    }
+
+    fn m5_fixture(name: &str) -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../fixtures/sanitized/m5")
             .join(name)
     }
 
@@ -1298,5 +2352,97 @@ mod tests {
             manager.commit_import(&batch, true),
             Err(ApplicationError::ImportBatchNotFound)
         );
+    }
+
+    #[test]
+    fn full_history_fixture_rebuilds_cash_holdings_and_expense_bridge() {
+        let directory = tempdir().unwrap();
+        let mut manager = SqliteLedgerManager::new(directory.path()).unwrap();
+        let analysis = manager
+            .analyze_import(&m5_fixture("full-import-history.xlsx"))
+            .unwrap();
+        assert!(
+            analysis.can_commit,
+            "issues: {:?}; metrics: {:?}; differences: {:?}; balances: {:?}",
+            analysis.issues,
+            analysis.reconciliation.metrics,
+            analysis.reconciliation.difference_items,
+            analysis.reconciliation.balances
+        );
+        assert_eq!(analysis.proposed_events.len(), 5);
+        assert!(
+            analysis
+                .reconciliation
+                .metrics
+                .iter()
+                .all(|item| item.difference == "0")
+        );
+        assert!(
+            analysis
+                .reconciliation
+                .difference_items
+                .iter()
+                .all(|item| item.difference == "0")
+        );
+        manager.commit_import(&analysis.batch_id, true).unwrap();
+        let overview = manager
+            .get_overview(&LocalDate::parse("2026-03-15").unwrap())
+            .unwrap();
+        assert_eq!(overview.valued_net_assets, "7140");
+        assert_eq!(overview.mtd_expense, "35");
+        assert!(overview.unvalued_assets.is_empty());
+    }
+
+    #[test]
+    fn cutover_fixture_excludes_pre_and_on_date_rows_and_preserves_zero_history() {
+        let directory = tempdir().unwrap();
+        let mut manager = SqliteLedgerManager::new(directory.path()).unwrap();
+        let analysis = manager
+            .analyze_import(&m5_fixture("full-import-cutover.xlsx"))
+            .unwrap();
+        assert!(
+            analysis.can_commit,
+            "issues: {:?}; metrics: {:?}; differences: {:?}; balances: {:?}",
+            analysis.issues,
+            analysis.reconciliation.metrics,
+            analysis.reconciliation.difference_items,
+            analysis.reconciliation.balances
+        );
+        assert_eq!(analysis.proposed_events.len(), 6);
+        assert!(
+            analysis
+                .proposed_events
+                .iter()
+                .any(|item| item.event_type == "OpeningPosition")
+        );
+        assert!(
+            !analysis
+                .proposed_events
+                .iter()
+                .any(|item| item.effective_date.as_str() < "2026-01-01")
+        );
+        manager.commit_import(&analysis.batch_id, true).unwrap();
+        let workspace = manager
+            .get_investment_workspace(&LocalDate::parse("2026-03-15").unwrap())
+            .unwrap();
+        assert_eq!(workspace.holdings[0].quantity, "2");
+        assert_eq!(workspace.holdings[0].realized_trade_pnl, "25");
+        assert_eq!(workspace.portfolio_expenses[0].amount, "3");
+    }
+
+    #[test]
+    fn missing_full_migration_policy_and_unbalanced_checks_block_switch() {
+        let directory = tempdir().unwrap();
+        let mut manager = SqliteLedgerManager::new(directory.path()).unwrap();
+        let analysis = manager
+            .analyze_import(&m5_fixture("full-import-invalid.xlsx"))
+            .unwrap();
+        assert!(!analysis.can_commit);
+        assert!(analysis.blocker_count > 0);
+        assert_eq!(
+            manager.commit_import(&analysis.batch_id, true),
+            Err(ApplicationError::ImportBlockersPresent)
+        );
+        assert!(!directory.path().join("ledger.sqlite3").exists());
     }
 }

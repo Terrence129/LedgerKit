@@ -87,6 +87,24 @@ pub enum InvestmentEventKind {
         fee_scope: FeeScope,
         settlement_override_reason: Option<String>,
     },
+    OpeningPosition {
+        portfolio: PortfolioFact,
+        instrument: InstrumentFact,
+        quantity: Decimal,
+        carrying_cost: Decimal,
+        cost_currency: Currency,
+        cutover_date: LocalDate,
+        migration_policy: String,
+    },
+    OpeningPerformance {
+        portfolio: PortfolioFact,
+        instrument: Option<InstrumentFact>,
+        realized_trade_pnl: Decimal,
+        net_dividend: Decimal,
+        independent_expense: Decimal,
+        currency: Currency,
+        cutover_date: LocalDate,
+    },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -142,6 +160,12 @@ pub enum InvestmentPostingKind {
     NetDividend,
     IndependentExpense,
     PortfolioIndependentExpense,
+    OpeningQuantity,
+    OpeningCost,
+    OpeningRealizedPnl,
+    OpeningNetDividend,
+    OpeningIndependentExpense,
+    OpeningPortfolioIndependentExpense,
 }
 
 impl InvestmentPostingKind {
@@ -155,6 +179,12 @@ impl InvestmentPostingKind {
             Self::NetDividend => "net-dividend",
             Self::IndependentExpense => "independent-expense",
             Self::PortfolioIndependentExpense => "portfolio-independent-expense",
+            Self::OpeningQuantity => "opening-quantity",
+            Self::OpeningCost => "opening-cost",
+            Self::OpeningRealizedPnl => "opening-realized-pnl",
+            Self::OpeningNetDividend => "opening-net-dividend",
+            Self::OpeningIndependentExpense => "opening-independent-expense",
+            Self::OpeningPortfolioIndependentExpense => "opening-portfolio-independent-expense",
         }
     }
 }
@@ -426,7 +456,136 @@ pub fn prepare_investment_event(
                 portfolio_expense: (instrument_id.is_none()).then(|| amount.clone()),
             })
         }
+        InvestmentEventKind::OpeningPosition {
+            portfolio,
+            instrument,
+            quantity,
+            carrying_cost,
+            cost_currency,
+            cutover_date,
+            migration_policy,
+        } => {
+            require_non_negative(quantity)?;
+            require_non_negative(carrying_cost)?;
+            if *cost_currency != instrument.trade_currency
+                || cutover_date != &command.effective_date
+                || !matches!(
+                    migration_policy.as_str(),
+                    "full_history" | "explicit_cutover"
+                )
+                || (quantity.is_zero() && !carrying_cost.is_zero())
+                || !holding_is_empty(current)
+            {
+                return Err(DomainError::EventInvariantViolation);
+            }
+            let ids = (portfolio.portfolio_id, Some(instrument.instrument_id));
+            let mut postings = vec![posting(
+                InvestmentPostingKind::OpeningQuantity,
+                None,
+                ids,
+                quantity.clone(),
+                *cost_currency,
+            )];
+            if !carrying_cost.is_zero() {
+                postings.push(posting(
+                    InvestmentPostingKind::OpeningCost,
+                    None,
+                    ids,
+                    carrying_cost.clone(),
+                    *cost_currency,
+                ));
+            }
+            Ok(PreparedInvestmentEvent {
+                event_type: "OpeningPosition",
+                postings,
+                next_holding: Some(HoldingState {
+                    quantity: quantity.clone(),
+                    carrying_cost: carrying_cost.clone(),
+                    realized_trade_pnl: Decimal::zero(DecimalUse::Internal),
+                    net_dividend: Decimal::zero(DecimalUse::Internal),
+                    independent_expense: Decimal::zero(DecimalUse::Internal),
+                }),
+                portfolio_expense: None,
+            })
+        }
+        InvestmentEventKind::OpeningPerformance {
+            portfolio,
+            instrument,
+            realized_trade_pnl,
+            net_dividend,
+            independent_expense,
+            currency,
+            cutover_date,
+        } => {
+            if cutover_date != &command.effective_date
+                || instrument.is_some_and(|value| value.trade_currency != *currency)
+                || realized_trade_pnl.is_negative()
+                || net_dividend.is_negative()
+                || independent_expense.is_negative()
+                || (instrument.is_none()
+                    && (!realized_trade_pnl.is_zero() || !net_dividend.is_zero()))
+            {
+                return Err(DomainError::EventInvariantViolation);
+            }
+            let ids = (
+                portfolio.portfolio_id,
+                instrument.as_ref().map(|value| value.instrument_id),
+            );
+            let mut postings = Vec::new();
+            if !realized_trade_pnl.is_zero() {
+                postings.push(posting(
+                    InvestmentPostingKind::OpeningRealizedPnl,
+                    None,
+                    ids,
+                    realized_trade_pnl.clone(),
+                    *currency,
+                ));
+            }
+            if !net_dividend.is_zero() {
+                postings.push(posting(
+                    InvestmentPostingKind::OpeningNetDividend,
+                    None,
+                    ids,
+                    net_dividend.clone(),
+                    *currency,
+                ));
+            }
+            if !independent_expense.is_zero() {
+                postings.push(posting(
+                    if instrument.is_some() {
+                        InvestmentPostingKind::OpeningIndependentExpense
+                    } else {
+                        InvestmentPostingKind::OpeningPortfolioIndependentExpense
+                    },
+                    None,
+                    ids,
+                    independent_expense.clone(),
+                    *currency,
+                ));
+            }
+            let next_holding = instrument.map(|_| {
+                let mut next = current.clone();
+                next.realized_trade_pnl = realized_trade_pnl.clone();
+                next.net_dividend = net_dividend.clone();
+                next.independent_expense = independent_expense.clone();
+                next
+            });
+            Ok(PreparedInvestmentEvent {
+                event_type: "OpeningPerformance",
+                postings,
+                next_holding,
+                portfolio_expense: instrument.is_none().then(|| independent_expense.clone()),
+            })
+        }
     }
+}
+
+fn holding_is_empty(value: &HoldingState) -> bool {
+    value.quantity.is_zero()
+        && value.carrying_cost.is_zero()
+        && value.realized_trade_pnl.is_zero()
+        && value.net_dividend.is_zero()
+        && value.independent_expense.is_zero()
 }
 
 fn validate_relationships(

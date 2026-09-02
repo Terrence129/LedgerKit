@@ -8,5 +8,6 @@ mod migration;
 mod projection;
 mod schema;
 mod store;
+mod valuation_store;
 
 pub use store::SqliteLedgerManager;

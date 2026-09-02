@@ -22,6 +22,7 @@ const HEADERS: &[(&str, &[&str])] = &[
             "opening_balance",
             "cutover_date",
             "migration_policy",
+            "enabled",
         ],
     ),
     (
@@ -156,6 +157,7 @@ fn write_common(workbook: &mut Workbook, kind: FixtureKind) -> Result<(), XlsxEr
             "1000",
             "2026-01-01",
             "explicit_cutover",
+            "true",
         ],
     )?;
     write_row(
@@ -171,6 +173,7 @@ fn write_common(workbook: &mut Workbook, kind: FixtureKind) -> Result<(), XlsxEr
             "500",
             "2026-01-01",
             "explicit_cutover",
+            "true",
         ],
     )?;
     write_row(
@@ -186,6 +189,7 @@ fn write_common(workbook: &mut Workbook, kind: FixtureKind) -> Result<(), XlsxEr
             "100",
             "2026-01-01",
             "explicit_cutover",
+            "true",
         ],
     )?;
     if matches!(kind, FixtureKind::Invalid) {
@@ -202,6 +206,7 @@ fn write_common(workbook: &mut Workbook, kind: FixtureKind) -> Result<(), XlsxEr
                 "1",
                 "2026-01-01",
                 "",
+                "true",
             ],
         )?;
     }

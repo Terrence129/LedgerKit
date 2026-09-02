@@ -22,6 +22,7 @@ use crate::application::investment::{
 };
 use crate::application::ledger::{LedgerState, LedgerStatus};
 use crate::application::settings::PRIVILEGED_OPERATION_COUNT;
+use crate::application::valuation::{DataQualityReport, Overview};
 use crate::domain::catalog::SemanticRole;
 use crate::domain::decimal::{Decimal, DecimalUse};
 use crate::domain::error::DomainError;
@@ -352,6 +353,13 @@ pub struct InvestmentEventRequest {
     withholding_tax: Option<String>,
     fee_amount: Option<String>,
     amount: Option<String>,
+    carrying_cost: Option<String>,
+    realized_trade_pnl: Option<String>,
+    net_dividend: Option<String>,
+    independent_expense: Option<String>,
+    cost_currency: Option<String>,
+    cutover_date: Option<String>,
+    migration_policy: Option<String>,
     fee_scope: Option<String>,
     settlement_override_reason: Option<String>,
     #[serde(default)]
@@ -377,6 +385,33 @@ impl InvestmentEventRequest {
             withholding_tax: parse_optional_decimal(self.withholding_tax.as_deref())?,
             fee_amount: parse_optional_decimal(self.fee_amount.as_deref())?,
             amount: parse_optional_decimal(self.amount.as_deref())?,
+            carrying_cost: parse_optional_decimal_use(
+                self.carrying_cost.as_deref(),
+                DecimalUse::Internal,
+            )?,
+            realized_trade_pnl: parse_optional_decimal_use(
+                self.realized_trade_pnl.as_deref(),
+                DecimalUse::Internal,
+            )?,
+            net_dividend: parse_optional_decimal_use(
+                self.net_dividend.as_deref(),
+                DecimalUse::Internal,
+            )?,
+            independent_expense: parse_optional_decimal_use(
+                self.independent_expense.as_deref(),
+                DecimalUse::Internal,
+            )?,
+            cost_currency: self
+                .cost_currency
+                .as_deref()
+                .map(Currency::parse)
+                .transpose()?,
+            cutover_date: self
+                .cutover_date
+                .as_deref()
+                .map(LocalDate::parse)
+                .transpose()?,
+            migration_policy: self.migration_policy,
             fee_scope: self
                 .fee_scope
                 .as_deref()
@@ -739,6 +774,28 @@ pub fn get_investment_workspace(
 ) -> Result<InvestmentWorkspace, CommandError> {
     lock_facade(&state)?
         .get_investment_workspace(&request.as_of_date)
+        .map_err(Into::into)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn get_overview(
+    request: InvestmentWorkspaceRequest,
+    state: State<'_, AppState>,
+) -> Result<Overview, CommandError> {
+    lock_facade(&state)?
+        .get_overview(&request.as_of_date)
+        .map_err(Into::into)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn get_data_quality(
+    request: InvestmentWorkspaceRequest,
+    state: State<'_, AppState>,
+) -> Result<DataQualityReport, CommandError> {
+    lock_facade(&state)?
+        .get_data_quality(&request.as_of_date)
         .map_err(Into::into)
 }
 

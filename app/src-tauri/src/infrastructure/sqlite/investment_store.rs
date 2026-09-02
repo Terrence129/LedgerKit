@@ -75,6 +75,13 @@ struct StoredInvestmentEvent {
     dividend_fee: Option<String>,
     expense_amount: Option<String>,
     fee_scope: Option<String>,
+    carrying_cost: Option<String>,
+    realized_trade_pnl: Option<String>,
+    net_dividend: Option<String>,
+    independent_expense: Option<String>,
+    cost_currency: Option<String>,
+    cutover_date: Option<String>,
+    migration_policy: Option<String>,
 }
 
 struct ReplayOutcome {
@@ -103,7 +110,7 @@ impl LedgerStore {
         build_preview(&self.connection, input, &prepared)
     }
 
-    fn post_investment(
+    pub(super) fn post_investment(
         &mut self,
         input: &InvestmentEventInput,
         supersedes: Option<UuidV7>,
@@ -172,7 +179,7 @@ impl LedgerStore {
             .connection
             .query_row(
                 "SELECT revision FROM business_events e WHERE event_id=?1 AND status='posted'
-                 AND e.event_type IN ('SecurityTrade','Dividend','InvestmentExpense')
+                 AND e.event_type IN ('SecurityTrade','Dividend','InvestmentExpense','OpeningPosition','OpeningPerformance')
                  AND NOT EXISTS(SELECT 1 FROM business_events n WHERE n.supersedes_event_id=e.event_id)
                  AND NOT EXISTS(SELECT 1 FROM business_events r WHERE r.reverses_event_id=e.event_id)",
                 [&target],
@@ -189,7 +196,7 @@ impl LedgerStore {
         )
     }
 
-    fn investment_workspace(
+    pub(super) fn investment_workspace(
         &self,
         as_of_date: &LocalDate,
     ) -> ApplicationResult<InvestmentWorkspace> {
@@ -419,12 +426,12 @@ fn build_preview(
     })
 }
 
+#[allow(clippy::too_many_lines)] // Typed variants remain together so every required reference is visible.
 fn command_from_input(
     connection: &Connection,
     input: &InvestmentEventInput,
 ) -> ApplicationResult<InvestmentEventCommand> {
     let portfolio = load_portfolio(connection, input.portfolio_id)?;
-    let settlement = load_investment_account(connection, input.settlement_account_id)?;
     let instrument = input
         .instrument_id
         .map(|value| load_instrument(connection, value))
@@ -432,6 +439,7 @@ fn command_from_input(
     let zero = || Decimal::zero(DecimalUse::Amount);
     let kind = match input.event_type {
         InvestmentEventType::SecurityBuy | InvestmentEventType::SecuritySell => {
+            let settlement = load_investment_account(connection, input.settlement_account_id)?;
             InvestmentEventKind::SecurityTrade {
                 side: if input.event_type == InvestmentEventType::SecurityBuy {
                     TradeSide::Buy
@@ -453,30 +461,73 @@ fn command_from_input(
                 settlement_override_reason: input.settlement_override_reason.clone(),
             }
         }
-        InvestmentEventType::Dividend => InvestmentEventKind::Dividend {
+        InvestmentEventType::Dividend => {
+            let settlement = load_investment_account(connection, input.settlement_account_id)?;
+            InvestmentEventKind::Dividend {
+                portfolio,
+                instrument: instrument.ok_or(DomainError::InstrumentRequiredForFeeScope)?,
+                settlement,
+                gross_cash_amount: input
+                    .gross_cash_amount
+                    .clone()
+                    .ok_or(DomainError::EventInvariantViolation)?,
+                withholding_tax: input.withholding_tax.clone().unwrap_or_else(zero),
+                fee_amount: input.fee_amount.clone().unwrap_or_else(zero),
+                settlement_override_reason: input.settlement_override_reason.clone(),
+            }
+        }
+        InvestmentEventType::InvestmentExpense => {
+            let settlement = load_investment_account(connection, input.settlement_account_id)?;
+            InvestmentEventKind::InvestmentExpense {
+                portfolio,
+                instrument,
+                settlement,
+                amount: input
+                    .amount
+                    .clone()
+                    .ok_or(DomainError::EventInvariantViolation)?,
+                fee_scope: input
+                    .fee_scope
+                    .ok_or(DomainError::EventInvariantViolation)?,
+                settlement_override_reason: input.settlement_override_reason.clone(),
+            }
+        }
+        InvestmentEventType::OpeningPosition => InvestmentEventKind::OpeningPosition {
             portfolio,
             instrument: instrument.ok_or(DomainError::InstrumentRequiredForFeeScope)?,
-            settlement,
-            gross_cash_amount: input
-                .gross_cash_amount
+            quantity: input
+                .quantity
                 .clone()
                 .ok_or(DomainError::EventInvariantViolation)?,
-            withholding_tax: input.withholding_tax.clone().unwrap_or_else(zero),
-            fee_amount: input.fee_amount.clone().unwrap_or_else(zero),
-            settlement_override_reason: input.settlement_override_reason.clone(),
+            carrying_cost: input
+                .carrying_cost
+                .clone()
+                .ok_or(DomainError::EventInvariantViolation)?,
+            cost_currency: input
+                .cost_currency
+                .ok_or(DomainError::EventInvariantViolation)?,
+            cutover_date: input
+                .cutover_date
+                .clone()
+                .ok_or(DomainError::EventInvariantViolation)?,
+            migration_policy: input
+                .migration_policy
+                .clone()
+                .ok_or(DomainError::EventInvariantViolation)?,
         },
-        InvestmentEventType::InvestmentExpense => InvestmentEventKind::InvestmentExpense {
+        InvestmentEventType::OpeningPerformance => InvestmentEventKind::OpeningPerformance {
             portfolio,
             instrument,
-            settlement,
-            amount: input
-                .amount
+            realized_trade_pnl: input.realized_trade_pnl.clone().unwrap_or_else(zero),
+            net_dividend: input.net_dividend.clone().unwrap_or_else(zero),
+            independent_expense: input.independent_expense.clone().unwrap_or_else(zero),
+            currency: input
+                .cost_currency
+                .ok_or(DomainError::EventInvariantViolation)?,
+            cutover_date: input
+                .cutover_date
                 .clone()
                 .ok_or(DomainError::EventInvariantViolation)?,
-            fee_scope: input
-                .fee_scope
-                .ok_or(DomainError::EventInvariantViolation)?,
-            settlement_override_reason: input.settlement_override_reason.clone(),
         },
     };
     Ok(InvestmentEventCommand {
@@ -495,6 +546,8 @@ fn command_from_stored(
         ("SecurityTrade", Some("SELL")) => InvestmentEventType::SecuritySell,
         ("Dividend", _) => InvestmentEventType::Dividend,
         ("InvestmentExpense", _) => InvestmentEventType::InvestmentExpense,
+        ("OpeningPosition", _) => InvestmentEventType::OpeningPosition,
+        ("OpeningPerformance", _) => InvestmentEventType::OpeningPerformance,
         _ => return Err(DomainError::EventInvariantViolation.into()),
     };
     let fee_scope = stored
@@ -529,6 +582,27 @@ fn command_from_stored(
             withholding_tax: parse_optional(stored.withholding_tax.as_ref(), DecimalUse::Amount)?,
             fee_amount: parse_optional(stored.dividend_fee.as_ref(), DecimalUse::Amount)?,
             amount: parse_optional(stored.expense_amount.as_ref(), DecimalUse::Amount)?,
+            carrying_cost: parse_optional(stored.carrying_cost.as_ref(), DecimalUse::Internal)?,
+            realized_trade_pnl: parse_optional(
+                stored.realized_trade_pnl.as_ref(),
+                DecimalUse::Internal,
+            )?,
+            net_dividend: parse_optional(stored.net_dividend.as_ref(), DecimalUse::Internal)?,
+            independent_expense: parse_optional(
+                stored.independent_expense.as_ref(),
+                DecimalUse::Internal,
+            )?,
+            cost_currency: stored
+                .cost_currency
+                .as_deref()
+                .map(Currency::parse)
+                .transpose()?,
+            cutover_date: stored
+                .cutover_date
+                .as_deref()
+                .map(LocalDate::parse)
+                .transpose()?,
+            migration_policy: stored.migration_policy.clone(),
             fee_scope,
             settlement_override_reason: stored.settlement_override_reason.clone(),
             fx_overrides: Vec::new(),
@@ -540,17 +614,22 @@ fn load_effective_events(connection: &Connection) -> ApplicationResult<Vec<Store
     let mut statement = connection
         .prepare(
             "SELECT e.event_id,e.event_type,e.effective_date,e.sequence,
-                    st.trade_type,COALESCE(st.portfolio_id,dv.portfolio_id,ie.portfolio_id),
-                    COALESCE(st.instrument_id,dv.instrument_id,ie.instrument_id),
-                    COALESCE(st.settlement_account_id,dv.settlement_account_id,ie.settlement_account_id),
-                    st.quantity,st.unit_price,st.trade_fee,
+                    st.trade_type,COALESCE(st.portfolio_id,dv.portfolio_id,ie.portfolio_id,op.portfolio_id,opf.portfolio_id),
+                    COALESCE(st.instrument_id,dv.instrument_id,ie.instrument_id,op.instrument_id,opf.instrument_id),
+                    COALESCE(st.settlement_account_id,dv.settlement_account_id,ie.settlement_account_id,p.settlement_account_id),
+                    COALESCE(st.quantity,op.quantity),st.unit_price,st.trade_fee,
                     COALESCE(st.settlement_override_reason,dv.settlement_override_reason,ie.settlement_override_reason),
-                    dv.gross_cash_amount,dv.withholding_tax,dv.fee_amount,ie.amount,ie.fee_scope
+                    dv.gross_cash_amount,dv.withholding_tax,dv.fee_amount,ie.amount,ie.fee_scope,
+                    op.carrying_cost,opf.realized_trade_pnl,opf.net_dividend,opf.independent_expense,
+                    COALESCE(op.cost_currency,opf.currency),COALESCE(op.cutover_date,opf.cutover_date),op.migration_policy
              FROM business_events e
              LEFT JOIN security_trade_details st ON st.event_id=e.event_id
              LEFT JOIN dividend_details dv ON dv.event_id=e.event_id
              LEFT JOIN investment_expense_details ie ON ie.event_id=e.event_id
-             WHERE e.status='posted' AND e.event_type IN ('SecurityTrade','Dividend','InvestmentExpense')
+             LEFT JOIN opening_position_details op ON op.event_id=e.event_id
+             LEFT JOIN opening_performance_details opf ON opf.event_id=e.event_id
+             LEFT JOIN portfolios p ON p.portfolio_id=COALESCE(st.portfolio_id,dv.portfolio_id,ie.portfolio_id,op.portfolio_id,opf.portfolio_id)
+             WHERE e.status='posted' AND e.event_type IN ('SecurityTrade','Dividend','InvestmentExpense','OpeningPosition','OpeningPerformance')
                AND NOT EXISTS(SELECT 1 FROM business_events n WHERE n.supersedes_event_id=e.event_id)
                AND NOT EXISTS(SELECT 1 FROM business_events r WHERE r.reverses_event_id=e.event_id)
              ORDER BY e.effective_date,e.sequence,e.event_id",
@@ -576,6 +655,13 @@ fn load_effective_events(connection: &Connection) -> ApplicationResult<Vec<Store
                 row.get::<_, Option<String>>(14)?,
                 row.get::<_, Option<String>>(15)?,
                 row.get::<_, Option<String>>(16)?,
+                row.get::<_, Option<String>>(17)?,
+                row.get::<_, Option<String>>(18)?,
+                row.get::<_, Option<String>>(19)?,
+                row.get::<_, Option<String>>(20)?,
+                row.get::<_, Option<String>>(21)?,
+                row.get::<_, Option<String>>(22)?,
+                row.get::<_, Option<String>>(23)?,
             ))
         })
         .map_err(|_| ApplicationError::TransactionFailed)?
@@ -601,6 +687,13 @@ fn load_effective_events(connection: &Connection) -> ApplicationResult<Vec<Store
                 dividend_fee: row.14,
                 expense_amount: row.15,
                 fee_scope: row.16,
+                carrying_cost: row.17,
+                realized_trade_pnl: row.18,
+                net_dividend: row.19,
+                independent_expense: row.20,
+                cost_currency: row.21,
+                cutover_date: row.22,
+                migration_policy: row.23,
             })
         })
         .collect()
@@ -676,7 +769,7 @@ pub(super) fn rebuild_investment_derived(
         .execute(
             "DELETE FROM ledger_postings WHERE event_id IN (
                SELECT e.event_id FROM business_events e
-               WHERE e.event_type IN ('SecurityTrade','Dividend','InvestmentExpense')
+               WHERE e.event_type IN ('SecurityTrade','Dividend','InvestmentExpense','OpeningPosition','OpeningPerformance')
                  AND NOT EXISTS(SELECT 1 FROM business_events n WHERE n.supersedes_event_id=e.event_id)
                  AND NOT EXISTS(SELECT 1 FROM business_events r WHERE r.reverses_event_id=e.event_id)
              )",
@@ -793,6 +886,38 @@ fn insert_investment_detail(
                 params![event_id.to_string(), input.portfolio_id.to_string(), input.instrument_id.map(|value| value.to_string()), input.settlement_account_id.to_string(), input.amount.as_ref().map(Decimal::as_str), input.fee_scope.map(FeeScope::as_str), input.settlement_override_reason],
             ).map_err(map_sqlite_error)?;
         }
+        InvestmentEventType::OpeningPosition => {
+            transaction.execute(
+                "INSERT INTO opening_position_details(event_id,portfolio_id,instrument_id,quantity,carrying_cost,cost_currency,cutover_date,migration_policy)
+                 VALUES(?1,?2,?3,?4,?5,?6,?7,?8)",
+                params![
+                    event_id.to_string(),
+                    input.portfolio_id.to_string(),
+                    input.instrument_id.map(|value| value.to_string()),
+                    input.quantity.as_ref().map(Decimal::as_str),
+                    input.carrying_cost.as_ref().map(Decimal::as_str),
+                    input.cost_currency.map(|value| value.to_string()),
+                    input.cutover_date.as_ref().map(LocalDate::as_str),
+                    input.migration_policy
+                ],
+            ).map_err(map_sqlite_error)?;
+        }
+        InvestmentEventType::OpeningPerformance => {
+            transaction.execute(
+                "INSERT INTO opening_performance_details(event_id,portfolio_id,instrument_id,realized_trade_pnl,net_dividend,independent_expense,currency,cutover_date)
+                 VALUES(?1,?2,?3,?4,?5,?6,?7,?8)",
+                params![
+                    event_id.to_string(),
+                    input.portfolio_id.to_string(),
+                    input.instrument_id.map(|value| value.to_string()),
+                    input.realized_trade_pnl.as_ref().map_or("0", Decimal::as_str),
+                    input.net_dividend.as_ref().map_or("0", Decimal::as_str),
+                    input.independent_expense.as_ref().map_or("0", Decimal::as_str),
+                    input.cost_currency.map(|value| value.to_string()),
+                    input.cutover_date.as_ref().map(LocalDate::as_str),
+                ],
+            ).map_err(map_sqlite_error)?;
+        }
     }
     Ok(())
 }
@@ -803,6 +928,12 @@ fn save_event_fx_resolution(
     input: &InvestmentEventInput,
     command: &InvestmentEventCommand,
 ) -> ApplicationResult<()> {
+    if matches!(
+        input.event_type,
+        InvestmentEventType::OpeningPosition | InvestmentEventType::OpeningPerformance
+    ) {
+        return Ok(());
+    }
     let base_currency = load_base_currency(transaction)?;
     let currency = command_currency_from_domain(command);
     let override_input = input
@@ -964,11 +1095,24 @@ fn command_key(command: &InvestmentEventCommand) -> Option<(String, String)> {
             portfolio,
             instrument: Some(instrument),
             ..
+        }
+        | InvestmentEventKind::OpeningPosition {
+            portfolio,
+            instrument,
+            ..
+        }
+        | InvestmentEventKind::OpeningPerformance {
+            portfolio,
+            instrument: Some(instrument),
+            ..
         } => Some((
             portfolio.portfolio_id.to_string(),
             instrument.instrument_id.to_string(),
         )),
         InvestmentEventKind::InvestmentExpense {
+            instrument: None, ..
+        }
+        | InvestmentEventKind::OpeningPerformance {
             instrument: None, ..
         } => None,
     }
@@ -979,6 +1123,8 @@ fn command_currency_from_domain(command: &InvestmentEventCommand) -> Currency {
         InvestmentEventKind::SecurityTrade { instrument, .. }
         | InvestmentEventKind::Dividend { instrument, .. } => instrument.trade_currency,
         InvestmentEventKind::InvestmentExpense { settlement, .. } => settlement.currency,
+        InvestmentEventKind::OpeningPosition { cost_currency, .. } => *cost_currency,
+        InvestmentEventKind::OpeningPerformance { currency, .. } => *currency,
     }
 }
 
@@ -988,7 +1134,10 @@ fn command_currency(
 ) -> ApplicationResult<Currency> {
     match input.instrument_id {
         Some(id) => Ok(load_instrument(connection, id)?.trade_currency),
-        None => Ok(load_investment_account(connection, input.settlement_account_id)?.currency),
+        None => input.cost_currency.map_or_else(
+            || Ok(load_investment_account(connection, input.settlement_account_id)?.currency),
+            Ok,
+        ),
     }
 }
 
@@ -1063,6 +1212,8 @@ fn stored_event_type(value: InvestmentEventType) -> &'static str {
         InvestmentEventType::SecurityBuy | InvestmentEventType::SecuritySell => "SecurityTrade",
         InvestmentEventType::Dividend => "Dividend",
         InvestmentEventType::InvestmentExpense => "InvestmentExpense",
+        InvestmentEventType::OpeningPosition => "OpeningPosition",
+        InvestmentEventType::OpeningPerformance => "OpeningPerformance",
     }
 }
 
@@ -1266,6 +1417,13 @@ mod tests {
             withholding_tax: None,
             fee_amount: None,
             amount: None,
+            carrying_cost: None,
+            realized_trade_pnl: None,
+            net_dividend: None,
+            independent_expense: None,
+            cost_currency: None,
+            cutover_date: None,
+            migration_policy: None,
             fee_scope: None,
             settlement_override_reason: None,
             fx_overrides: Vec::new(),
@@ -1364,6 +1522,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::too_many_lines)] // One scenario proves the complete accepted return formula.
     fn dividends_and_both_expense_scopes_follow_the_single_return_formula() {
         let (_directory, mut manager, account, portfolio, instrument) = setup();
         manager
@@ -1394,6 +1553,13 @@ mod tests {
                 withholding_tax: Some(Decimal::parse("1.5", DecimalUse::Amount).unwrap()),
                 fee_amount: Some(Decimal::parse("0.5", DecimalUse::Amount).unwrap()),
                 amount: None,
+                carrying_cost: None,
+                realized_trade_pnl: None,
+                net_dividend: None,
+                independent_expense: None,
+                cost_currency: None,
+                cutover_date: None,
+                migration_policy: None,
                 fee_scope: None,
                 settlement_override_reason: None,
                 fx_overrides: Vec::new(),
@@ -1414,6 +1580,13 @@ mod tests {
                 withholding_tax: None,
                 fee_amount: None,
                 amount: Some(Decimal::parse("2", DecimalUse::Amount).unwrap()),
+                carrying_cost: None,
+                realized_trade_pnl: None,
+                net_dividend: None,
+                independent_expense: None,
+                cost_currency: None,
+                cutover_date: None,
+                migration_policy: None,
                 fee_scope: Some(FeeScope::Instrument),
                 settlement_override_reason: None,
                 fx_overrides: Vec::new(),
@@ -1434,6 +1607,13 @@ mod tests {
                 withholding_tax: None,
                 fee_amount: None,
                 amount: Some(Decimal::parse("0.01", DecimalUse::Amount).unwrap()),
+                carrying_cost: None,
+                realized_trade_pnl: None,
+                net_dividend: None,
+                independent_expense: None,
+                cost_currency: None,
+                cutover_date: None,
+                migration_policy: None,
                 fee_scope: Some(FeeScope::Portfolio),
                 settlement_override_reason: None,
                 fx_overrides: Vec::new(),

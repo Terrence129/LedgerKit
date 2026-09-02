@@ -26,6 +26,8 @@ import type {
   InvestmentEventPreview,
   PostedInvestmentEvent,
   InvestmentWorkspace,
+  Overview,
+  DataQualityReport,
 } from "./contracts";
 
 class TauriLedgerKitCommands implements LedgerKitCommands {
@@ -64,6 +66,8 @@ class TauriLedgerKitCommands implements LedgerKitCommands {
   postInvestmentEvent(request: InvestmentEventRequest): Promise<PostedInvestmentEvent> { return invoke("post_investment_event", { request }); }
   reviseInvestmentEvent(request: { targetEventId: string; reason: string; replacement: InvestmentEventRequest }): Promise<PostedInvestmentEvent> { return invoke("revise_investment_event", { request }); }
   getInvestmentWorkspace(request: { asOfDate: string }): Promise<InvestmentWorkspace> { return invoke("get_investment_workspace", { request }); }
+  getOverview(request: { asOfDate: string }): Promise<Overview> { return invoke("get_overview", { request }); }
+  getDataQuality(request: { asOfDate: string }): Promise<DataQualityReport> { return invoke("get_data_quality", { request }); }
 }
 
 export const ledgerKitCommands: LedgerKitCommands = new TauriLedgerKitCommands();

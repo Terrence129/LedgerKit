@@ -263,7 +263,8 @@ impl LedgerStore {
         if persisted_schema_hash != schema_hash() {
             return Err(ApplicationError::SchemaValidationFailed);
         }
-        ensure_cash_projection(&mut connection)?;
+        let investment_rebuilt = ensure_investment_projection(&mut connection)?;
+        ensure_cash_projection(&mut connection, investment_rebuilt)?;
         Ok(Self {
             connection,
             expense_cache: RefCell::new(Vec::new()),
@@ -421,7 +422,10 @@ impl LedgerStore {
     }
 }
 
-fn ensure_cash_projection(connection: &mut Connection) -> ApplicationResult<()> {
+fn ensure_cash_projection(
+    connection: &mut Connection,
+    force_rebuild: bool,
+) -> ApplicationResult<()> {
     let event_watermark: i64 = connection
         .query_row(
             "SELECT COALESCE(MAX(event_order),0) FROM business_events",
@@ -446,7 +450,7 @@ fn ensure_cash_projection(connection: &mut Connection) -> ApplicationResult<()> 
         .query_row(
             "SELECT COUNT(*)
              FROM ledger_postings p JOIN business_events e ON e.event_id=p.event_id
-             WHERE p.posting_kind IN ('cash','cash-reversal') AND e.event_type<>'Reversal'
+             WHERE p.posting_kind IN ('cash','opening-cash','cash-reversal','settlement-cash') AND e.event_type<>'Reversal'
                AND NOT EXISTS(SELECT 1 FROM business_events n WHERE n.supersedes_event_id=e.event_id)
                AND NOT EXISTS(SELECT 1 FROM business_events r WHERE r.reverses_event_id=e.event_id)",
             [],
@@ -465,7 +469,8 @@ fn ensure_cash_projection(connection: &mut Connection) -> ApplicationResult<()> 
             |row| row.get(0),
         )
         .map_err(|_| ApplicationError::SchemaValidationFailed)?;
-    let needs_rebuild = projection_version != CASH_PROJECTION_VERSION
+    let needs_rebuild = force_rebuild
+        || projection_version != CASH_PROJECTION_VERSION
         || calculation_version != CALCULATION_VERSION
         || projection_watermark != event_watermark
         || !available
@@ -474,6 +479,12 @@ fn ensure_cash_projection(connection: &mut Connection) -> ApplicationResult<()> 
     if needs_rebuild {
         let transaction = connection
             .transaction()
+            .map_err(|_| ApplicationError::TransactionFailed)?;
+        transaction
+            .execute(
+                "UPDATE projection_metadata SET available=0 WHERE projection_name IN ('cash-balance','monthly-cash-flow','cash-data-quality','expense-daily')",
+                [],
+            )
             .map_err(|_| ApplicationError::TransactionFailed)?;
         super::cash_store::rebuild_cash_derived(
             &transaction,
@@ -484,6 +495,64 @@ fn ensure_cash_projection(connection: &mut Connection) -> ApplicationResult<()> 
             .map_err(|_| ApplicationError::TransactionFailed)?;
     }
     Ok(())
+}
+
+fn ensure_investment_projection(connection: &mut Connection) -> ApplicationResult<bool> {
+    let event_watermark: i64 = connection
+        .query_row(
+            "SELECT COALESCE(MAX(event_order),0) FROM business_events",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(|_| ApplicationError::SchemaValidationFailed)?;
+    let state: Option<(String, String, i64, bool)> = connection
+        .query_row(
+            "SELECT projection_version,calculation_version,event_watermark,available FROM projection_metadata WHERE projection_name='holdings'",
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+        )
+        .optional()
+        .map_err(|_| ApplicationError::SchemaValidationFailed)?;
+    let Some((version, calculation, watermark, available)) = state else {
+        return Err(ApplicationError::SchemaValidationFailed);
+    };
+    let event_count: i64 = connection
+        .query_row(
+            "SELECT COUNT(*) FROM business_events WHERE status='posted' AND event_type IN ('SecurityTrade','Dividend','InvestmentExpense','OpeningPosition','OpeningPerformance')",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(|_| ApplicationError::SchemaValidationFailed)?;
+    let projection_count: i64 = connection
+        .query_row("SELECT COUNT(*) FROM holding_projection", [], |row| {
+            row.get(0)
+        })
+        .map_err(|_| ApplicationError::SchemaValidationFailed)?;
+    let needs_rebuild = version != super::investment_store::HOLDING_PROJECTION_VERSION
+        || calculation != CALCULATION_VERSION
+        || watermark != event_watermark
+        || !available
+        || event_count > 0 && projection_count == 0;
+    if !needs_rebuild {
+        return Ok(false);
+    }
+    let transaction = connection
+        .transaction()
+        .map_err(|_| ApplicationError::TransactionFailed)?;
+    transaction
+        .execute(
+            "UPDATE projection_metadata SET available=0 WHERE projection_name='holdings'",
+            [],
+        )
+        .map_err(|_| ApplicationError::TransactionFailed)?;
+    super::investment_store::rebuild_investment_derived(
+        &transaction,
+        u64::try_from(event_watermark).map_err(|_| ApplicationError::TransactionFailed)?,
+    )?;
+    transaction
+        .commit()
+        .map_err(|_| ApplicationError::TransactionFailed)?;
+    Ok(true)
 }
 
 fn insert_income_expense_detail(

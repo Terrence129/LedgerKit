@@ -12,11 +12,11 @@ use infrastructure::sqlite::SqliteLedgerManager;
 use tauri::Manager;
 
 use crate::ipc::{
-    AppState, analyze_import, commit_import, create_ledger, get_activity, get_expense_analysis,
-    get_investment_workspace, get_ledger_status, open_ledger, post_event, post_investment_event,
-    preview_event, preview_investment_event, reverse_event, revise_event, revise_investment_event,
-    save_cash_account, save_category, save_fx_revision, save_institution, save_instrument,
-    save_portfolio, save_price_revision, update_settings,
+    AppState, analyze_import, commit_import, create_ledger, get_activity, get_data_quality,
+    get_expense_analysis, get_investment_workspace, get_ledger_status, get_overview, open_ledger,
+    post_event, post_investment_event, preview_event, preview_investment_event, reverse_event,
+    revise_event, revise_investment_event, save_cash_account, save_category, save_fx_revision,
+    save_institution, save_instrument, save_portfolio, save_price_revision, update_settings,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -66,6 +66,8 @@ pub fn run() {
             post_investment_event,
             revise_investment_event,
             get_investment_workspace,
+            get_overview,
+            get_data_quality,
             analyze_import,
             commit_import
         ])

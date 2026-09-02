@@ -1,13 +1,13 @@
-# LedgerKit Persistence Schema v1–v4
+# LedgerKit Persistence Schema v1–v5
 
-> 状态：Schema v1 基线、M2 Cash Schema v2、M3 Import Schema v3 与 M4 Investment Schema v4 前向迁移已实现
+> 状态：Schema v1 基线、M2 Cash Schema v2、M3 Import Schema v3、M4 Investment Schema v4 与 M5 Opening/Valuation Schema v5 前向迁移已实现
 >
 > 权威边界：受 ADR-0002、ADR-0003、ADR-0004、ADR-0006、ADR-0011 和 ADR-0012 约束；本文记录物理实现，不改变财务口径。
 
 ## 标识与版本
 
-- SQLite `application_id = 0x4C4B4954`（`LKIT`）；Foundation 基线为 `user_version = 1`，当前生产 schema 为 `user_version = 4`。
-- migration 历史保存应用版本和对应 schema SQL 的 SHA-256；posting 使用 `ledger-calculation-v1`，现金投影使用 `cash-balance-projection-v1`，支出日投影使用 `expense-daily-projection-v1`，持仓投影使用 `holding-projection-v1`。
+- SQLite `application_id = 0x4C4B4954`（`LKIT`）；Foundation 基线为 `user_version = 1`，当前生产 schema 为 `user_version = 5`。
+- migration 历史保存应用版本和对应 schema SQL 的 SHA-256；posting 使用 `ledger-calculation-v1`，现金投影使用 `cash-balance-projection-v1`，支出日投影使用 `expense-daily-projection-v1`，持仓投影使用 `holding-projection-v1`，估值快照使用 `valuation-snapshot-v1`。
 - 权威财务字段为 ADR-0004 规范十进制 `TEXT`，不使用 SQLite `REAL`。
 
 ## 表组
@@ -29,6 +29,8 @@ Schema v3 为 `import_batches` 增加正整数 `target_schema_version` 和受 `j
 
 Schema v4 扩展投资 detail 的结算账户覆盖原因，并允许组合级独立费用使用仅含 `portfolio_id` 的 posting 目标。投资 posting 使用与黄金 fixture 一致的 `settlement-cash`、`security-quantity`、`holding-cost`、`realized-pnl`、`net-dividend`、`independent-expense` 和 `portfolio-independent-expense`；旧 posting kind 继续可读。v3→v4 在一致性备份后重建 posting 约束并保留既有行。
 
+Schema v5 为显式 cut-over 固化 `OpeningPosition` 与 `OpeningPerformance` typed detail，并把 `opening-cash`、`opening-quantity`、`opening-cost`、`opening-realized-pnl`、`opening-net-dividend`、`opening-independent-expense` 和 `opening-portfolio-independent-expense` 纳入 posting 约束。v4→v5 在一致性备份后重建 posting 约束；既有事件和分录逐行保留。已确认估值写入不可变 `valuation_snapshots` 与 `valuation_snapshot_lines`，每行冻结估值日、价格修订、FX 修订/最终汇率、原币值、本位币值、未估值原因、计算版本和事件/市场水位；同日重新确认创建新快照并指向被替代快照，不覆盖历史。
+
 Schema 使用外键、业务 ID/自然键唯一约束、日期与枚举状态检查。汇率和价格由 partial unique index 保证同一业务键至多一个 active 修订。活动、修订/冲正、费用分类、posting、持仓、as-of 市场数据、导入和估值均有对应查询索引。
 
 ## 写入与冻结
@@ -36,7 +38,7 @@ Schema 使用外键、业务 ID/自然键唯一约束、日期与枚举状态检
 - `EventTransactionPort` 只接受已通过 Domain 校验的 `PreparedEventCommit`；现金与投资命令的事件、唯一 typed detail、确定性 posting、audit、现金/持仓投影和投影水位在同一个 SQLite transaction 中提交。
 - `LedgerPosting` 没有 IPC 或独立写入入口。规范序列先按 `(effective_date, sequence, event_id, posting_id)` 排序，再以 `ledgerkit-canonical-json-v1` 序列化并计算 SHA-256。
 - 本位币在出现现金账户、标的、事件、市场数据或估值依赖后冻结。账户产生 posting 后不能更改币种；标的产生交易或价格修订后不能更改交易币种。
-- 统一派生重建路径先清空派生行，再按稳定事件/posting 顺序重建并原子推进版本与水位。当前实现现金余额、持仓、月度收支、现金数据质量和支出日聚合；事实、posting、投影与 watermark 在同一 transaction 提交。
+- 统一派生重建路径先把受影响投影标记为不可用，再按稳定事件/posting 顺序清空重建并原子推进版本与水位。当前实现现金余额、持仓、月度收支、现金数据质量和支出日聚合；启动时若现金/持仓版本、水位或完整性不匹配，必须完成统一重建后才开放查询，禁止混合版本。事实、posting、投影与 watermark 在同一 transaction 提交；不可变估值快照不属于可删除投影，重建不得改写。
 
 ## 创建、打开与迁移
 

@@ -22,6 +22,7 @@ Invoke-Checked { cargo fmt --manifest-path (Join-Path $appRoot 'src-tauri/Cargo.
 Invoke-Checked { cargo clippy --manifest-path (Join-Path $appRoot 'src-tauri/Cargo.toml') --all-targets --all-features -- -D warnings } 'Clippy failed.'
 Invoke-Checked { cargo test --manifest-path (Join-Path $appRoot 'src-tauri/Cargo.toml') --all-targets --all-features } 'Rust tests failed.'
 & (Join-Path $PSScriptRoot 'check-m3-fixtures.ps1')
+& (Join-Path $PSScriptRoot 'check-m5-fixtures.ps1')
 Invoke-Checked { node (Join-Path $PSScriptRoot 'check-m1-scaffold.mjs') } 'M1 scaffold contract check failed.'
 & (Join-Path $PSScriptRoot 'check-privacy.ps1')
 Invoke-Checked { git -C $repositoryRoot diff --check } 'git diff --check failed.'

@@ -156,7 +156,7 @@ impl LedgerStore {
         commit(transaction)
     }
 
-    fn save_portfolio(&mut self, value: &Portfolio) -> ApplicationResult<()> {
+    pub(super) fn save_portfolio(&mut self, value: &Portfolio) -> ApplicationResult<()> {
         let transaction = begin(&mut self.connection)?;
         ensure_entity(
             &transaction,
@@ -192,7 +192,7 @@ impl LedgerStore {
         commit(transaction)
     }
 
-    fn save_instrument(&mut self, value: &SecurityInstrument) -> ApplicationResult<()> {
+    pub(super) fn save_instrument(&mut self, value: &SecurityInstrument) -> ApplicationResult<()> {
         let transaction = begin(&mut self.connection)?;
         ensure_unique_business_id(
             &transaction,
@@ -276,7 +276,10 @@ impl LedgerStore {
         commit(transaction)
     }
 
-    fn save_price_revision(&mut self, value: &SecurityPriceRevision) -> ApplicationResult<()> {
+    pub(super) fn save_price_revision(
+        &mut self,
+        value: &SecurityPriceRevision,
+    ) -> ApplicationResult<()> {
         let transaction = begin(&mut self.connection)?;
         let trade_currency: Option<String> = transaction
             .query_row(

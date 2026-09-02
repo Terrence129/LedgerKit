@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "The local main window can call only the twenty-three reviewed setup, catalog, cash, investment, query, and initial-import operations.",
+  "description": "The local main window can call only the twenty-five reviewed setup, catalog, cash, investment, valuation, query, and initial-import operations.",
   "windows": ["main"],
   "permissions": [
     "core:app:default",
@@ -26,6 +26,8 @@
     "allow-post-investment-event",
     "allow-revise-investment-event",
     "allow-get-investment-workspace",
+    "allow-get-overview",
+    "allow-get-data-quality",
     "allow-analyze-import",
     "allow-commit-import"
   ]

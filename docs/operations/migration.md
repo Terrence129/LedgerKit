@@ -1,6 +1,6 @@
 # Excel Migration Runbook
 
-> 状态：M3 现金子集已实现；投资、估值和完整 11 表迁移在后续阶段扩展。
+> 状态：M5 全量规范化迁移契约、投资 cut-over、估值与质量对账已实现；真实源最终 cut-over 仍需按本 runbook 在仓库外完成。
 >
 > 适用范围：从用户在仓库外私人目录中明确选择的已知
 > `多币种个人账本v1.3.0.xlsx` 模板进行一次性初始迁移。
@@ -25,18 +25,18 @@
 
 ## Dry-run
 
-1. M3 只读解析设置、机构、资金子账户、分类、汇率、收支流水、资金调拨和换汇流水 8 个结构化表到 `ImportBatch/ImportRow` staging；完整 11 表迁移在后续阶段加入投资相关表。
+1. 只读解析设置、机构、资金子账户、分类、汇率、收支流水、资金调拨和换汇流水，并在全量契约中加入投资组合、证券、证券价格、投资流水、持仓基线、检查和支出分析证据，共 15 张精确命名工作表，进入 `ImportBatch/ImportRow` staging。真实 v1.3.0 的 14 张展示/业务工作表先在仓库外只读转换为该版本化规范契约；转换副本及任何真实数据不得进入 Git。
 2. 保存工作表、行号、原始文本、公式文本、缓存值和内容哈希；不得把公式本身当成权威金额。
 3. 区分硬编码输入、带公式输入、派生公式、状态和展示字段。
 4. 将旧业务 ID 映射到新 UUID；无稳定 ID 的流水使用同字节文件范围内的确定性导入键。
 5. 运行字段、引用、重复、分类方向、汇率/价格、负持仓和 cut-over 校验。
 6. 生成问题清单、规范化差异和拟议财务结果，不写正式账本。
 
-### M3 实际入口与限制
+### 实际入口与限制
 
 - 首次启动且尚无活库时，在 onboarding 选择“选择并分析工作簿”。文件对话框仅接受 `.xlsx`，路径只在 Rust Core 内使用，WebView 和 IPC 请求都不能提交任意路径。
 - 解析和提交均通过 Tauri blocking pool 执行；UI 保持响应并通过 `aria-live` 报告进度/失败。
-- 已知模板限制为 5 MiB、8 张精确命名工作表、总计 20,000 行、每表最多 32 列、每个文本单元格最多 4,096 字符。含宏、外部链接、未知/缺失表或表头漂移的文件拒绝进入 staging。
+- 已知模板限制为 5 MiB；现金契约为 8 张、全量契约为 15 张精确命名工作表；总计最多 20,000 行、每表最多 32 列、每个文本单元格最多 4,096 字符。含宏、外部链接、未知/缺失表或表头漂移的文件拒绝进入 staging。
 - 问题清单只显示稳定错误码、工作表、Excel 行号和字段，不记录单元格值或绝对路径。公式不执行；输入公式必须有可用缓存，派生、状态和展示公式只保存为证据。
 - 分析结果展示旧 ID 到 UUIDv7、逐账户迁移策略、拟议事件/posting、原币余额和规范差异。只有零 blocker 且对账为零差异时才能确认。
 
@@ -65,7 +65,7 @@
 5. 创建并验证候选数据库的一致性备份。
 6. 只有全部通过后才原子切换正式账本；失败则保留旧账本并丢弃候选库。
 
-M3 初始导入使用 opaque `batchId` 作为唯一提交授权。候选数据库和 staging 位于应用本地数据目录的 `import-staging` 子目录，与最终 `ledger.sqlite3` 同卷；完成单事务提交、投影重建、`integrity_check`/外键检查、原币余额复核和 SQLite backup API 验证后，以同卷 rename 原子切换。已有活库只允许同一已提交 batch 返回幂等结果，任何不同文件哈希的候选都以 `IMPORT_MODIFIED_MERGE_FORBIDDEN` 拒绝，不做增量 merge。
+初始导入使用 opaque `batchId` 作为唯一提交授权。候选数据库和 staging 位于应用本地数据目录的 `import-staging` 子目录，与最终 `ledger.sqlite3` 同卷；dry-run 已在隔离候选中通过同一 Cash/Investment Core 过账完整拟议事件，因此可同时生成账户、持仓、机构、币种、总净资产与支出差异矩阵。确认后在同一事务绑定 batch、恢复源账户生命周期并统一重建投影，经 `integrity_check`/外键检查、全部矩阵复核和 SQLite backup API 验证后，以同卷 rename 原子切换。已有活库只允许同一已提交 batch 返回幂等结果，任何不同文件哈希的候选都以 `IMPORT_MODIFIED_MERGE_FORBIDDEN` 拒绝，不做增量 merge。
 
 ## 对账证据
 
@@ -89,13 +89,14 @@ M3 初始导入使用 opaque `batchId` 作为唯一提交授权。候选数据�
 
 ## 开发与复核命令
 
-以下命令只使用 `fixtures/sanitized/m3` 中的程序生成合成文件，不读取真实工作簿：
+以下命令只使用 `fixtures/sanitized/m3` 与 `fixtures/sanitized/m5` 中的程序生成合成文件，不读取真实工作簿：
 
 ```powershell
 cargo run --manifest-path app/src-tauri/Cargo.toml --example generate_m3_fixtures
+cargo run --manifest-path app/src-tauri/Cargo.toml --example generate_m5_fixtures
 cargo test --manifest-path app/src-tauri/Cargo.toml infrastructure::sqlite::import_store::tests
 npm --prefix app run check
 pwsh -NoProfile -File tools/check.ps1
 ```
 
-确定性复核应在连续两次生成后比较三份 `.xlsx` 的 SHA-256；任何字节漂移都视为 fixture 失败。当前合成现金文件的解析、staging、预览、提交和切换测试均在 10 秒门禁内完成。
+确定性复核应在连续两次生成后比较各组 `.xlsx` 的 SHA-256；任何字节漂移都视为 fixture 失败。M5 合成文件分别固定完整历史、显式 cut-over 和阻断路径；显式 cut-over 采用日末边界，cut-over 当日及之前的流水只作证据，Opening 事件在该日建立新账本基线。

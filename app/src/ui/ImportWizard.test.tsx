@@ -17,7 +17,7 @@ const analysis: ImportAnalysis = {
   issues: [{ code: "IMPORT_REFERENCE_INVALID", severity: "blocker", sheet: "收支流水", row: 3, field: "account_legacy_id" }],
   mappings: [{ entityType: "account", legacyId: "synthetic-account", targetId: "019d0000-0000-7000-8000-000000000002", migrationPolicy: "explicit_cutover" }],
   proposedEvents: [],
-  reconciliation: { balances: [], differenceBridge: [], canonicalResultSha256: `sha256:${"b".repeat(64)}`, balanced: true },
+  reconciliation: { balances: [], metrics: [], differenceBridge: [], differenceItems: [], canonicalResultSha256: `sha256:${"b".repeat(64)}`, balanced: true },
   canCommit: false,
   reusedStaging: false,
 };

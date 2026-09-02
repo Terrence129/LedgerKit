@@ -6,7 +6,7 @@ use crate::domain::decimal::Decimal;
 use crate::domain::investment::FeeScope;
 use crate::domain::types::{LocalDate, Sequence, UuidV7};
 
-use super::cash::{CashEventInput, FxOverrideInput};
+use super::cash::FxOverrideInput;
 use super::error::ApplicationResult;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -15,6 +15,8 @@ pub enum InvestmentEventType {
     SecuritySell,
     Dividend,
     InvestmentExpense,
+    OpeningPosition,
+    OpeningPerformance,
 }
 
 impl InvestmentEventType {
@@ -25,6 +27,8 @@ impl InvestmentEventType {
             Self::SecuritySell => "SecuritySell",
             Self::Dividend => "Dividend",
             Self::InvestmentExpense => "InvestmentExpense",
+            Self::OpeningPosition => "OpeningPosition",
+            Self::OpeningPerformance => "OpeningPerformance",
         }
     }
 
@@ -39,6 +43,8 @@ impl InvestmentEventType {
             "SecuritySell" => Ok(Self::SecuritySell),
             "Dividend" => Ok(Self::Dividend),
             "InvestmentExpense" => Ok(Self::InvestmentExpense),
+            "OpeningPosition" => Ok(Self::OpeningPosition),
+            "OpeningPerformance" => Ok(Self::OpeningPerformance),
             _ => Err(crate::domain::error::DomainError::EventInvariantViolation),
         }
     }
@@ -59,18 +65,19 @@ pub struct InvestmentEventInput {
     pub withholding_tax: Option<Decimal>,
     pub fee_amount: Option<Decimal>,
     pub amount: Option<Decimal>,
+    pub carrying_cost: Option<Decimal>,
+    pub realized_trade_pnl: Option<Decimal>,
+    pub net_dividend: Option<Decimal>,
+    pub independent_expense: Option<Decimal>,
+    pub cost_currency: Option<crate::domain::types::Currency>,
+    pub cutover_date: Option<LocalDate>,
+    pub migration_policy: Option<String>,
     pub fee_scope: Option<FeeScope>,
     pub settlement_override_reason: Option<String>,
     pub fx_overrides: Vec<FxOverrideInput>,
 }
 
 /// High-level authoritative event command. UI callers cannot submit postings.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum EventCommand {
-    Cash(CashEventInput),
-    Investment(InvestmentEventInput),
-}
-
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InvestmentPostingPreview {

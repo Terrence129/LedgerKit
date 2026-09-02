@@ -3,7 +3,7 @@
 use sha2::{Digest, Sha256};
 
 pub const APPLICATION_ID: u32 = 1_280_002_388;
-pub const SCHEMA_VERSION: u32 = 4;
+pub const SCHEMA_VERSION: u32 = 5;
 
 pub const REQUIRED_TABLES: &[&str] = &[
     "app_settings",
@@ -378,7 +378,10 @@ CREATE TABLE ledger_postings (
     posting_kind TEXT NOT NULL CHECK (posting_kind IN (
         'cash', 'cash-reversal', 'security-quantity', 'security-cost', 'realized-trade-pnl',
         'net-dividend', 'independent-expense', 'settlement-cash', 'holding-cost',
-        'realized-pnl', 'portfolio-independent-expense'
+        'realized-pnl', 'portfolio-independent-expense', 'opening-cash',
+        'opening-quantity', 'opening-cost', 'opening-realized-pnl',
+        'opening-net-dividend', 'opening-independent-expense',
+        'opening-portfolio-independent-expense'
     )),
     account_id TEXT REFERENCES cash_accounts(account_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
     portfolio_id TEXT REFERENCES portfolios(portfolio_id) ON UPDATE RESTRICT ON DELETE RESTRICT,

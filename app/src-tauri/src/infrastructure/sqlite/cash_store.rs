@@ -134,7 +134,7 @@ impl LedgerStore {
         Ok(self.prepare_write(input)?.preview)
     }
 
-    fn post_cash_event(
+    pub(super) fn post_cash_event(
         &mut self,
         input: &CashEventInput,
         supersedes: Option<UuidV7>,
@@ -377,7 +377,7 @@ impl LedgerStore {
         })
     }
 
-    fn expense_analysis(
+    pub(super) fn expense_analysis(
         &self,
         start_date: &LocalDate,
         end_date: &LocalDate,
@@ -771,11 +771,16 @@ pub(super) fn insert_prepared_event(
         .map_err(map_sqlite_error)?;
     insert_detail(transaction, event_id, input, &prepared.domain)?;
     for (index, posting) in prepared.postings.iter().enumerate() {
+        let posting_kind = if input.event_type == EventInputType::OpeningBalance {
+            "opening-cash"
+        } else {
+            "cash"
+        };
         transaction
             .execute(
                 "INSERT INTO ledger_postings(posting_id,event_id,posting_ordinal,posting_kind,account_id,quantity_delta,currency,base_value,base_currency,calculation_version)
-                 VALUES(?1,?2,?3,'cash',?4,?5,?6,?7,?8,?9)",
-                params![UuidV7::new()?.to_string(), event_id.to_string(), index_i64(index)?, posting.account_id, posting.quantity_delta.as_str(), posting.currency.as_str(), posting.base_value.as_ref().map(Decimal::as_str), prepared.preview.postings[index].base_currency, CALCULATION_VERSION],
+                 VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)",
+                params![UuidV7::new()?.to_string(), event_id.to_string(), index_i64(index)?, posting_kind, posting.account_id, posting.quantity_delta.as_str(), posting.currency.as_str(), posting.base_value.as_ref().map(Decimal::as_str), prepared.preview.postings[index].base_currency, CALCULATION_VERSION],
             )
             .map_err(map_sqlite_error)?;
     }
@@ -958,7 +963,7 @@ pub(super) fn rebuild_cash_derived(
             .prepare(
                 "SELECT p.account_id,p.quantity_delta,p.currency,p.base_value,e.event_id,e.event_type,e.effective_date,p.posting_ordinal
                  FROM ledger_postings p JOIN business_events e ON e.event_id=p.event_id
-                 WHERE p.posting_kind IN ('cash','cash-reversal','settlement-cash')
+                 WHERE p.posting_kind IN ('cash','opening-cash','cash-reversal','settlement-cash')
                    AND e.event_order<=?1 AND e.event_type<>'Reversal'
                    AND NOT EXISTS(SELECT 1 FROM business_events n WHERE n.supersedes_event_id=e.event_id AND n.event_order<=?1)
                    AND NOT EXISTS(SELECT 1 FROM business_events r WHERE r.reverses_event_id=e.event_id AND r.event_order<=?1)
@@ -2060,6 +2065,11 @@ struct InvestmentActivityContent {
     investment_expense_amount: Option<String>,
     fee_scope: Option<String>,
     settlement_override_reason: Option<String>,
+    carrying_cost: Option<String>,
+    realized_trade_pnl: Option<String>,
+    net_dividend: Option<String>,
+    independent_expense: Option<String>,
+    cost_currency: Option<String>,
 }
 
 fn load_general_activity_ids(
@@ -2167,16 +2177,20 @@ fn load_activity_items(
                     COALESCE(ob.balance_amount,d.amount,t.amount,x.from_amount),
                     x.to_amount,d.category_id,COALESCE(d.semantic_role,'normal'),d.merchant,d.note,
                     COALESCE(f.fee_account_id,x.fee_account_id),COALESCE(f.fee_amount,x.fee_amount),
-                    ob.cutover_date,ob.migration_policy,
+                    COALESCE(ob.cutover_date,op.cutover_date,opf.cutover_date),
+                    COALESCE(ob.migration_policy,op.migration_policy),
                     json_object(
-                      'portfolioId',COALESCE(st.portfolio_id,dv.portfolio_id,ie.portfolio_id),
-                      'instrumentId',COALESCE(st.instrument_id,dv.instrument_id,ie.instrument_id),
-                      'settlementAccountId',COALESCE(st.settlement_account_id,dv.settlement_account_id,ie.settlement_account_id),
-                      'tradeType',st.trade_type,'quantity',st.quantity,'unitPrice',st.unit_price,
+                      'portfolioId',COALESCE(st.portfolio_id,dv.portfolio_id,ie.portfolio_id,op.portfolio_id,opf.portfolio_id),
+                      'instrumentId',COALESCE(st.instrument_id,dv.instrument_id,ie.instrument_id,op.instrument_id,opf.instrument_id),
+                      'settlementAccountId',COALESCE(st.settlement_account_id,dv.settlement_account_id,ie.settlement_account_id,p.settlement_account_id),
+                      'tradeType',st.trade_type,'quantity',COALESCE(st.quantity,op.quantity),'unitPrice',st.unit_price,
                       'tradeFee',st.trade_fee,'grossCashAmount',dv.gross_cash_amount,
                       'withholdingTax',dv.withholding_tax,'investmentFeeAmount',dv.fee_amount,
                       'investmentExpenseAmount',ie.amount,'feeScope',ie.fee_scope,
-                      'settlementOverrideReason',COALESCE(st.settlement_override_reason,dv.settlement_override_reason,ie.settlement_override_reason)
+                      'settlementOverrideReason',COALESCE(st.settlement_override_reason,dv.settlement_override_reason,ie.settlement_override_reason),
+                      'carryingCost',op.carrying_cost,'realizedTradePnl',opf.realized_trade_pnl,
+                      'netDividend',opf.net_dividend,'independentExpense',opf.independent_expense,
+                      'costCurrency',COALESCE(op.cost_currency,opf.currency)
                     ),
                     e.supersedes_event_id,e.reverses_event_id,
                     (SELECT n.event_id FROM business_events n WHERE n.supersedes_event_id=e.event_id ORDER BY n.event_order LIMIT 1),
@@ -2226,6 +2240,9 @@ fn load_activity_items(
              LEFT JOIN security_trade_details st ON st.event_id=e.event_id
              LEFT JOIN dividend_details dv ON dv.event_id=e.event_id
              LEFT JOIN investment_expense_details ie ON ie.event_id=e.event_id
+             LEFT JOIN opening_position_details op ON op.event_id=e.event_id
+             LEFT JOIN opening_performance_details opf ON opf.event_id=e.event_id
+             LEFT JOIN portfolios p ON p.portfolio_id=COALESCE(st.portfolio_id,dv.portfolio_id,ie.portfolio_id,op.portfolio_id,opf.portfolio_id)
              WHERE e.event_id IN (SELECT value FROM json_each(?1))
              ORDER BY e.event_order DESC",
         )
@@ -2350,6 +2367,11 @@ fn load_activity_items(
                     investment_expense_amount: investment.investment_expense_amount,
                     fee_scope: investment.fee_scope,
                     settlement_override_reason: investment.settlement_override_reason,
+                    carrying_cost: investment.carrying_cost,
+                    realized_trade_pnl: investment.realized_trade_pnl,
+                    net_dividend: investment.net_dividend,
+                    independent_expense: investment.independent_expense,
+                    cost_currency: investment.cost_currency,
                 },
                 relations: ActivityRelations {
                     supersedes_event_id: row.20,

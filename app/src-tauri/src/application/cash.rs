@@ -325,6 +325,11 @@ pub struct ActivityEventContent {
     pub investment_expense_amount: Option<String>,
     pub fee_scope: Option<String>,
     pub settlement_override_reason: Option<String>,
+    pub carrying_cost: Option<String>,
+    pub realized_trade_pnl: Option<String>,
+    pub net_dividend: Option<String>,
+    pub independent_expense: Option<String>,
+    pub cost_currency: Option<String>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]

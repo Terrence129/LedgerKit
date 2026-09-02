@@ -7,6 +7,7 @@ use super::types::{CalculationVersion, Currency, LocalDate, Sequence, UuidV7};
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PostingKind {
     Cash,
+    OpeningCash,
     CashReversal,
     SecurityQuantity,
     SecurityCost,
@@ -17,6 +18,12 @@ pub enum PostingKind {
     HoldingCost,
     RealizedPnl,
     PortfolioIndependentExpense,
+    OpeningQuantity,
+    OpeningCost,
+    OpeningRealizedPnl,
+    OpeningNetDividend,
+    OpeningIndependentExpense,
+    OpeningPortfolioIndependentExpense,
 }
 
 impl PostingKind {
@@ -24,6 +31,7 @@ impl PostingKind {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Cash => "cash",
+            Self::OpeningCash => "opening-cash",
             Self::CashReversal => "cash-reversal",
             Self::SecurityQuantity => "security-quantity",
             Self::SecurityCost => "security-cost",
@@ -34,6 +42,12 @@ impl PostingKind {
             Self::HoldingCost => "holding-cost",
             Self::RealizedPnl => "realized-pnl",
             Self::PortfolioIndependentExpense => "portfolio-independent-expense",
+            Self::OpeningQuantity => "opening-quantity",
+            Self::OpeningCost => "opening-cost",
+            Self::OpeningRealizedPnl => "opening-realized-pnl",
+            Self::OpeningNetDividend => "opening-net-dividend",
+            Self::OpeningIndependentExpense => "opening-independent-expense",
+            Self::OpeningPortfolioIndependentExpense => "opening-portfolio-independent-expense",
         }
     }
 
@@ -45,6 +59,7 @@ impl PostingKind {
     pub fn parse(value: &str) -> Result<Self, DomainError> {
         match value {
             "cash" => Ok(Self::Cash),
+            "opening-cash" => Ok(Self::OpeningCash),
             "cash-reversal" => Ok(Self::CashReversal),
             "security-quantity" => Ok(Self::SecurityQuantity),
             "security-cost" => Ok(Self::SecurityCost),
@@ -55,6 +70,12 @@ impl PostingKind {
             "holding-cost" => Ok(Self::HoldingCost),
             "realized-pnl" => Ok(Self::RealizedPnl),
             "portfolio-independent-expense" => Ok(Self::PortfolioIndependentExpense),
+            "opening-quantity" => Ok(Self::OpeningQuantity),
+            "opening-cost" => Ok(Self::OpeningCost),
+            "opening-realized-pnl" => Ok(Self::OpeningRealizedPnl),
+            "opening-net-dividend" => Ok(Self::OpeningNetDividend),
+            "opening-independent-expense" => Ok(Self::OpeningIndependentExpense),
+            "opening-portfolio-independent-expense" => Ok(Self::OpeningPortfolioIndependentExpense),
             _ => Err(DomainError::PostingInvariantViolation),
         }
     }

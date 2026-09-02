@@ -21,6 +21,8 @@ fn main() {
         "post_investment_event",
         "revise_investment_event",
         "get_investment_workspace",
+        "get_overview",
+        "get_data_quality",
         "analyze_import",
         "commit_import",
     ];

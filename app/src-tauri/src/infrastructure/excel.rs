@@ -17,7 +17,7 @@ const MAX_ROWS: usize = 20_000;
 const MAX_COLUMNS: usize = 32;
 const MAX_CELL_CHARS: usize = 4_096;
 
-const SHEETS: &[SheetContract] = &[
+const CASH_SHEETS: &[SheetContract] = &[
     SheetContract::new("设置", &["template_version", "base_currency", "ui_locale"]),
     SheetContract::new(
         "机构",
@@ -35,6 +35,7 @@ const SHEETS: &[SheetContract] = &[
             "opening_balance",
             "cutover_date",
             "migration_policy",
+            "enabled",
         ],
     ),
     SheetContract::new(
@@ -98,6 +99,86 @@ const SHEETS: &[SheetContract] = &[
     ),
 ];
 
+const INVESTMENT_SHEETS: &[SheetContract] = &[
+    SheetContract::new(
+        "投资组合",
+        &[
+            "legacy_id",
+            "institution_legacy_id",
+            "settlement_account_legacy_id",
+            "name",
+            "portfolio_type",
+            "enabled",
+            "migration_policy",
+            "cutover_date",
+        ],
+    ),
+    SheetContract::new(
+        "证券",
+        &["legacy_id", "code", "name", "trade_currency", "enabled"],
+    ),
+    SheetContract::new(
+        "证券价格",
+        &[
+            "instrument_legacy_id",
+            "price_date",
+            "price",
+            "price_currency",
+            "source",
+            "active",
+        ],
+    ),
+    SheetContract::new(
+        "投资流水",
+        &[
+            "date",
+            "sequence",
+            "type",
+            "portfolio_legacy_id",
+            "instrument_legacy_id",
+            "settlement_account_legacy_id",
+            "quantity",
+            "unit_price",
+            "trade_fee",
+            "gross_cash_amount",
+            "withholding_tax",
+            "fee_amount",
+            "amount",
+            "fee_scope",
+            "settlement_override_reason",
+        ],
+    ),
+    SheetContract::new(
+        "持仓基线",
+        &[
+            "portfolio_legacy_id",
+            "instrument_legacy_id",
+            "quantity",
+            "carrying_cost",
+            "realized_trade_pnl",
+            "net_dividend",
+            "independent_expense",
+            "currency",
+            "as_of_date",
+        ],
+    ),
+    SheetContract::new(
+        "检查",
+        &["scope", "legacy_id", "metric", "source_value", "as_of_date"],
+    ),
+    SheetContract::new(
+        "支出分析",
+        &[
+            "start_date",
+            "end_date",
+            "bucket_id",
+            "source_amount",
+            "source_count",
+            "explanation",
+        ],
+    ),
+];
+
 struct SheetContract {
     name: &'static str,
     headers: &'static [&'static str],
@@ -153,8 +234,13 @@ pub(super) fn parse_workbook(path: &Path) -> ApplicationResult<ParsedWorkbook> {
     let source_sha256 = sha256(&bytes);
     let mut workbook = open_workbook_auto(path).map_err(|_| ApplicationError::ImportFileInvalid)?;
     let names = workbook.sheet_names();
-    if names.len() != SHEETS.len()
-        || SHEETS
+    let full_contract = names.len() == CASH_SHEETS.len() + INVESTMENT_SHEETS.len()
+        && INVESTMENT_SHEETS
+            .iter()
+            .all(|contract| names.iter().any(|name| name == contract.name));
+    let cash_contract = names.len() == CASH_SHEETS.len();
+    if (!cash_contract && !full_contract)
+        || CASH_SHEETS
             .iter()
             .any(|contract| !names.iter().any(|name| name == contract.name))
     {
@@ -163,7 +249,12 @@ pub(super) fn parse_workbook(path: &Path) -> ApplicationResult<ParsedWorkbook> {
 
     let mut rows = Vec::new();
     let mut issues = Vec::new();
-    for contract in SHEETS {
+    for contract in CASH_SHEETS.iter().chain(
+        full_contract
+            .then_some(INVESTMENT_SHEETS)
+            .into_iter()
+            .flatten(),
+    ) {
         let range = workbook
             .worksheet_range(contract.name)
             .map_err(|_| ApplicationError::ImportFileInvalid)?;
@@ -284,9 +375,13 @@ fn validate_duplicates_and_references(rows: &[ParsedRow], issues: &mut Vec<Impor
     let institutions = ids(rows, "机构");
     let accounts = ids(rows, "资金子账户");
     let categories = ids(rows, "分类");
+    let portfolios = ids(rows, "投资组合");
+    let instruments = ids(rows, "证券");
     flag_duplicate_ids(rows, "机构", issues);
     flag_duplicate_ids(rows, "资金子账户", issues);
     flag_duplicate_ids(rows, "分类", issues);
+    flag_duplicate_ids(rows, "投资组合", issues);
+    flag_duplicate_ids(rows, "证券", issues);
     let mut events = BTreeSet::new();
     for row in rows {
         match row.sheet.as_str() {
@@ -324,6 +419,23 @@ fn validate_duplicates_and_references(rows: &[ParsedRow], issues: &mut Vec<Impor
                 require_reference(row, "to_account_legacy_id", &accounts, issues);
                 optional_reference(row, "fee_account_legacy_id", &accounts, issues);
                 flag_event_duplicate(row, &mut events, issues);
+            }
+            "投资组合" => {
+                require_reference(row, "institution_legacy_id", &institutions, issues);
+                require_reference(row, "settlement_account_legacy_id", &accounts, issues);
+            }
+            "证券价格" => {
+                require_reference(row, "instrument_legacy_id", &instruments, issues);
+            }
+            "投资流水" => {
+                require_reference(row, "portfolio_legacy_id", &portfolios, issues);
+                optional_reference(row, "instrument_legacy_id", &instruments, issues);
+                require_reference(row, "settlement_account_legacy_id", &accounts, issues);
+                flag_event_duplicate(row, &mut events, issues);
+            }
+            "持仓基线" => {
+                require_reference(row, "portfolio_legacy_id", &portfolios, issues);
+                optional_reference(row, "instrument_legacy_id", &instruments, issues);
             }
             _ => {}
         }

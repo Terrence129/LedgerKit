@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use super::error::ApplicationResult;
 
-pub const IMPORTER_VERSION: &str = "ledgerkit-xlsx-cash-v1";
+pub const IMPORTER_VERSION: &str = "ledgerkit-xlsx-full-v2";
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -31,6 +31,10 @@ pub struct ImportMapping {
 #[serde(rename_all = "camelCase")]
 pub struct ImportPosting {
     pub account_id: String,
+    #[serde(default)]
+    pub portfolio_id: Option<String>,
+    #[serde(default)]
+    pub instrument_id: Option<String>,
     pub quantity_delta: String,
     pub currency: String,
     pub base_value: Option<String>,
@@ -60,9 +64,37 @@ pub struct ImportBalance {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct ImportMetric {
+    pub scope: String,
+    pub entity_id: String,
+    pub metric: String,
+    pub source_value: String,
+    pub proposed_value: String,
+    pub difference: String,
+    #[serde(default)]
+    pub as_of_date: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportDifference {
+    pub scope: String,
+    pub key: String,
+    pub excel_value: String,
+    pub application_value: String,
+    pub difference: String,
+    pub explanation: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ImportReconciliation {
     pub balances: Vec<ImportBalance>,
+    #[serde(default)]
+    pub metrics: Vec<ImportMetric>,
     pub difference_bridge: Vec<String>,
+    #[serde(default)]
+    pub difference_items: Vec<ImportDifference>,
     pub canonical_result_sha256: String,
     pub balanced: bool,
 }

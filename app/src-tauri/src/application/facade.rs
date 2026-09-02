@@ -24,17 +24,20 @@ use super::ledger::{
     CreateLedgerCommand, LedgerPort, LedgerState, LedgerStatus, UpdateLedgerSettingsCommand,
 };
 use super::settings::{SettingsError, SettingsRepository};
+use super::valuation::{DataQualityReport, Overview, ValuationPort};
 
 pub struct ApplicationFacade<
-    L: LedgerPort + CatalogPort + CashPort + InvestmentPort,
+    L: LedgerPort + CatalogPort + CashPort + InvestmentPort + ValuationPort,
     S: SettingsRepository,
 > {
     ledger: L,
     shell_settings: S,
 }
 
-impl<L: LedgerPort + CatalogPort + CashPort + InvestmentPort + ImportPort, S: SettingsRepository>
-    ApplicationFacade<L, S>
+impl<
+    L: LedgerPort + CatalogPort + CashPort + InvestmentPort + ValuationPort + ImportPort,
+    S: SettingsRepository,
+> ApplicationFacade<L, S>
 {
     /// Stages and analyzes one user-selected workbook without mutating the live ledger.
     ///
@@ -59,7 +62,7 @@ impl<L: LedgerPort + CatalogPort + CashPort + InvestmentPort + ImportPort, S: Se
     }
 }
 
-impl<L: LedgerPort + CatalogPort + CashPort + InvestmentPort, S: SettingsRepository>
+impl<L: LedgerPort + CatalogPort + CashPort + InvestmentPort + ValuationPort, S: SettingsRepository>
     ApplicationFacade<L, S>
 {
     pub const fn new(ledger: L, shell_settings: S) -> Self {
@@ -450,6 +453,24 @@ impl<L: LedgerPort + CatalogPort + CashPort + InvestmentPort, S: SettingsReposit
     ) -> ApplicationResult<InvestmentWorkspace> {
         self.ledger
             .get_investment_workspace(&LocalDate::parse(as_of_date)?)
+    }
+
+    /// Returns the date-bounded net-worth, composition, MTD, and anomaly overview.
+    ///
+    /// # Errors
+    ///
+    /// Returns stable date, valuation, projection, or storage errors.
+    pub fn get_overview(&self, as_of_date: &str) -> ApplicationResult<Overview> {
+        self.ledger.get_overview(&LocalDate::parse(as_of_date)?)
+    }
+
+    /// Returns stable, actionable quality issues for one explicit as-of date.
+    ///
+    /// # Errors
+    ///
+    /// Returns stable date, quality-query, projection, or storage errors.
+    pub fn get_data_quality(&self, as_of_date: &str) -> ApplicationResult<DataQualityReport> {
+        self.ledger.get_data_quality(&LocalDate::parse(as_of_date)?)
     }
 
     /// Returns the versioned P0 expense query result from one SQLite snapshot.

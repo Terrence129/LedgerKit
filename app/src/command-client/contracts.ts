@@ -135,6 +135,8 @@ export type ActivityEventContent = {
   tradeFee?: string | null; grossCashAmount?: string | null; withholdingTax?: string | null;
   investmentFeeAmount?: string | null; investmentExpenseAmount?: string | null;
   feeScope?: "instrument" | "portfolio" | null; settlementOverrideReason?: string | null;
+  carryingCost?: string | null; realizedTradePnl?: string | null; netDividend?: string | null;
+  independentExpense?: string | null; costCurrency?: string | null;
 };
 export type ActivityItem = {
   eventId: string; eventOrder: number; eventType: string; effectiveDate: string;
@@ -147,7 +149,7 @@ export type ActivityItem = {
 export type ActivityPage = { items: ActivityItem[]; nextCursor: number | null };
 export type ActivityRequest = {
   startDate: string; endDate: string; context?: DrilldownContext;
-  eventType?: CashEventRequest["eventType"] | "SecurityBuy" | "SecuritySell" | "Dividend" | "InvestmentExpense" | "Reversal";
+  eventType?: CashEventRequest["eventType"] | "SecurityBuy" | "SecuritySell" | "Dividend" | "InvestmentExpense" | "OpeningPosition" | "OpeningPerformance" | "Reversal";
   accountId?: string; categoryId?: string; search?: string;
   cursor?: number; limit: number;
 };
@@ -171,15 +173,17 @@ export type UpdateSettingsResult = {
 
 export type ImportIssue = { code: string; severity: "blocker" | "warning"; sheet: string; row: number; field: string };
 export type ImportMapping = { entityType: string; legacyId: string; targetId: string; migrationPolicy: string | null };
-export type ImportPosting = { accountId: string; quantityDelta: string; currency: string; baseValue: string | null; role: string };
+export type ImportPosting = { accountId: string; portfolioId: string | null; instrumentId: string | null; quantityDelta: string; currency: string; baseValue: string | null; role: string };
 export type ImportProposedEvent = { sourceSheet: string; sourceRow: number; eventType: string; effectiveDate: string; sequence: number; postings: ImportPosting[] };
 export type ImportBalance = { accountId: string; currency: string; sourceBalance: string; proposedBalance: string; difference: string };
+export type ImportMetric = { scope: string; entityId: string; metric: string; sourceValue: string; proposedValue: string; difference: string; asOfDate: string | null };
+export type ImportDifference = { scope: string; key: string; excelValue: string; applicationValue: string; difference: string; explanation: string };
 export type ImportAnalysis = {
   batchId: string; sourceSha256: string; templateVersion: string; importerVersion: string;
   targetSchemaVersion: number; status: "ready" | "needs-review" | "committed";
   rowCount: number; validRowCount: number; blockerCount: number; warningCount: number;
   issues: ImportIssue[]; mappings: ImportMapping[]; proposedEvents: ImportProposedEvent[];
-  reconciliation: { balances: ImportBalance[]; differenceBridge: string[]; canonicalResultSha256: string; balanced: boolean };
+  reconciliation: { balances: ImportBalance[]; metrics: ImportMetric[]; differenceBridge: string[]; differenceItems: ImportDifference[]; canonicalResultSha256: string; balanced: boolean };
   canCommit: boolean; reusedStaging: boolean;
 };
 export type ImportCommitResult = {
@@ -189,11 +193,14 @@ export type ImportCommitResult = {
 
 export type InvestmentEventRequest = {
   effectiveDate: string; sequence: number;
-  eventType: "SecurityBuy" | "SecuritySell" | "Dividend" | "InvestmentExpense";
+  eventType: "SecurityBuy" | "SecuritySell" | "Dividend" | "InvestmentExpense" | "OpeningPosition" | "OpeningPerformance";
   portfolioId: string; instrumentId?: string; settlementAccountId: string;
   quantity?: string; unitPrice?: string; tradeFee?: string;
   grossCashAmount?: string; withholdingTax?: string; feeAmount?: string;
   amount?: string; feeScope?: "instrument" | "portfolio";
+  carryingCost?: string; realizedTradePnl?: string; netDividend?: string;
+  independentExpense?: string; costCurrency?: string; cutoverDate?: string;
+  migrationPolicy?: "full_history" | "explicit_cutover";
   settlementOverrideReason?: string; fxOverrides?: FxOverrideRequest[];
 };
 export type InvestmentPostingPreview = {
@@ -224,6 +231,25 @@ export type InvestmentWorkspace = {
   eventWatermark: number; projectionVersion: string; calculationVersion: string;
 };
 
+export type CompositionItem = { id: string; label: string; baseValue: string };
+export type Overview = {
+  contract: "ledgerkit-overview-v1"; valuationDate: string; mtdStartDate: string; mtdEndDate: string;
+  baseCurrency: string; valuedNetAssets: string; valuedCash: string; valuedHoldings: string;
+  mtdExpense: string; mtdUnvaluedExpenseCount: number;
+  composition: { institutions: CompositionItem[]; currencies: CompositionItem[]; cashAccounts: CompositionItem[]; holdings: CompositionItem[] };
+  unvaluedAssets: { assetType: string; entityId: string; nativeValue: string; nativeCurrency: string; reason: string }[];
+  anomalyCodes: string[]; watermarks: { event: number; marketData: number };
+  calculationVersion: string; snapshotVersion: string;
+};
+export type DataQualityIssue = {
+  issueId: string; code: string; severity: "blocker" | "warning"; status: "open";
+  context: { operation: string; field: string; entityType: string; entityId: string; asOfDate: string };
+};
+export type DataQualityReport = {
+  contract: "ledgerkit-data-quality-v1"; asOfDate: string; blockerCount: number; warningCount: number;
+  issues: DataQualityIssue[]; eventWatermark: number; calculationVersion: string;
+};
+
 export interface LedgerKitCommands {
   createLedger(request: CreateLedgerRequest): Promise<LedgerStatus>;
   openLedger(): Promise<LedgerStatus>;
@@ -248,4 +274,6 @@ export interface LedgerKitCommands {
   postInvestmentEvent(request: InvestmentEventRequest): Promise<PostedInvestmentEvent>;
   reviseInvestmentEvent(request: { targetEventId: string; reason: string; replacement: InvestmentEventRequest }): Promise<PostedInvestmentEvent>;
   getInvestmentWorkspace(request: { asOfDate: string }): Promise<InvestmentWorkspace>;
+  getOverview(request: { asOfDate: string }): Promise<Overview>;
+  getDataQuality(request: { asOfDate: string }): Promise<DataQualityReport>;
 }
