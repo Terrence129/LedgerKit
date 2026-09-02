@@ -1,10 +1,12 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "The local main window can call only the two M1 scaffold operations.",
+  "description": "The local main window can call only the four M2 foundation operations.",
   "windows": ["main"],
   "permissions": [
     "core:app:default",
+    "allow-create-ledger",
+    "allow-open-ledger",
     "allow-get-ledger-status",
     "allow-update-settings"
   ]

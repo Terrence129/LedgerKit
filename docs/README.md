@@ -21,6 +21,7 @@
 | [`operations/migration.md`](operations/migration.md) | Excel staging、cut-over、对账和切换 | 导入与迁移任务 |
 | [`operations/backup-restore.md`](operations/backup-restore.md) | 一致性备份、恢复和升级安全顺序 | 数据安全与发布任务 |
 | [`production-dependencies.md`](production-dependencies.md) | 已锁定生产依赖、预算与延期适配器 | 新增/升级依赖或发布审计 |
+| [`persistence-schema-v1.md`](persistence-schema-v1.md) | Schema v1、事务、迁移、路径和重建边界 | Core/SQLite 实现与后续 catalog/ledger 阶段 |
 | [`../fixtures/sanitized/README.md`](../fixtures/sanitized/README.md) | 脱敏黄金样例格式和变更规则 | 测试与财务实现任务 |
 
 ## 更新原则

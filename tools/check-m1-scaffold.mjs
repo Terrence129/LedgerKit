@@ -62,8 +62,8 @@ if (pluginCount > 8) fail(`Tauri plugin budget exceeded: ${pluginCount}/8`);
 const capability = readJson(join(appRoot, "src-tauri/capabilities/main.json"));
 const privilegedPermissions = capability.permissions.filter((item) => item.startsWith("allow-"));
 if (privilegedPermissions.length > 25) fail(`privileged IPC budget exceeded: ${privilegedPermissions.length}/25`);
-if (JSON.stringify(privilegedPermissions.sort()) !== JSON.stringify(["allow-get-ledger-status", "allow-update-settings"])) {
-  fail("M1 capability must contain exactly get_ledger_status and update_settings");
+if (JSON.stringify(privilegedPermissions.sort()) !== JSON.stringify(["allow-create-ledger", "allow-get-ledger-status", "allow-open-ledger", "allow-update-settings"])) {
+  fail("M2 foundation capability must contain exactly create_ledger, open_ledger, get_ledger_status, and update_settings");
 }
 
 const sourceFiles = walkFiles(join(appRoot, "src")).filter((path) => /\.(ts|tsx)$/.test(path));
@@ -120,8 +120,8 @@ for (const adrName of acceptedM1Adrs) {
   }
 }
 const agentContext = readFileSync(join(repositoryRoot, "docs/agent-context.md"), "utf8");
-if (!agentContext.includes("> 状态：M1 完成，Ready for M2") || !agentContext.includes("> M0 状态：完成")) {
-  fail("agent context does not record M1 completion while retaining M0 completion");
+if (!agentContext.includes("> M1 状态：Tauri 2 + React/TypeScript + Rust Core 已选择并建立生产骨架") || !agentContext.includes("> M0 状态：完成")) {
+  fail("agent context does not retain the completed M0 and M1 milestones");
 }
 if (!existsSync(join(repositoryRoot, "docs/benchmarks/m1/selection.md"))) fail("M1 selection report is missing");
 if (existsSync(join(repositoryRoot, "spikes/tauri/package.json")) || existsSync(join(repositoryRoot, "spikes/avalonia/global.json"))) {

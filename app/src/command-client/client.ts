@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
+  CreateLedgerRequest,
   LedgerKitCommands,
   LedgerStatus,
   LedgerStatusRequest,
@@ -8,6 +9,14 @@ import type {
 } from "./contracts";
 
 class TauriLedgerKitCommands implements LedgerKitCommands {
+  createLedger(request: CreateLedgerRequest): Promise<LedgerStatus> {
+    return invoke<LedgerStatus>("create_ledger", { request });
+  }
+
+  openLedger(): Promise<LedgerStatus> {
+    return invoke<LedgerStatus>("open_ledger");
+  }
+
   getLedgerStatus(request: LedgerStatusRequest): Promise<LedgerStatus> {
     return invoke<LedgerStatus>("get_ledger_status", { request });
   }

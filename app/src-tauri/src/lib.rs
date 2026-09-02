@@ -1,18 +1,17 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
-mod application;
-mod domain;
+pub mod application;
+pub mod domain;
 mod infrastructure;
 mod ipc;
 mod platform;
 
-use std::sync::Mutex;
-
-use application::settings::SettingsService;
+use application::facade::ApplicationFacade;
 use infrastructure::file_settings::FileSettingsRepository;
+use infrastructure::sqlite::SqliteLedgerManager;
 use tauri::Manager;
 
-use crate::ipc::{AppState, get_ledger_status, update_settings};
+use crate::ipc::{AppState, create_ledger, get_ledger_status, open_ledger, update_settings};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 /// Starts the single `LedgerKit` desktop process tree.
@@ -25,8 +24,10 @@ pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
             let settings_path = app.path().app_config_dir()?.join("settings.json");
-            let service = SettingsService::new(FileSettingsRepository::new(settings_path));
-            app.manage(AppState::new(Mutex::new(service)));
+            let local_data_root = app.path().app_local_data_dir()?;
+            let ledger = SqliteLedgerManager::new(&local_data_root)?;
+            let facade = ApplicationFacade::new(ledger, FileSettingsRepository::new(settings_path));
+            app.manage(AppState::new(facade));
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -37,7 +38,12 @@ pub fn run() {
                 platform::webview::handle_focus_change(&webview_window, *focused);
             }
         })
-        .invoke_handler(tauri::generate_handler![get_ledger_status, update_settings])
+        .invoke_handler(tauri::generate_handler![
+            create_ledger,
+            open_ledger,
+            get_ledger_status,
+            update_settings
+        ])
         .run(tauri::generate_context!())
         .expect("LedgerKit desktop runtime failed");
 }

@@ -1,8 +1,10 @@
 # Production dependency inventory
 
-> Baseline: M1 selected Tauri scaffold, 2026-09-02. Exact versions are locked in `app/package-lock.json` and `app/src-tauri/Cargo.lock`.
+> Baseline: M2 Core/SQLite foundation, 2026-09-02. Exact versions are locked in `app/package-lock.json` and `app/src-tauri/Cargo.lock`.
 
-The current scaffold has **8 direct production dependencies** (3 npm + 5 Rust, including Windows-targeted crates), below the hard budget of 25. Build/test-only dependencies are excluded from that number and never ship as Node or Python sidecars. Rust crates are statically linked, so the M1 measurements report aggregate binary/package size rather than misleading per-crate deltas.
+The current application has **13 direct production dependencies** (3 npm + 10 Rust, including Windows-targeted crates), below the hard budget of 25. Build/test-only dependencies are excluded from that number and never ship as Node or Python sidecars. Rust crates are statically linked, so size evidence is recorded at the aggregate binary/package level rather than as misleading per-crate deltas.
+
+The verified M2 Windows x64 release build produced a 9,687,040-byte application executable and a 2,596,645-byte standard thin NSIS installer. The installer remains below the M1 hard budget and continues to reuse the system Evergreen WebView2 runtime.
 
 | Dependency | Purpose and boundary | Size evidence | License | Security and maintenance | Cost of not using it |
 |---|---|---|---|---|---|
@@ -11,7 +13,12 @@ The current scaffold has **8 direct production dependencies** (3 npm + 5 Rust, i
 | `react-dom 19.2.8` | Local DOM rendering | Included in first-load gzip baseline | MIT | Paired with exact React version | Custom DOM integration |
 | `tauri 2.11.5` | Desktop shell, local WebView and named IPC | Dominant part of measured aggregate app | Apache-2.0 OR MIT | Official stable line; every upgrade reruns M1 runtime gates | Build native shell/security boundary ourselves |
 | `serde 1.0.229` | Strict IPC and settings DTO serialization | Aggregate Rust binary only | Apache-2.0 OR MIT | `deny_unknown_fields` on inbound DTOs | Error-prone manual parsing |
-| `serde_json 1.0.151` | Minimal versioned settings file | Aggregate Rust binary only | Apache-2.0 OR MIT | Only non-financial settings in M1 | Custom JSON codec |
+| `serde_json 1.0.151` | Strict settings/IPC JSON and canonical value tree before constrained serialization | Aggregate Rust binary only | Apache-2.0 OR MIT | Inbound DTOs deny unknown fields; canonical layer rejects unsupported JSON numbers | Custom JSON parser and serializer |
+| `getrandom 0.4.3` | OS randomness for UUIDv7 random bits; later reused by accepted backup format | Aggregate Rust binary only | Apache-2.0 OR MIT | Thin OS adapter with no custom entropy source | Unsafe timestamp/counter-only IDs or another RNG dependency |
+| `rusqlite 0.40.2` | Bundled SQLite driver, explicit transactions, backup API and controlled migration | Aggregate Rust binary only | MIT | Core-only parameterized access; no frontend SQL plugin | Hand-written SQLite FFI and backup sequencing |
+| `rust_decimal 1.42.1` | ADR-0004 checked Decimal coefficient arithmetic behind LedgerKit validation | Aggregate Rust binary only | MIT | No binary float; wrapper enforces scale/precision/error order | Implement and audit arbitrary-precision decimal arithmetic |
+| `sha2 0.11.0` | SHA-256 for canonical posting and schema hashes | Aggregate Rust binary only | Apache-2.0 OR MIT | RustCrypto implementation; only non-secret hashing here | Hand-written cryptographic primitive |
+| `unicode-normalization 0.1.25` | Unicode NFC normalization for canonical JSON v1 | Aggregate Rust binary only | Apache-2.0 OR MIT | Narrow canonicalization boundary | Cross-stack hashes differ for canonically equivalent text |
 | `webview2-com 0.38.2` | Windows-only low-memory target adapter | Aggregate Rust binary only | MIT | One reviewed unsafe block; WebView upgrades require remeasurement | Lose measured RSS control |
 | `windows-core 0.61.2` | Windows COM interface support for the adapter | Aggregate Rust binary only | Apache-2.0 OR MIT | Isolated under `platform`; no Domain dependency | Hand-written COM ABI |
 
@@ -24,7 +31,6 @@ The current scaffold has **8 direct production dependencies** (3 npm + 5 Rust, i
 The following exact dependencies are approved by Accepted ADRs but are deliberately absent until the stage that implements their port. They do not count in the current 8-dependency baseline:
 
 - ADR-0007: `calamine 0.36.1`, `rust_xlsxwriter 0.99.0`.
-- ADR-0008: `argon2 0.6.0`, `aes-gcm 0.11.1`, `getrandom 0.4.3`, `zeroize 1.9.0`, `base64 0.23.1`.
-- M0/M2 requirements, already measured in the Tauri spike but still subject to the implementing stage: `rusqlite 0.40.2`, `rust_decimal 1.42.1`, `sha2 0.11.0`, `unicode-normalization 0.1.25`.
+- ADR-0008: `argon2 0.6.0`, `aes-gcm 0.11.1`, `zeroize 1.9.0`, `base64 0.23.1`; the already-present `getrandom 0.4.3` will also supply backup randomness.
 
 Adding any of these still requires a manifest diff, license/security review, updated aggregate package measurement and this inventory update. Approval is not permission to introduce an unused dependency.

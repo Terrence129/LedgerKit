@@ -7,8 +7,15 @@ const status: LedgerStatus = {
   appVersion: "0.1.0",
   uiLocale: "en-US",
   ledgerState: "not-created",
+  ledgerId: null,
+  schemaVersion: null,
+  baseCurrency: null,
+  eventWatermark: 0,
+  projectionWatermark: 0,
+  calculationVersion: "ledger-calculation-v1",
+  blockedReason: null,
   localOnly: true,
-  privilegedOperationCount: 2,
+  privilegedOperationCount: 4,
 };
 
 describe("HealthHome", () => {
@@ -28,6 +35,6 @@ describe("HealthHome", () => {
 
     expect(html).toContain(heading);
     expect(html).toContain("<select");
-    expect(html).toContain(">2</dd>");
+    expect(html).toContain(">4</dd>");
   });
 });

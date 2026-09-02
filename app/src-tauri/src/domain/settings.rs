@@ -7,6 +7,7 @@ pub enum UiLocale {
 }
 
 impl UiLocale {
+    #[must_use]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::EnUs => "en-US",
@@ -14,6 +15,7 @@ impl UiLocale {
         }
     }
 
+    #[must_use]
     pub fn parse(value: &str) -> Option<Self> {
         match value {
             "en-US" => Some(Self::EnUs),
@@ -22,6 +24,7 @@ impl UiLocale {
         }
     }
 
+    #[must_use]
     pub fn from_system_hint(value: Option<&str>) -> Self {
         let is_chinese = value.is_some_and(|locale| {
             locale
