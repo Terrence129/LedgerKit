@@ -1,13 +1,13 @@
-# LedgerKit Persistence Schema v1
+# LedgerKit Persistence Schema v1 / v2
 
-> 状态：M2 Foundation 已实现
+> 状态：Schema v1 基线与 M2 Cash Schema v2 前向迁移已实现
 >
 > 权威边界：受 ADR-0002、ADR-0003、ADR-0004、ADR-0006、ADR-0011 和 ADR-0012 约束；本文记录物理实现，不改变财务口径。
 
 ## 标识与版本
 
-- SQLite `application_id = 0x4C4B4954`（`LKIT`），`user_version = 1`。
-- migration 历史保存应用版本和 Schema v1 SQL 的 SHA-256；posting 使用 `ledger-calculation-v1`，现金投影使用 `cash-balance-projection-v1`。
+- SQLite `application_id = 0x4C4B4954`（`LKIT`）；Foundation 基线为 `user_version = 1`，当前生产 schema 为 `user_version = 2`。
+- migration 历史保存应用版本和对应 schema SQL 的 SHA-256；posting 使用 `ledger-calculation-v1`，现金投影使用 `cash-balance-projection-v1`，支出日投影使用 `expense-daily-projection-v1`。
 - 权威财务字段为 ADR-0004 规范十进制 `TEXT`，不使用 SQLite `REAL`。
 
 ## 表组
@@ -23,6 +23,8 @@
 | 导入 staging | `import_batches`、`import_rows` |
 | 估值审计 | `valuation_snapshots`、`valuation_snapshot_lines` |
 
+Schema v2 在不改写 Schema v1 权威事实的前提下增加 `cash_event_fees`、`monthly_cash_flow_projection`、`cash_data_quality_projection`，以及 ADR-0015 接受的 `expense_daily_projection`、`expense_daily_summary_projection`、`expense_daily_event_bucket_projection`。后三张表分别保存日/桶规范金额、日级全局 distinct 计数和 Top 10 “其他”所需的有界事件—桶集合；全部可删除并从 typed event/detail/posting 确定性重建。
+
 Schema 使用外键、业务 ID/自然键唯一约束、日期与枚举状态检查。汇率和价格由 partial unique index 保证同一业务键至多一个 active 修订。活动、修订/冲正、费用分类、posting、持仓、as-of 市场数据、导入和估值均有对应查询索引。
 
 ## 写入与冻结
@@ -30,7 +32,7 @@ Schema 使用外键、业务 ID/自然键唯一约束、日期与枚举状态检
 - `EventTransactionPort` 只接受已通过 Domain 校验的 `PreparedEventCommit`；事件、唯一 typed detail、确定性 posting、audit、现金投影和投影水位在同一个 SQLite transaction 中提交。
 - `LedgerPosting` 没有 IPC 或独立写入入口。规范序列先按 `(effective_date, sequence, event_id, posting_id)` 排序，再以 `ledgerkit-canonical-json-v1` 序列化并计算 SHA-256。
 - 本位币在出现现金账户、标的、事件、市场数据或估值依赖后冻结。账户产生 posting 后不能更改币种；标的产生交易或价格修订后不能更改交易币种。
-- `ProjectionRebuilder` 先将投影标记不可用、清空派生行，再按稳定事件/posting 顺序重建并原子推进版本与水位。当前 Foundation 实现现金余额投影；后续投影必须沿用同一框架。
+- 统一派生重建路径先清空派生行，再按稳定事件/posting 顺序重建并原子推进版本与水位。当前实现现金余额、月度收支、现金数据质量和支出日聚合；事实、posting、投影与 watermark 在同一 transaction 提交。
 
 ## 创建、打开与迁移
 

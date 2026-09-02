@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-preview-event"
+description = "Enables the preview_event command without any pre-configured scope."
+commands.allow = ["preview_event"]
+
+[[permission]]
+identifier = "deny-preview-event"
+description = "Denies the preview_event command without any pre-configured scope."
+commands.deny = ["preview_event"]

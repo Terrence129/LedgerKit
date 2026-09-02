@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+pub mod cash;
 pub mod catalog;
 pub mod decimal;
 pub mod error;

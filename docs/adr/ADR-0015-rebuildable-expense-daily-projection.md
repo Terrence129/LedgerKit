@@ -1,10 +1,12 @@
 # ADR-0015：可重建支出日聚合投影
 
-> 状态：Proposed
+> 状态：Accepted
 >
 > 日期：2026-09-02
 >
-> 决策者：待确认
+> 决策者：项目所有者（2026-09-02 在任务 07 性能门禁失败后明确接受方案 B）
+>
+> 授权：项目所有者在本阶段明确回复“是”，接受任务 07 实测失败后提出的方案 B。
 >
 > 关联规则/里程碑：M1、`expense-analysis-query/v1`、EXP-001 至 EXP-009
 
@@ -43,7 +45,7 @@ Tauri M1 样机先对 100,000 个合成事件直接扫描事实表。原始 SQL 
 
 ## 决策
 
-待项目所有者决定。若接受，选择方案 B，并要求：
+接受方案 B：实现可删除、可确定性重建的按日/桶支出投影，并要求：
 
 - 投影仅为派生数据，不是新的权威事实；删除投影不得丢失业务信息。
 - 所有金额以规范十进制字符串持久化，并由 Rust Decimal 运算；禁止 SQLite `REAL` 或 JavaScript number 承担权威汇总。
@@ -66,7 +68,7 @@ Tauri M1 样机先对 100,000 个合成事件直接扫描事实表。原始 SQL 
 
 - 脱敏 fixture：M0 `21-expense-date-validation/` 至 `31-expense-excel-difference-bridge/`，以及 M1 确定性 100,000 事件生成器
 - 自动化测试：投影删除/重建结果与 hash 完全相同；failpoint 同时回滚事件、posting、投影和 watermark
-- 性能/体积/恢复验证：100,000 事件 cold P95 2.6740 ms、warm P95 2.1098 ms、DB 54,038,528 bytes；仍需在最终技术栈和迁移阶段复测
+- 性能/体积/恢复验证：M1 样机为 100,000 事件 cold/warm P95 2.6740/2.1098 ms；生产 Rust/SQLite 实现两次复测冷查询 0–1 ms、warm P95 0 ms、查询加序列化 0 ms、响应 2,457 bytes。迁移与恢复阶段仍须复测重建路径。
 - 对账或差异桥：`expense-analysis-query/v1` 的 M0 canonical hash 保持不变
 
 ## 关联

@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+use std::cmp::Ordering;
 use std::str::FromStr;
 
 use rust_decimal::{Decimal as RustDecimal, RoundingStrategy};
@@ -93,6 +94,25 @@ impl Decimal {
     #[must_use]
     pub const fn is_positive(&self) -> bool {
         self.value.is_sign_positive() && !self.value.is_zero()
+    }
+
+    #[must_use]
+    pub const fn is_negative(&self) -> bool {
+        self.value.is_sign_negative() && !self.value.is_zero()
+    }
+
+    #[must_use]
+    pub fn numeric_cmp(&self, other: &Self) -> Ordering {
+        self.value.cmp(&other.value)
+    }
+
+    #[must_use]
+    pub fn normalized(&self) -> Self {
+        let value = self.value.normalize();
+        Self {
+            text: value.to_string(),
+            value,
+        }
     }
 
     /// Adds without implicit rounding.

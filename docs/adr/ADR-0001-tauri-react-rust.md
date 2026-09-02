@@ -47,7 +47,7 @@ Tauri 与 Avalonia Native AOT 均通过所有硬门禁。授权规则规定：�
 - P0 不增加本地 HTTP 服务、Node/Python sidecar、后台 daemon、图表运行时或重复状态框架。
 - `spikes/tauri` 与 `spikes/avalonia` 只保留在 Git 历史；生产实现从经整理的 `app` 骨架继续。
 
-ADR-0015 仍为 Proposed。本 ADR 只选择技术栈，不接受样机中的支出物化投影。
+本 ADR 只选择技术栈；其接受时并未接受样机中的支出物化投影。该后续问题已在任务 07 的生产查询实测失败后由项目所有者另行接受 ADR-0015，不改变本 ADR 的技术栈结论。
 
 ## 后果
 

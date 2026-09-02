@@ -65,11 +65,11 @@ impl CatalogPort for SqliteLedgerManager {
 }
 
 impl SqliteLedgerManager {
-    fn open_store(&self) -> ApplicationResult<&LedgerStore> {
+    pub(super) fn open_store(&self) -> ApplicationResult<&LedgerStore> {
         self.store.as_ref().ok_or(ApplicationError::LedgerNotOpen)
     }
 
-    fn open_store_mut(&mut self) -> ApplicationResult<&mut LedgerStore> {
+    pub(super) fn open_store_mut(&mut self) -> ApplicationResult<&mut LedgerStore> {
         self.store.as_mut().ok_or(ApplicationError::LedgerNotOpen)
     }
 }

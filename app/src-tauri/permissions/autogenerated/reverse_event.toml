@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-reverse-event"
+description = "Enables the reverse_event command without any pre-configured scope."
+commands.allow = ["reverse_event"]
+
+[[permission]]
+identifier = "deny-reverse-event"
+description = "Denies the reverse_event command without any pre-configured scope."
+commands.deny = ["reverse_event"]

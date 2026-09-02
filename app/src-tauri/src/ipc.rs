@@ -6,6 +6,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::State;
 
+use crate::application::cash::{
+    ActivityPage, ActivityQuery, CashEventInput, DrilldownContext, EventInputType, EventPreview,
+    ExpenseAnalysis, FxOverrideInput, PostedEvent, ReversalInput, RevisionInput,
+};
 use crate::application::catalog::{
     CatalogRecord, CatalogSnapshot, MarketRevisionRecord, QualityIssue,
 };
@@ -13,6 +17,10 @@ use crate::application::error::ApplicationError;
 use crate::application::facade::ApplicationFacade;
 use crate::application::ledger::{LedgerState, LedgerStatus};
 use crate::application::settings::PRIVILEGED_OPERATION_COUNT;
+use crate::domain::catalog::SemanticRole;
+use crate::domain::decimal::{Decimal, DecimalUse};
+use crate::domain::error::DomainError;
+use crate::domain::types::{Currency, LocalDate, Sequence, UuidV7};
 use crate::infrastructure::file_settings::FileSettingsRepository;
 use crate::infrastructure::sqlite::SqliteLedgerManager;
 
@@ -289,6 +297,126 @@ pub struct SavePriceRevisionRequest {
     active: bool,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct FxOverrideRequest {
+    currency: String,
+    value: String,
+    reason: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CashEventRequest {
+    effective_date: String,
+    sequence: u64,
+    event_type: String,
+    account_id: Option<String>,
+    from_account_id: Option<String>,
+    to_account_id: Option<String>,
+    amount: Option<String>,
+    to_amount: Option<String>,
+    category_id: Option<String>,
+    semantic_role: Option<String>,
+    merchant: Option<String>,
+    note: Option<String>,
+    fee_account_id: Option<String>,
+    fee_amount: Option<String>,
+    cutover_date: Option<String>,
+    migration_policy: Option<String>,
+    #[serde(default)]
+    fx_overrides: Vec<FxOverrideRequest>,
+    #[serde(default)]
+    currency_precision_confirmed: bool,
+}
+
+impl CashEventRequest {
+    fn into_application(self) -> Result<CashEventInput, CommandError> {
+        Ok(CashEventInput {
+            effective_date: LocalDate::parse(&self.effective_date)?,
+            sequence: Sequence::new(self.sequence)?,
+            event_type: EventInputType::parse(&self.event_type)?,
+            account_id: parse_optional_id(self.account_id.as_deref())?,
+            from_account_id: parse_optional_id(self.from_account_id.as_deref())?,
+            to_account_id: parse_optional_id(self.to_account_id.as_deref())?,
+            amount: parse_optional_decimal(self.amount.as_deref())?,
+            to_amount: parse_optional_decimal(self.to_amount.as_deref())?,
+            category_id: parse_optional_id(self.category_id.as_deref())?,
+            semantic_role: SemanticRole::parse(self.semantic_role.as_deref().unwrap_or("normal"))?,
+            merchant: self.merchant,
+            note: self.note,
+            fee_account_id: parse_optional_id(self.fee_account_id.as_deref())?,
+            fee_amount: parse_optional_decimal(self.fee_amount.as_deref())?,
+            cutover_date: self
+                .cutover_date
+                .as_deref()
+                .map(LocalDate::parse)
+                .transpose()?,
+            migration_policy: self.migration_policy,
+            fx_overrides: self
+                .fx_overrides
+                .into_iter()
+                .map(|item| {
+                    Ok(FxOverrideInput {
+                        currency: Currency::parse(&item.currency)?,
+                        value: Decimal::parse(&item.value, DecimalUse::FxRate)?,
+                        reason: item.reason,
+                    })
+                })
+                .collect::<Result<Vec<_>, CommandError>>()?,
+            currency_precision_confirmed: self.currency_precision_confirmed,
+        })
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ReviseEventRequest {
+    target_event_id: String,
+    reason: String,
+    replacement: CashEventRequest,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ReverseEventRequest {
+    target_event_id: String,
+    reason: String,
+    effective_date: String,
+    sequence: u64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ExpenseAnalysisRequest {
+    start_date: String,
+    end_date: String,
+    event_watermark: Option<u64>,
+}
+
+#[derive(Debug, Deserialize)]
+// Drilldown contexts are copied verbatim from the canonical snake_case query result.
+#[serde(deny_unknown_fields)]
+pub struct DrilldownContextRequest {
+    start_date: String,
+    end_date: String,
+    event_watermark: u64,
+    bucket_id: Option<String>,
+    semantic_role: Option<String>,
+    member_rank_gt: Option<u32>,
+    valuation_state: String,
+    expense_policy_version: String,
+    calculation_version: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ActivityRequest {
+    context: DrilldownContextRequest,
+    cursor: Option<u64>,
+    limit: u32,
+}
+
 #[derive(Debug, Serialize)]
 pub struct SaveResult {
     id: String,
@@ -306,6 +434,12 @@ impl From<ApplicationError> for CommandError {
             code: value.code(),
             field: value.field(),
         }
+    }
+}
+
+impl From<DomainError> for CommandError {
+    fn from(value: DomainError) -> Self {
+        ApplicationError::from(value).into()
     }
 }
 
@@ -402,6 +536,123 @@ save_command!(
         )
     }
 );
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn preview_event(
+    request: CashEventRequest,
+    state: State<'_, AppState>,
+) -> Result<EventPreview, CommandError> {
+    let input = request.into_application()?;
+    lock_facade(&state)?
+        .preview_event(&input)
+        .map_err(Into::into)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn post_event(
+    request: CashEventRequest,
+    state: State<'_, AppState>,
+) -> Result<PostedEvent, CommandError> {
+    let input = request.into_application()?;
+    lock_facade(&state)?.post_event(&input).map_err(Into::into)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn revise_event(
+    request: ReviseEventRequest,
+    state: State<'_, AppState>,
+) -> Result<PostedEvent, CommandError> {
+    let input = RevisionInput {
+        target_event_id: UuidV7::parse(&request.target_event_id)?,
+        reason: request.reason,
+        replacement: request.replacement.into_application()?,
+    };
+    lock_facade(&state)?
+        .revise_event(&input)
+        .map_err(Into::into)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn reverse_event(
+    request: ReverseEventRequest,
+    state: State<'_, AppState>,
+) -> Result<PostedEvent, CommandError> {
+    let input = ReversalInput {
+        target_event_id: UuidV7::parse(&request.target_event_id)?,
+        reason: request.reason,
+        effective_date: LocalDate::parse(&request.effective_date)?,
+        sequence: Sequence::new(request.sequence)?,
+    };
+    lock_facade(&state)?
+        .reverse_event(&input)
+        .map_err(Into::into)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn get_expense_analysis(
+    request: ExpenseAnalysisRequest,
+    state: State<'_, AppState>,
+) -> Result<ExpenseAnalysis, CommandError> {
+    lock_facade(&state)?
+        .get_expense_analysis(
+            &request.start_date,
+            &request.end_date,
+            request.event_watermark,
+        )
+        .map_err(Into::into)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn get_activity(
+    request: ActivityRequest,
+    state: State<'_, AppState>,
+) -> Result<ActivityPage, CommandError> {
+    let context = request.context;
+    if context.expense_policy_version != "expense-policy-v1"
+        || context.calculation_version != "ledger-calculation-v1"
+        || !matches!(
+            context.valuation_state.as_str(),
+            "valued" | "unvalued" | "all"
+        )
+    {
+        return Err(CommandError::from(ApplicationError::ActivityCursorInvalid));
+    }
+    let query = ActivityQuery {
+        context: DrilldownContext {
+            start_date: context.start_date,
+            end_date: context.end_date,
+            event_watermark: context.event_watermark,
+            calculation_version: "ledger-calculation-v1",
+            expense_policy_version: "expense-policy-v1",
+            bucket_id: context.bucket_id,
+            semantic_role: context.semantic_role,
+            member_rank_gt: context.member_rank_gt,
+            valuation_state: context.valuation_state,
+        },
+        cursor: request.cursor,
+        limit: request.limit,
+    };
+    lock_facade(&state)?
+        .get_activity(&query)
+        .map_err(Into::into)
+}
+
+fn parse_optional_id(value: Option<&str>) -> Result<Option<UuidV7>, CommandError> {
+    value.map(UuidV7::parse).transpose().map_err(Into::into)
+}
+
+fn parse_optional_decimal(value: Option<&str>) -> Result<Option<Decimal>, CommandError> {
+    value
+        .map(|item| Decimal::parse(item, DecimalUse::Amount))
+        .transpose()
+        .map_err(Into::into)
+}
 save_command!(
     save_cash_account,
     SaveCashAccountRequest,
@@ -502,7 +753,7 @@ fn lock_facade<'a>(
 
 #[cfg(test)]
 mod tests {
-    use super::{CreateLedgerRequest, SaveFxRevisionRequest};
+    use super::{ActivityRequest, CreateLedgerRequest, SaveFxRevisionRequest};
     use serde_json::json;
 
     #[test]
@@ -511,5 +762,18 @@ mod tests {
         assert!(serde_json::from_value::<CreateLedgerRequest>(forged).is_err());
         let fx_with_float = json!({ "rateDate": "2026-09-02", "currency": "USD", "rateToBase": 7.1, "source": "manual", "active": true });
         assert!(serde_json::from_value::<SaveFxRevisionRequest>(fx_with_float).is_err());
+        let canonical_context = json!({
+            "context": {
+                "start_date": "2026-09-01",
+                "end_date": "2026-09-02",
+                "event_watermark": 1,
+                "calculation_version": "ledger-calculation-v1",
+                "expense_policy_version": "expense-policy-v1",
+                "bucket_id": "system:ordinary-fee",
+                "valuation_state": "valued"
+            },
+            "limit": 25
+        });
+        assert!(serde_json::from_value::<ActivityRequest>(canonical_context).is_ok());
     }
 }

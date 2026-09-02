@@ -3,7 +3,7 @@
 use sha2::{Digest, Sha256};
 
 pub const APPLICATION_ID: u32 = 1_280_002_388;
-pub const SCHEMA_VERSION: u32 = 1;
+pub const SCHEMA_VERSION: u32 = 2;
 
 pub const REQUIRED_TABLES: &[&str] = &[
     "app_settings",
@@ -12,6 +12,8 @@ pub const REQUIRED_TABLES: &[&str] = &[
     "business_events",
     "cash_accounts",
     "cash_balance_projection",
+    "cash_data_quality_projection",
+    "cash_event_fees",
     "categories",
     "currency_exchange_details",
     "dividend_details",
@@ -23,9 +25,13 @@ pub const REQUIRED_TABLES: &[&str] = &[
     "income_expense_details",
     "institutions",
     "investment_expense_details",
+    "expense_daily_event_bucket_projection",
+    "expense_daily_projection",
+    "expense_daily_summary_projection",
     "ledger_metadata",
     "ledger_postings",
     "migration_history",
+    "monthly_cash_flow_projection",
     "opening_balance_details",
     "opening_performance_details",
     "opening_position_details",
@@ -43,6 +49,9 @@ pub const REQUIRED_INDEXES: &[&str] = &[
     "idx_business_events_activity",
     "idx_business_events_revision_target",
     "idx_business_events_reversal_target",
+    "idx_cash_event_fees_event",
+    "idx_expense_daily_bucket",
+    "idx_expense_daily_event_bucket",
     "idx_fx_rate_as_of",
     "idx_income_expense_category",
     "idx_ledger_postings_event_kind",
@@ -58,7 +67,7 @@ pub const REQUIRED_TRIGGERS: &[&str] = &[
     "trg_freeze_instrument_trade_currency",
 ];
 
-pub const SCHEMA_V1: &str = r"
+pub const SCHEMA_CURRENT: &str = r"
 CREATE TABLE ledger_metadata (
     singleton_id INTEGER PRIMARY KEY CHECK (singleton_id = 1),
     ledger_id TEXT NOT NULL UNIQUE CHECK (
@@ -221,6 +230,14 @@ CREATE TABLE income_expense_details (
     )
 ) STRICT;
 
+CREATE TABLE cash_event_fees (
+    event_id TEXT PRIMARY KEY REFERENCES business_events(event_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
+    fee_account_id TEXT NOT NULL REFERENCES cash_accounts(account_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
+    fee_amount TEXT NOT NULL
+) STRICT;
+
+CREATE INDEX idx_cash_event_fees_event ON cash_event_fees(event_id, fee_account_id);
+
 CREATE TABLE transfer_details (
     event_id TEXT PRIMARY KEY REFERENCES business_events(event_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
     from_account_id TEXT NOT NULL REFERENCES cash_accounts(account_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
@@ -355,7 +372,7 @@ CREATE TABLE ledger_postings (
     event_id TEXT NOT NULL REFERENCES business_events(event_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
     posting_ordinal INTEGER NOT NULL CHECK (posting_ordinal > 0),
     posting_kind TEXT NOT NULL CHECK (posting_kind IN (
-        'cash', 'security-quantity', 'security-cost', 'realized-trade-pnl',
+        'cash', 'cash-reversal', 'security-quantity', 'security-cost', 'realized-trade-pnl',
         'net-dividend', 'independent-expense'
     )),
     account_id TEXT REFERENCES cash_accounts(account_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
@@ -398,6 +415,64 @@ CREATE TABLE cash_balance_projection (
     event_watermark INTEGER NOT NULL CHECK (event_watermark >= 0),
     calculation_version TEXT NOT NULL
 ) STRICT;
+
+CREATE TABLE monthly_cash_flow_projection (
+    month TEXT NOT NULL CHECK (length(month) = 7),
+    currency TEXT NOT NULL CHECK (length(currency) = 3 AND currency = upper(currency)),
+    income TEXT NOT NULL,
+    expense TEXT NOT NULL,
+    event_watermark INTEGER NOT NULL CHECK (event_watermark >= 0),
+    calculation_version TEXT NOT NULL,
+    PRIMARY KEY (month, currency)
+) STRICT;
+
+CREATE TABLE cash_data_quality_projection (
+    event_id TEXT NOT NULL REFERENCES business_events(event_id) ON UPDATE RESTRICT ON DELETE CASCADE,
+    issue_code TEXT NOT NULL,
+    currency TEXT NOT NULL CHECK (length(currency) = 3 AND currency = upper(currency)),
+    target_date TEXT NOT NULL CHECK (target_date = date(target_date, '+0 days')),
+    event_watermark INTEGER NOT NULL CHECK (event_watermark >= 0),
+    calculation_version TEXT NOT NULL,
+    PRIMARY KEY (event_id, issue_code, currency)
+) STRICT;
+
+CREATE TABLE expense_daily_projection (
+    effective_date TEXT NOT NULL CHECK (effective_date = date(effective_date, '+0 days')),
+    bucket_id TEXT NOT NULL,
+    semantic_role TEXT NOT NULL CHECK (semantic_role = 'normal'),
+    valuation_state TEXT NOT NULL CHECK (valuation_state IN ('valued', 'unvalued')),
+    amount TEXT NOT NULL,
+    distinct_event_count INTEGER NOT NULL CHECK (distinct_event_count >= 0),
+    event_watermark INTEGER NOT NULL CHECK (event_watermark >= 0),
+    calculation_version TEXT NOT NULL,
+    PRIMARY KEY (effective_date, bucket_id, semantic_role, valuation_state)
+) STRICT;
+
+CREATE TABLE expense_daily_summary_projection (
+    effective_date TEXT NOT NULL CHECK (effective_date = date(effective_date, '+0 days')),
+    measure_role TEXT NOT NULL CHECK (measure_role IN ('expense', 'refund', 'reimbursement')),
+    valuation_state TEXT NOT NULL CHECK (valuation_state IN ('valued', 'unvalued')),
+    amount TEXT NOT NULL,
+    distinct_event_count INTEGER NOT NULL CHECK (distinct_event_count >= 0),
+    event_watermark INTEGER NOT NULL CHECK (event_watermark >= 0),
+    calculation_version TEXT NOT NULL,
+    PRIMARY KEY (effective_date, measure_role, valuation_state)
+) STRICT;
+
+CREATE TABLE expense_daily_event_bucket_projection (
+    effective_date TEXT NOT NULL CHECK (effective_date = date(effective_date, '+0 days')),
+    event_id TEXT NOT NULL REFERENCES business_events(event_id) ON UPDATE RESTRICT ON DELETE CASCADE,
+    bucket_id TEXT NOT NULL,
+    valuation_state TEXT NOT NULL CHECK (valuation_state IN ('valued', 'unvalued')),
+    event_watermark INTEGER NOT NULL CHECK (event_watermark >= 0),
+    calculation_version TEXT NOT NULL,
+    PRIMARY KEY (effective_date, event_id, bucket_id, valuation_state)
+) STRICT;
+
+CREATE INDEX idx_expense_daily_bucket
+    ON expense_daily_projection(effective_date, bucket_id, valuation_state);
+CREATE INDEX idx_expense_daily_event_bucket
+    ON expense_daily_event_bucket_projection(effective_date, bucket_id, event_id);
 
 CREATE TABLE holding_projection (
     portfolio_id TEXT NOT NULL REFERENCES portfolios(portfolio_id) ON UPDATE RESTRICT ON DELETE CASCADE,
@@ -518,7 +593,7 @@ END;
 
 pub fn schema_hash() -> String {
     use std::fmt::Write as _;
-    let digest = Sha256::digest(SCHEMA_V1.as_bytes());
+    let digest = Sha256::digest(SCHEMA_CURRENT.as_bytes());
     let hex = digest
         .iter()
         .fold(String::with_capacity(64), |mut output, byte| {

@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "The local main window can call only the eleven completed M2 setup and catalog operations.",
+  "description": "The local main window can call only the seventeen reviewed M2 setup, catalog, cash, and query operations.",
   "windows": ["main"],
   "permissions": [
     "core:app:default",
@@ -15,6 +15,12 @@
     "allow-save-portfolio",
     "allow-save-instrument",
     "allow-save-fx-revision",
-    "allow-save-price-revision"
+    "allow-save-price-revision",
+    "allow-preview-event",
+    "allow-post-event",
+    "allow-revise-event",
+    "allow-reverse-event",
+    "allow-get-expense-analysis",
+    "allow-get-activity"
   ]
 }

@@ -7,6 +7,7 @@ use super::types::{CalculationVersion, Currency, LocalDate, Sequence, UuidV7};
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PostingKind {
     Cash,
+    CashReversal,
     SecurityQuantity,
     SecurityCost,
     RealizedTradePnl,
@@ -19,6 +20,7 @@ impl PostingKind {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Cash => "cash",
+            Self::CashReversal => "cash-reversal",
             Self::SecurityQuantity => "security-quantity",
             Self::SecurityCost => "security-cost",
             Self::RealizedTradePnl => "realized-trade-pnl",
@@ -35,6 +37,7 @@ impl PostingKind {
     pub fn parse(value: &str) -> Result<Self, DomainError> {
         match value {
             "cash" => Ok(Self::Cash),
+            "cash-reversal" => Ok(Self::CashReversal),
             "security-quantity" => Ok(Self::SecurityQuantity),
             "security-cost" => Ok(Self::SecurityCost),
             "realized-trade-pnl" => Ok(Self::RealizedTradePnl),

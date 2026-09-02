@@ -14,6 +14,12 @@ import type {
   SaveFxRevisionRequest,
   SavePriceRevisionRequest,
   SaveResult,
+  CashEventRequest,
+  EventPreview,
+  PostedEvent,
+  ExpenseAnalysis,
+  DrilldownContext,
+  ActivityPage,
 } from "./contracts";
 
 class TauriLedgerKitCommands implements LedgerKitCommands {
@@ -40,6 +46,12 @@ class TauriLedgerKitCommands implements LedgerKitCommands {
   saveInstrument(request: SaveInstrumentRequest): Promise<SaveResult> { return invoke("save_instrument", { request }); }
   saveFxRevision(request: SaveFxRevisionRequest): Promise<SaveResult> { return invoke("save_fx_revision", { request }); }
   savePriceRevision(request: SavePriceRevisionRequest): Promise<SaveResult> { return invoke("save_price_revision", { request }); }
+  previewEvent(request: CashEventRequest): Promise<EventPreview> { return invoke("preview_event", { request }); }
+  postEvent(request: CashEventRequest): Promise<PostedEvent> { return invoke("post_event", { request }); }
+  reviseEvent(request: { targetEventId: string; reason: string; replacement: CashEventRequest }): Promise<PostedEvent> { return invoke("revise_event", { request }); }
+  reverseEvent(request: { targetEventId: string; reason: string; effectiveDate: string; sequence: number }): Promise<PostedEvent> { return invoke("reverse_event", { request }); }
+  getExpenseAnalysis(request: { startDate: string; endDate: string; eventWatermark?: number }): Promise<ExpenseAnalysis> { return invoke("get_expense_analysis", { request }); }
+  getActivity(request: { context: DrilldownContext; cursor?: number; limit: number }): Promise<ActivityPage> { return invoke("get_activity", { request }); }
 }
 
 export const ledgerKitCommands: LedgerKitCommands = new TauriLedgerKitCommands();

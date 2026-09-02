@@ -30,6 +30,19 @@ pub enum DomainError {
     PortfolioInstitutionMismatch,
     AccountBalanceNonzero,
     RevisionImmutable,
+    AmountMustBePositive,
+    AdjustmentZero,
+    CategoryDirectionMismatch,
+    TransferAccountSame,
+    TransferCurrencyMismatch,
+    ExchangeCurrencySame,
+    FeeAccountCurrencyMismatch,
+    FxOverrideReasonRequired,
+    RevisionReasonRequired,
+    RevisionTargetNotEffective,
+    ReversalReasonRequired,
+    EventAlreadyReversed,
+    RevisionChainCycle,
 }
 
 impl DomainError {
@@ -64,6 +77,19 @@ impl DomainError {
             Self::PortfolioInstitutionMismatch => "PORTFOLIO_INSTITUTION_MISMATCH",
             Self::AccountBalanceNonzero => "ACCOUNT_BALANCE_NONZERO",
             Self::RevisionImmutable => "MARKET_REVISION_IMMUTABLE",
+            Self::AmountMustBePositive => "AMOUNT_MUST_BE_POSITIVE",
+            Self::AdjustmentZero => "ADJUSTMENT_ZERO",
+            Self::CategoryDirectionMismatch => "CATEGORY_DIRECTION_MISMATCH",
+            Self::TransferAccountSame => "TRANSFER_ACCOUNT_SAME",
+            Self::TransferCurrencyMismatch => "TRANSFER_CURRENCY_MISMATCH",
+            Self::ExchangeCurrencySame => "EXCHANGE_CURRENCY_SAME",
+            Self::FeeAccountCurrencyMismatch => "FEE_ACCOUNT_CURRENCY_MISMATCH",
+            Self::FxOverrideReasonRequired => "FX_OVERRIDE_REASON_REQUIRED",
+            Self::RevisionReasonRequired => "REVISION_REASON_REQUIRED",
+            Self::RevisionTargetNotEffective => "REVISION_TARGET_NOT_EFFECTIVE",
+            Self::ReversalReasonRequired => "REVERSAL_REASON_REQUIRED",
+            Self::EventAlreadyReversed => "EVENT_ALREADY_REVERSED",
+            Self::RevisionChainCycle => "REVISION_CHAIN_CYCLE",
         }
     }
 }

@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+use std::cell::RefCell;
 use std::path::PathBuf;
 
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
@@ -22,10 +23,7 @@ use super::migration::{
     MigrationRunner, VerifiedSqliteMigrationBackup, inspect_read_only, validate_local_data_root,
     validate_schema,
 };
-use super::projection::{
-    CASH_PROJECTION_NAME, CASH_PROJECTION_VERSION, CashBalanceProjectionRebuilder,
-    ProjectionRebuilder, apply_cash_postings,
-};
+use super::projection::{CASH_PROJECTION_NAME, CASH_PROJECTION_VERSION};
 use super::schema::{SCHEMA_VERSION, schema_hash};
 
 pub const CALCULATION_VERSION: &str = "ledger-calculation-v1";
@@ -179,6 +177,7 @@ pub enum CommitFailpoint {
 
 pub struct LedgerStore {
     pub(super) connection: Connection,
+    pub(super) expense_cache: RefCell<Vec<(String, crate::application::cash::ExpenseAnalysis)>>,
 }
 
 impl LedgerStore {
@@ -217,21 +216,33 @@ impl LedgerStore {
             .map_err(map_sqlite_error)?;
         transaction
             .execute(
+                "INSERT INTO projection_metadata(projection_name,projection_version,calculation_version,event_watermark,available) VALUES
+                 ('monthly-cash-flow','monthly-cash-flow-projection-v1',?1,0,1),
+                 ('cash-data-quality','cash-data-quality-projection-v1',?1,0,1),
+                 ('expense-daily','expense-daily-projection-v1',?1,0,1)",
+                [CALCULATION_VERSION],
+            )
+            .map_err(map_sqlite_error)?;
+        transaction
+            .execute(
                 "INSERT INTO backup_status(singleton_id,protection_state,external_target_configured) VALUES(1,'not-configured',0)",
                 [],
             )
             .map_err(map_sqlite_error)?;
         transaction
             .execute(
-                "INSERT INTO migration_history(schema_version,applied_at_utc,application_version,schema_hash) VALUES(1,CURRENT_TIMESTAMP,?1,?2)",
-                [env!("CARGO_PKG_VERSION"), &schema_hash()],
+                "INSERT INTO migration_history(schema_version,applied_at_utc,application_version,schema_hash) VALUES(?1,CURRENT_TIMESTAMP,?2,?3)",
+                params![SCHEMA_VERSION, env!("CARGO_PKG_VERSION"), schema_hash()],
             )
             .map_err(map_sqlite_error)?;
         transaction
             .commit()
             .map_err(|_| ApplicationError::TransactionFailed)?;
         validate_schema(&connection)?;
-        Ok(Self { connection })
+        Ok(Self {
+            connection,
+            expense_cache: RefCell::new(Vec::new()),
+        })
     }
 
     fn from_open_connection(mut connection: Connection) -> ApplicationResult<Self> {
@@ -253,7 +264,10 @@ impl LedgerStore {
             return Err(ApplicationError::SchemaValidationFailed);
         }
         ensure_cash_projection(&mut connection)?;
-        Ok(Self { connection })
+        Ok(Self {
+            connection,
+            expense_cache: RefCell::new(Vec::new()),
+        })
     }
 
     fn status(&self) -> ApplicationResult<LedgerStatus> {
@@ -370,13 +384,7 @@ impl LedgerStore {
         let watermark = ProjectionWatermark::new(
             u64::try_from(event_watermark).map_err(|_| ApplicationError::TransactionFailed)?,
         )?;
-        apply_cash_postings(&transaction, &prepared.postings, watermark)?;
-        transaction
-            .execute(
-                "UPDATE projection_metadata SET event_watermark=?1,calculation_version=?2,available=1 WHERE projection_name=?3",
-                params![i64::try_from(watermark.get()).map_err(|_| ApplicationError::TransactionFailed)?, prepared.calculation_version.as_str(), CASH_PROJECTION_NAME],
-            )
-            .map_err(map_sqlite_error)?;
+        super::cash_store::rebuild_cash_derived(&transaction, watermark.get())?;
         maybe_fail(failpoint, CommitFailpoint::AfterWatermark)?;
         transaction
             .commit()
@@ -389,11 +397,22 @@ impl LedgerStore {
             .connection
             .transaction()
             .map_err(|_| ApplicationError::TransactionFailed)?;
-        let watermark =
-            CashBalanceProjectionRebuilder.rebuild(&transaction, CALCULATION_VERSION)?;
+        let watermark = ProjectionWatermark::new(
+            transaction
+                .query_row(
+                    "SELECT COALESCE(MAX(event_order),0) FROM business_events",
+                    [],
+                    |row| row.get::<_, i64>(0),
+                )
+                .map_err(|_| ApplicationError::TransactionFailed)?
+                .try_into()
+                .map_err(|_| ApplicationError::TransactionFailed)?,
+        )?;
+        super::cash_store::rebuild_cash_derived(&transaction, watermark.get())?;
         transaction
             .commit()
             .map_err(|_| ApplicationError::TransactionFailed)?;
+        self.expense_cache.borrow_mut().clear();
         Ok(watermark)
     }
 
@@ -425,7 +444,11 @@ fn ensure_cash_projection(connection: &mut Connection) -> ApplicationResult<()> 
     };
     let cash_posting_count: i64 = connection
         .query_row(
-            "SELECT COUNT(*) FROM ledger_postings WHERE posting_kind='cash'",
+            "SELECT COUNT(*)
+             FROM ledger_postings p JOIN business_events e ON e.event_id=p.event_id
+             WHERE p.posting_kind IN ('cash','cash-reversal') AND e.event_type<>'Reversal'
+               AND NOT EXISTS(SELECT 1 FROM business_events n WHERE n.supersedes_event_id=e.event_id)
+               AND NOT EXISTS(SELECT 1 FROM business_events r WHERE r.reverses_event_id=e.event_id)",
             [],
             |row| row.get(0),
         )
@@ -435,16 +458,27 @@ fn ensure_cash_projection(connection: &mut Connection) -> ApplicationResult<()> 
             row.get(0)
         })
         .map_err(|_| ApplicationError::SchemaValidationFailed)?;
+    let derived_ready: bool = connection
+        .query_row(
+            "SELECT COUNT(*)=3 FROM projection_metadata WHERE projection_name IN ('monthly-cash-flow','cash-data-quality','expense-daily') AND calculation_version=?1 AND event_watermark=?2 AND available=1",
+            params![CALCULATION_VERSION,event_watermark],
+            |row| row.get(0),
+        )
+        .map_err(|_| ApplicationError::SchemaValidationFailed)?;
     let needs_rebuild = projection_version != CASH_PROJECTION_VERSION
         || calculation_version != CALCULATION_VERSION
         || projection_watermark != event_watermark
         || !available
-        || cash_posting_count > 0 && cash_projection_count == 0;
+        || cash_posting_count > 0 && cash_projection_count == 0
+        || !derived_ready;
     if needs_rebuild {
         let transaction = connection
             .transaction()
             .map_err(|_| ApplicationError::TransactionFailed)?;
-        CashBalanceProjectionRebuilder.rebuild(&transaction, CALCULATION_VERSION)?;
+        super::cash_store::rebuild_cash_derived(
+            &transaction,
+            u64::try_from(event_watermark).map_err(|_| ApplicationError::TransactionFailed)?,
+        )?;
         transaction
             .commit()
             .map_err(|_| ApplicationError::TransactionFailed)?;

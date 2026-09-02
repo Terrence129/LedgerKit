@@ -64,8 +64,14 @@ const privilegedPermissions = capability.permissions.filter((item) => item.start
 if (privilegedPermissions.length > 25) fail(`privileged IPC budget exceeded: ${privilegedPermissions.length}/25`);
 const expectedPermissions = [
   "allow-create-ledger",
+  "allow-get-activity",
+  "allow-get-expense-analysis",
   "allow-get-ledger-status",
   "allow-open-ledger",
+  "allow-post-event",
+  "allow-preview-event",
+  "allow-reverse-event",
+  "allow-revise-event",
   "allow-save-cash-account",
   "allow-save-category",
   "allow-save-fx-revision",
@@ -76,7 +82,7 @@ const expectedPermissions = [
   "allow-update-settings",
 ];
 if (JSON.stringify(privilegedPermissions.sort()) !== JSON.stringify(expectedPermissions)) {
-  fail("M2 catalog capability set differs from the eleven reviewed operations");
+  fail("M2 cash capability set differs from the seventeen reviewed operations");
 }
 
 const sourceFiles = walkFiles(join(appRoot, "src")).filter((path) => /\.(ts|tsx)$/.test(path));
@@ -114,15 +120,16 @@ if (/\b(?:tauri|serde|infrastructure|application)::/.test(domainSources)) fail("
 const applicationSources = walkFiles(join(appRoot, "src-tauri/src/application")).map((path) => readFileSync(path, "utf8")).join("\n");
 if (/\b(?:tauri|infrastructure)::/.test(applicationSources)) fail("Application depends on UI or Infrastructure");
 
-const acceptedM1Adrs = [
+const acceptedImplementationAdrs = [
   "ADR-0001-tauri-react-rust.md",
   "ADR-0007-rust-xlsx-adapter.md",
   "ADR-0008-live-database-and-portable-backup-encryption.md",
   "ADR-0009-system-webview2-thin-package.md",
   "ADR-0010-p0-manual-update-and-unsigned-beta.md",
+  "ADR-0015-rebuildable-expense-daily-projection.md",
 ];
 const adrIndex = readFileSync(join(repositoryRoot, "docs/adr/README.md"), "utf8");
-for (const adrName of acceptedM1Adrs) {
+for (const adrName of acceptedImplementationAdrs) {
   const adrPath = join(repositoryRoot, "docs/adr", adrName);
   const adrText = readFileSync(adrPath, "utf8");
   if (!adrText.includes("> 状态：Accepted") || !adrText.includes("> 决策者：项目所有者") || !adrText.includes("> 授权：")) {

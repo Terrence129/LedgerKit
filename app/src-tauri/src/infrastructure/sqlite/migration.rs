@@ -8,7 +8,7 @@ use crate::application::error::{ApplicationError, ApplicationResult};
 use crate::application::ledger::MigrationBackupPort;
 
 use super::schema::{
-    APPLICATION_ID, REQUIRED_INDEXES, REQUIRED_TABLES, REQUIRED_TRIGGERS, SCHEMA_V1,
+    APPLICATION_ID, REQUIRED_INDEXES, REQUIRED_TABLES, REQUIRED_TRIGGERS, SCHEMA_CURRENT,
     SCHEMA_VERSION, schema_hash,
 };
 
@@ -38,7 +38,7 @@ impl MigrationRunner {
         let transaction = connection
             .transaction()
             .map_err(|_| ApplicationError::MigrationFailed)?;
-        apply_schema_v1(&transaction)?;
+        apply_current_schema(&transaction)?;
         validate_schema(&transaction)?;
         transaction
             .commit()
@@ -80,7 +80,7 @@ impl MigrationRunner {
         let transaction = connection
             .transaction()
             .map_err(|_| ApplicationError::MigrationFailed)?;
-        migrate_to_v1(&transaction, identity.schema_version)?;
+        migrate_to_current(&transaction, identity.schema_version)?;
         if failpoint == MigrationFailpoint::BeforeValidation {
             return Err(ApplicationError::MigrationFailed);
         }
@@ -218,9 +218,9 @@ fn configure_writable(connection: &Connection) -> ApplicationResult<()> {
         .map_err(|_| ApplicationError::StorageUnavailable)
 }
 
-fn apply_schema_v1(transaction: &Transaction<'_>) -> ApplicationResult<()> {
+fn apply_current_schema(transaction: &Transaction<'_>) -> ApplicationResult<()> {
     transaction
-        .execute_batch(SCHEMA_V1)
+        .execute_batch(SCHEMA_CURRENT)
         .map_err(|_| ApplicationError::MigrationFailed)?;
     let application_id = APPLICATION_ID;
     transaction
@@ -230,10 +230,15 @@ fn apply_schema_v1(transaction: &Transaction<'_>) -> ApplicationResult<()> {
         .map_err(|_| ApplicationError::MigrationFailed)
 }
 
-fn migrate_to_v1(transaction: &Transaction<'_>, source_version: u32) -> ApplicationResult<()> {
-    if source_version != 0 {
-        return Err(ApplicationError::MigrationFailed);
+fn migrate_to_current(transaction: &Transaction<'_>, source_version: u32) -> ApplicationResult<()> {
+    match source_version {
+        0 => migrate_legacy_to_current(transaction),
+        1 => migrate_v1_to_v2(transaction),
+        _ => Err(ApplicationError::MigrationFailed),
     }
+}
+
+fn migrate_legacy_to_current(transaction: &Transaction<'_>) -> ApplicationResult<()> {
     let legacy_settings = transaction
         .query_row(
             "SELECT base_currency, ui_locale FROM legacy_settings WHERE singleton_id = 1",
@@ -244,7 +249,7 @@ fn migrate_to_v1(transaction: &Transaction<'_>, source_version: u32) -> Applicat
     transaction
         .execute_batch("ALTER TABLE legacy_settings RENAME TO migration_v0_settings;")
         .map_err(|_| ApplicationError::MigrationFailed)?;
-    apply_schema_v1(transaction)?;
+    apply_current_schema(transaction)?;
     let ledger_id = crate::domain::types::UuidV7::new()?.to_string();
     transaction
         .execute(
@@ -260,13 +265,18 @@ fn migrate_to_v1(transaction: &Transaction<'_>, source_version: u32) -> Applicat
         .map_err(|_| ApplicationError::MigrationFailed)?;
     transaction
         .execute(
-            "INSERT INTO migration_history(schema_version, applied_at_utc, application_version, schema_hash) VALUES (1, CURRENT_TIMESTAMP, ?1, ?2)",
-            [env!("CARGO_PKG_VERSION"), &schema_hash()],
+            "INSERT INTO migration_history(schema_version, applied_at_utc, application_version, schema_hash) VALUES (?1, CURRENT_TIMESTAMP, ?2, ?3)",
+            rusqlite::params![SCHEMA_VERSION, env!("CARGO_PKG_VERSION"), schema_hash()],
         )
         .map_err(|_| ApplicationError::MigrationFailed)?;
     transaction
         .execute(
-            "INSERT INTO projection_metadata(projection_name,projection_version,calculation_version,event_watermark,available) VALUES('cash-balance','cash-balance-projection-v1','ledger-calculation-v1',0,1),('holdings','holding-projection-v1','ledger-calculation-v1',0,1)",
+            "INSERT INTO projection_metadata(projection_name,projection_version,calculation_version,event_watermark,available) VALUES
+             ('cash-balance','cash-balance-projection-v1','ledger-calculation-v1',0,1),
+             ('holdings','holding-projection-v1','ledger-calculation-v1',0,1),
+             ('monthly-cash-flow','monthly-cash-flow-projection-v1','ledger-calculation-v1',0,1),
+             ('cash-data-quality','cash-data-quality-projection-v1','ledger-calculation-v1',0,1),
+             ('expense-daily','expense-daily-projection-v1','ledger-calculation-v1',0,1)",
             [],
         )
         .map_err(|_| ApplicationError::MigrationFailed)?;
@@ -274,6 +284,127 @@ fn migrate_to_v1(transaction: &Transaction<'_>, source_version: u32) -> Applicat
         .execute(
             "INSERT INTO backup_status(singleton_id,protection_state,external_target_configured) VALUES(1,'not-configured',0)",
             [],
+        )
+        .map_err(|_| ApplicationError::MigrationFailed)?;
+    Ok(())
+}
+
+#[allow(clippy::too_many_lines)] // One atomic SQL batch defines the complete v1-to-v2 boundary.
+fn migrate_v1_to_v2(transaction: &Transaction<'_>) -> ApplicationResult<()> {
+    transaction
+        .execute_batch(
+            "DROP TRIGGER trg_freeze_cash_account_currency;
+            DROP INDEX idx_ledger_postings_event_kind;
+            ALTER TABLE ledger_postings RENAME TO ledger_postings_v1;
+            CREATE TABLE ledger_postings (
+                posting_id TEXT PRIMARY KEY,
+                event_id TEXT NOT NULL REFERENCES business_events(event_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
+                posting_ordinal INTEGER NOT NULL CHECK (posting_ordinal > 0),
+                posting_kind TEXT NOT NULL CHECK (posting_kind IN (
+                    'cash', 'cash-reversal', 'security-quantity', 'security-cost', 'realized-trade-pnl',
+                    'net-dividend', 'independent-expense'
+                )),
+                account_id TEXT REFERENCES cash_accounts(account_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
+                portfolio_id TEXT REFERENCES portfolios(portfolio_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
+                instrument_id TEXT REFERENCES security_instruments(instrument_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
+                quantity_delta TEXT NOT NULL,
+                currency TEXT NOT NULL CHECK (length(currency) = 3 AND currency = upper(currency)),
+                base_value TEXT,
+                base_currency TEXT NOT NULL CHECK (length(base_currency) = 3 AND base_currency = upper(base_currency)),
+                calculation_version TEXT NOT NULL,
+                CHECK (account_id IS NOT NULL OR instrument_id IS NOT NULL),
+                UNIQUE (event_id, posting_ordinal)
+            ) STRICT;
+            INSERT INTO ledger_postings(
+                posting_id,event_id,posting_ordinal,posting_kind,account_id,portfolio_id,instrument_id,
+                quantity_delta,currency,base_value,base_currency,calculation_version
+            )
+            SELECT posting_id,event_id,posting_ordinal,posting_kind,account_id,portfolio_id,instrument_id,
+                   quantity_delta,currency,base_value,base_currency,calculation_version
+            FROM ledger_postings_v1;
+            DROP TABLE ledger_postings_v1;
+            CREATE INDEX idx_ledger_postings_event_kind
+                ON ledger_postings(event_id, posting_kind);
+            CREATE TRIGGER trg_freeze_cash_account_currency
+            BEFORE UPDATE OF currency ON cash_accounts
+            WHEN OLD.currency <> NEW.currency AND EXISTS (
+                SELECT 1 FROM ledger_postings WHERE account_id = OLD.account_id LIMIT 1
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'CASH_ACCOUNT_CURRENCY_FROZEN');
+            END;
+            CREATE TABLE cash_event_fees (
+                event_id TEXT PRIMARY KEY REFERENCES business_events(event_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
+                fee_account_id TEXT NOT NULL REFERENCES cash_accounts(account_id) ON UPDATE RESTRICT ON DELETE RESTRICT,
+                fee_amount TEXT NOT NULL
+            ) STRICT;
+            CREATE INDEX idx_cash_event_fees_event ON cash_event_fees(event_id, fee_account_id);
+            CREATE TABLE monthly_cash_flow_projection (
+                month TEXT NOT NULL CHECK (length(month) = 7),
+                currency TEXT NOT NULL CHECK (length(currency) = 3 AND currency = upper(currency)),
+                income TEXT NOT NULL,
+                expense TEXT NOT NULL,
+                event_watermark INTEGER NOT NULL CHECK (event_watermark >= 0),
+                calculation_version TEXT NOT NULL,
+                PRIMARY KEY (month, currency)
+            ) STRICT;
+            CREATE TABLE cash_data_quality_projection (
+                event_id TEXT NOT NULL REFERENCES business_events(event_id) ON UPDATE RESTRICT ON DELETE CASCADE,
+                issue_code TEXT NOT NULL,
+                currency TEXT NOT NULL CHECK (length(currency) = 3 AND currency = upper(currency)),
+                target_date TEXT NOT NULL CHECK (target_date = date(target_date, '+0 days')),
+                event_watermark INTEGER NOT NULL CHECK (event_watermark >= 0),
+                calculation_version TEXT NOT NULL,
+                PRIMARY KEY (event_id, issue_code, currency)
+            ) STRICT;
+            CREATE TABLE expense_daily_projection (
+                effective_date TEXT NOT NULL CHECK (effective_date = date(effective_date, '+0 days')),
+                bucket_id TEXT NOT NULL,
+                semantic_role TEXT NOT NULL CHECK (semantic_role = 'normal'),
+                valuation_state TEXT NOT NULL CHECK (valuation_state IN ('valued', 'unvalued')),
+                amount TEXT NOT NULL,
+                distinct_event_count INTEGER NOT NULL CHECK (distinct_event_count >= 0),
+                event_watermark INTEGER NOT NULL CHECK (event_watermark >= 0),
+                calculation_version TEXT NOT NULL,
+                PRIMARY KEY (effective_date, bucket_id, semantic_role, valuation_state)
+            ) STRICT;
+            CREATE TABLE expense_daily_summary_projection (
+                effective_date TEXT NOT NULL CHECK (effective_date = date(effective_date, '+0 days')),
+                measure_role TEXT NOT NULL CHECK (measure_role IN ('expense', 'refund', 'reimbursement')),
+                valuation_state TEXT NOT NULL CHECK (valuation_state IN ('valued', 'unvalued')),
+                amount TEXT NOT NULL,
+                distinct_event_count INTEGER NOT NULL CHECK (distinct_event_count >= 0),
+                event_watermark INTEGER NOT NULL CHECK (event_watermark >= 0),
+                calculation_version TEXT NOT NULL,
+                PRIMARY KEY (effective_date, measure_role, valuation_state)
+            ) STRICT;
+            CREATE TABLE expense_daily_event_bucket_projection (
+                effective_date TEXT NOT NULL CHECK (effective_date = date(effective_date, '+0 days')),
+                event_id TEXT NOT NULL REFERENCES business_events(event_id) ON UPDATE RESTRICT ON DELETE CASCADE,
+                bucket_id TEXT NOT NULL,
+                valuation_state TEXT NOT NULL CHECK (valuation_state IN ('valued', 'unvalued')),
+                event_watermark INTEGER NOT NULL CHECK (event_watermark >= 0),
+                calculation_version TEXT NOT NULL,
+                PRIMARY KEY (effective_date, event_id, bucket_id, valuation_state)
+            ) STRICT;
+            CREATE INDEX idx_expense_daily_bucket
+                ON expense_daily_projection(effective_date, bucket_id, valuation_state);
+            CREATE INDEX idx_expense_daily_event_bucket
+                ON expense_daily_event_bucket_projection(effective_date, bucket_id, event_id);
+            INSERT INTO projection_metadata(projection_name,projection_version,calculation_version,event_watermark,available)
+            VALUES
+              ('monthly-cash-flow','monthly-cash-flow-projection-v1','ledger-calculation-v1',0,1),
+              ('cash-data-quality','cash-data-quality-projection-v1','ledger-calculation-v1',0,1),
+              ('expense-daily','expense-daily-projection-v1','ledger-calculation-v1',0,1);",
+        )
+        .map_err(|_| ApplicationError::MigrationFailed)?;
+    transaction
+        .execute_batch(&format!("PRAGMA user_version = {SCHEMA_VERSION};"))
+        .map_err(|_| ApplicationError::MigrationFailed)?;
+    transaction
+        .execute(
+            "INSERT INTO migration_history(schema_version,applied_at_utc,application_version,schema_hash) VALUES(?1,CURRENT_TIMESTAMP,?2,?3)",
+            rusqlite::params![SCHEMA_VERSION, env!("CARGO_PKG_VERSION"), schema_hash()],
         )
         .map_err(|_| ApplicationError::MigrationFailed)?;
     Ok(())
@@ -345,7 +476,7 @@ mod tests {
             source_schema_version: u32,
         ) -> ApplicationResult<PathBuf> {
             self.called = true;
-            assert_eq!(source_schema_version, 0);
+            assert!(source_schema_version < SCHEMA_VERSION);
             fs::copy(source, &self.path).map_err(|_| ApplicationError::MigrationBackupFailed)?;
             Ok(self.path.clone())
         }
@@ -358,6 +489,66 @@ mod tests {
                 "PRAGMA application_id = {APPLICATION_ID}; PRAGMA user_version = {version}; CREATE TABLE legacy_settings(singleton_id INTEGER PRIMARY KEY, base_currency TEXT NOT NULL, ui_locale TEXT NOT NULL); INSERT INTO legacy_settings VALUES(1, 'CNY', 'zh-CN');"
             ))
             .unwrap();
+    }
+
+    fn v1_database(path: &Path) {
+        let connection = Connection::open(path).unwrap();
+        connection.execute_batch(SCHEMA_CURRENT).unwrap();
+        connection
+            .execute_batch(
+                "INSERT INTO cash_accounts(account_id,business_id,name,purpose,currency,enabled,created_at_utc,updated_at_utc)
+                 VALUES('v1-account','v1-account','V1 account','test','CNY',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
+                 INSERT INTO business_events(event_id,event_type,effective_date,sequence,status,revision,created_at_utc,calculation_version)
+                 VALUES('v1-event','Expense','2026-09-01',1,'posted',1,CURRENT_TIMESTAMP,'ledger-calculation-v1');
+                 INSERT INTO ledger_postings(posting_id,event_id,posting_ordinal,posting_kind,account_id,quantity_delta,currency,base_value,base_currency,calculation_version)
+                 VALUES('v1-posting','v1-event',1,'cash','v1-account','-1','CNY','-1','CNY','ledger-calculation-v1');",
+            )
+            .unwrap();
+        connection
+            .execute_batch(&format!(
+                "DROP INDEX idx_expense_daily_event_bucket;
+                 DROP INDEX idx_expense_daily_bucket;
+                 DROP TABLE expense_daily_event_bucket_projection;
+                 DROP TABLE expense_daily_summary_projection;
+                 DROP TABLE expense_daily_projection;
+                 DROP TABLE cash_data_quality_projection;
+                 DROP TABLE monthly_cash_flow_projection;
+                 DROP INDEX idx_cash_event_fees_event;
+                 DROP TABLE cash_event_fees;
+                 PRAGMA application_id = {APPLICATION_ID};
+                 PRAGMA user_version = 1;"
+            ))
+            .unwrap();
+    }
+
+    #[test]
+    fn v1_is_backed_up_and_forward_migrated_to_v2() {
+        let directory = tempdir().unwrap();
+        let database = directory.path().join("ledger.sqlite3");
+        v1_database(&database);
+        let mut backup = RecordingBackup {
+            called: false,
+            path: directory.path().join("v1-backup.sqlite3"),
+        };
+        let connection = MigrationRunner::open_existing(&database, &mut backup).unwrap();
+        assert!(backup.called);
+        validate_schema(&connection).unwrap();
+        let migrated: i64 = connection
+            .query_row(
+                "SELECT COUNT(*) FROM migration_history WHERE schema_version=2",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(migrated, 1);
+        let preserved: String = connection
+            .query_row(
+                "SELECT posting_kind FROM ledger_postings WHERE posting_id='v1-posting'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(preserved, "cash");
     }
 
     #[test]

@@ -4,6 +4,10 @@ use crate::domain::catalog::{BusinessId, CatalogText, CategoryKind, SemanticRole
 use crate::domain::settings::UiLocale;
 use crate::domain::types::{Currency, LocalDate, UuidV7};
 
+use super::cash::{
+    ActivityPage, ActivityQuery, CashEventInput, CashPort, EventPreview, ExpenseAnalysis,
+    PostedEvent, ReversalInput, RevisionInput,
+};
 use super::catalog::{
     CashAccount, CatalogPort, CatalogSnapshot, Category, FxRateRevision, Institution, Portfolio,
     SecurityInstrument, SecurityPriceRevision,
@@ -14,12 +18,12 @@ use super::ledger::{
 };
 use super::settings::{SettingsError, SettingsRepository};
 
-pub struct ApplicationFacade<L: LedgerPort + CatalogPort, S: SettingsRepository> {
+pub struct ApplicationFacade<L: LedgerPort + CatalogPort + CashPort, S: SettingsRepository> {
     ledger: L,
     shell_settings: S,
 }
 
-impl<L: LedgerPort + CatalogPort, S: SettingsRepository> ApplicationFacade<L, S> {
+impl<L: LedgerPort + CatalogPort + CashPort, S: SettingsRepository> ApplicationFacade<L, S> {
     pub const fn new(ledger: L, shell_settings: S) -> Self {
         Self {
             ledger,
@@ -323,6 +327,71 @@ impl<L: LedgerPort + CatalogPort, S: SettingsRepository> ApplicationFacade<L, S>
         let id = value.revision_id.to_string();
         self.ledger.save_price_revision(&value)?;
         Ok(id)
+    }
+
+    /// Previews authoritative postings and frozen FX choices without mutation.
+    ///
+    /// # Errors
+    ///
+    /// Returns stable validation, catalog, or storage errors.
+    pub fn preview_event(&self, input: &CashEventInput) -> ApplicationResult<EventPreview> {
+        self.ledger.preview_event(input)
+    }
+
+    /// Posts a validated cash event atomically.
+    ///
+    /// # Errors
+    ///
+    /// Returns stable validation, catalog, or transaction errors.
+    pub fn post_event(&mut self, input: &CashEventInput) -> ApplicationResult<PostedEvent> {
+        self.ledger.post_event(input)
+    }
+
+    /// Appends a complete replacement for the current effective event leaf.
+    ///
+    /// # Errors
+    ///
+    /// Returns stable target, validation, or transaction errors.
+    pub fn revise_event(&mut self, input: &RevisionInput) -> ApplicationResult<PostedEvent> {
+        self.ledger.revise_event(input)
+    }
+
+    /// Appends an exact posting reversal for the current effective event leaf.
+    ///
+    /// # Errors
+    ///
+    /// Returns stable target, validation, or transaction errors.
+    pub fn reverse_event(&mut self, input: &ReversalInput) -> ApplicationResult<PostedEvent> {
+        self.ledger.reverse_event(input)
+    }
+
+    /// Returns the versioned P0 expense query result from one SQLite snapshot.
+    ///
+    /// # Errors
+    ///
+    /// Returns stable date, storage, or response-bound errors.
+    pub fn get_expense_analysis(
+        &self,
+        start_date: &str,
+        end_date: &str,
+        event_watermark: Option<u64>,
+    ) -> ApplicationResult<ExpenseAnalysis> {
+        let start_date = LocalDate::parse(start_date)?;
+        let end_date = LocalDate::parse(end_date)?;
+        if start_date > end_date {
+            return Err(ApplicationError::ExpenseDateRangeInvalid);
+        }
+        self.ledger
+            .get_expense_analysis(&start_date, &end_date, event_watermark)
+    }
+
+    /// Returns one bounded cursor page using the same effective-event policy.
+    ///
+    /// # Errors
+    ///
+    /// Returns stable cursor, limit, date, or storage errors.
+    pub fn get_activity(&self, query: &ActivityQuery) -> ApplicationResult<ActivityPage> {
+        self.ledger.get_activity(query)
     }
 
     fn save_shell_locale(&self, locale: UiLocale) -> ApplicationResult<()> {

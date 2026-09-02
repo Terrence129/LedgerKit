@@ -1,6 +1,6 @@
 # Agent Context
 
-> 状态：M2 Catalog 完成，Ready for M2 Cash
+> 状态：M2 Cash Core 完成，Ready for M2 UI
 >
 > M0 状态：完成
 >
@@ -44,7 +44,6 @@ LedgerKit 是单用户、本地优先、隐私友好的多币种现金、投资�
 
 ## 暂定方案（尚未 Accepted）
 
-- Tauri 样机已验证可重建支出日聚合投影能满足 10 万事件门禁；该方案仅记录于 Proposed ADR-0015，未获接受，不得作为后续权威实现依据。
 - 本位币出现依赖记录后不可原地修改；需要新账本和显式迁移。
 
 不得把本节的暂定方案描述成最终结论。
@@ -62,19 +61,20 @@ LedgerKit 是单用户、本地优先、隐私友好的多币种现金、投资�
 ## 当前工作区
 
 - 已有完整开发计划书和 agent 工作区规范。
-- 已有 [`implementation-prompts/README.md`](implementation-prompts/README.md) 索引的 14 阶段串行实现提示词包，覆盖 M0 决策、M1 双栈门禁、M2–M6 实现和 Beta 候选审计；任务 01–06 已完成，任务 07–14 尚未执行。
+- 已有 [`implementation-prompts/README.md`](implementation-prompts/README.md) 索引的 14 阶段串行实现提示词包，覆盖 M0 决策、M1 双栈门禁、M2–M6 实现和 Beta 候选审计；任务 01–07 已完成，任务 08–14 尚未执行。
 - GitHub 公开仓库为 `Terrence129/LedgerKit`，默认分支为 `main`。
-- 已创建十三份 Accepted ADR、Proposed ADR-0015、31 组正式合成黄金 fixture、JSON Schema、确定性生成器和 M0 检查命令；生产 [`Schema v1`](persistence-schema-v1.md) 已覆盖设置、主数据、typed event detail、市场修订/FxResolution、posting/audit、投影元数据、import staging、估值快照和备份状态。
-- 已建立 `app` 生产骨架、锁文件、固定 Node/Rust 工具链、严格 TypeScript/Clippy、最小 unsafe allowlist、两套键一致本地化资源、持久化即时语言切换，以及首次设置/设置与数据页面。当前共有十一项已实现具名 IPC：四项账本/设置操作和七项 Catalog/Market Data 写入；它们不接受任意数据库路径、SQL 或 posting。
+- 已创建十四份 Accepted ADR、31 组正式合成黄金 fixture、JSON Schema、确定性生成器和 M0 检查命令；当前生产 [`Schema v2`](persistence-schema-v1.md) 已覆盖设置、主数据、typed event detail、市场修订/FxResolution、posting/audit、import staging、估值快照、备份状态，以及现金/支出可重建投影。
+- 已建立 `app` 生产骨架、锁文件、固定 Node/Rust 工具链、严格 TypeScript/Clippy、最小 unsafe allowlist、两套键一致本地化资源、持久化即时语言切换，以及首次设置/设置与数据页面。当前共有十七项已实现具名 IPC，新增现金预览/过账/修订/冲正、支出分析和活动分页；它们不接受任意数据库路径、SQL 或 posting。
 - [`Catalog 与市场数据契约 v1`](catalog-and-market-data-v1.md) 已实现机构、现金账户、分类、组合、证券稳定 ID 与允许字段更新，非零账户停用阻断、组合/结算机构一致性、不可变汇率/价格修订、事务化 active 切换、非未来 as-of 解析及带稳定修复上下文的数据质量基础结果。
 - Rust Core 已实现 ADR-0004 Decimal/Money/Currency、LocalDate、UUIDv7、Sequence、CalculationVersion、ProjectionWatermark 和稳定 DomainError；SQLite 已实现只读识别、备份端口、单事务只前进 migration、事务协调器、规范 posting/hash 与现金投影清空重建框架。活库固定在 OS 本地应用数据目录，本位币及有依赖的账户/标的币种由 Domain/Schema 双重阻断原地重解释。
+- M2 Cash Core 已实现 OpeningBalance、Income/Expense、Adjustment、Transfer、CurrencyExchange 的高层命令，冻结交易/费用 FX resolution、修订/冲正、现金余额/月度收支/数据质量投影，以及 `expense-analysis-query/v1` 和有界游标活动下钻。生产事实扫描未达到 10 万事件门禁后，项目所有者接受 ADR-0015；可删除重建的日聚合投影两次复测为冷查询 0–1 ms、warm P95 0 ms、查询加序列化 0 ms、响应 2,457 bytes。
 - 已建立统一 `tools/check.ps1`、`tools/test.ps1`、`tools/build.ps1` 和 Windows CI；生产依赖清单见 [`production-dependencies.md`](production-dependencies.md)。一次性 `spikes/` 源码已从当前树删除，仍保留在 Git 历史。
 
 ## 下一步建议
 
-1. 按串行协议执行任务 07，在既有 Schema v1、Catalog 与 typed Facade 上实现现金事件、修订/冲正、现金投影和 `ExpenseAnalysisQuery`；本任务不自动启动该阶段。
-2. 后续 M2 必须复用现有 `EventTransactionPort`、Decimal 类型、migration runner 和投影重建框架，不在 UI、导入器或 SQL 复制财务规则。
-3. ADR-0015 仍为 Proposed；不得因为样机性能结果自行把支出日聚合投影变成生产架构。
+1. 按串行协议执行任务 08，在现有 typed Facade 上实现现金录入、预览、活动时间线和设置/主数据 UI；UI 不重算财务结果。
+2. 后续 M2/M3 必须复用现有 `EventTransactionPort`、Decimal 类型、migration runner 和投影重建框架，不在 UI、导入器或 SQL 复制财务规则。
+3. 支出页面与后续导出必须只消费 `expense-analysis-query/v1`；日聚合投影是 ADR-0015 约束的派生结构，不得变成可直接写入的第二事实源。
 
 ## 更新规则
 

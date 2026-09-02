@@ -27,6 +27,10 @@ pub enum ApplicationError {
     CatalogEntityNotFound,
     CatalogDuplicate,
     CatalogReferenceInvalid,
+    ActivityLimitInvalid,
+    ActivityCursorInvalid,
+    ExpenseDateRangeInvalid,
+    ResponseTooLarge,
 }
 
 impl ApplicationError {
@@ -52,6 +56,10 @@ impl ApplicationError {
             Self::CatalogEntityNotFound => "CATALOG_ENTITY_NOT_FOUND",
             Self::CatalogDuplicate => "CATALOG_DUPLICATE",
             Self::CatalogReferenceInvalid => "CATALOG_REFERENCE_INVALID",
+            Self::ActivityLimitInvalid => "ACTIVITY_LIMIT_INVALID",
+            Self::ActivityCursorInvalid => "ACTIVITY_CURSOR_INVALID",
+            Self::ExpenseDateRangeInvalid => "EXPENSE_DATE_RANGE_INVALID",
+            Self::ResponseTooLarge => "RESPONSE_TOO_LARGE",
         }
     }
 
@@ -73,6 +81,16 @@ impl ApplicationError {
             Self::Domain(DomainError::PortfolioInstitutionMismatch) => Some("settlementAccountId"),
             Self::Domain(DomainError::AccountBalanceNonzero) => Some("enabled"),
             Self::Domain(DomainError::RevisionImmutable) => Some("revisionId"),
+            Self::Domain(DomainError::AmountMustBePositive | DomainError::AdjustmentZero) => {
+                Some("amount")
+            }
+            Self::Domain(DomainError::FxOverrideReasonRequired) => Some("fxOverrides"),
+            Self::Domain(
+                DomainError::RevisionReasonRequired | DomainError::ReversalReasonRequired,
+            ) => Some("reason"),
+            Self::ActivityLimitInvalid => Some("limit"),
+            Self::ActivityCursorInvalid => Some("cursor"),
+            Self::ExpenseDateRangeInvalid => Some("dateRange"),
             _ => None,
         }
     }

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-revise-event"
+description = "Enables the revise_event command without any pre-configured scope."
+commands.allow = ["revise_event"]
+
+[[permission]]
+identifier = "deny-revise-event"
+description = "Denies the revise_event command without any pre-configured scope."
+commands.deny = ["revise_event"]
