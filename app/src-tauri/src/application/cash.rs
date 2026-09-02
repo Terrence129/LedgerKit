@@ -166,6 +166,7 @@ pub struct ExpenseBucket {
     pub label: String,
     pub archived: bool,
     pub amount: String,
+    pub share_basis_points: u32,
     pub distinct_event_count: u64,
     pub drilldown_context: DrilldownContext,
 }
@@ -175,6 +176,7 @@ pub struct ExpenseTopItem {
     pub bucket_id: String,
     pub label: String,
     pub amount: String,
+    pub share_basis_points: u32,
     pub distinct_event_count: u64,
     pub drilldown_context: DrilldownContext,
 }

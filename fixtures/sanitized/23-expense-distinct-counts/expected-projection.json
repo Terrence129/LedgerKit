@@ -30,6 +30,7 @@
               "label": "Food",
               "archived": false,
               "amount": "10.00",
+              "share_basis_points": 9091,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -47,6 +48,7 @@
               "label": "Ordinary fees",
               "archived": false,
               "amount": "1.00",
+              "share_basis_points": 909,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -65,6 +67,7 @@
                 "bucket_id": "cat-food",
                 "label": "Food",
                 "amount": "10.00",
+                "share_basis_points": 9091,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -80,6 +83,7 @@
                 "bucket_id": "system:ordinary-fee",
                 "label": "Ordinary fees",
                 "amount": "1.00",
+                "share_basis_points": 909,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -147,7 +151,7 @@
             "refund_policy": "refund-policy-v1"
           },
           "canonicalization": "ledgerkit-canonical-json-v1",
-          "canonical_hash": "sha256:2d61dc63cec7549ae621ed86bd0e0370e01e0d521e98d89ae5c0a3043979d3f0"
+          "canonical_hash": "sha256:2649c11f0354b442ca3b87ee91338e17cbde3d883b37c13f63bb305a4696617c"
         },
         "bucket_count_sum": 2,
         "global_distinct_count": 1
@@ -182,6 +186,7 @@
               "label": "A",
               "archived": false,
               "amount": "1.00",
+              "share_basis_points": 3333,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -199,6 +204,7 @@
               "label": "B",
               "archived": false,
               "amount": "1.00",
+              "share_basis_points": 3333,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -216,6 +222,7 @@
               "label": "C",
               "archived": false,
               "amount": "1.00",
+              "share_basis_points": 3333,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -234,6 +241,7 @@
                 "bucket_id": "cat-a",
                 "label": "A",
                 "amount": "1.00",
+                "share_basis_points": 3333,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -249,6 +257,7 @@
                 "bucket_id": "cat-b",
                 "label": "B",
                 "amount": "1.00",
+                "share_basis_points": 3333,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -264,6 +273,7 @@
                 "bucket_id": "cat-c",
                 "label": "C",
                 "amount": "1.00",
+                "share_basis_points": 3333,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -331,7 +341,7 @@
             "refund_policy": "refund-policy-v1"
           },
           "canonicalization": "ledgerkit-canonical-json-v1",
-          "canonical_hash": "sha256:284f5776abbc19cf8d9267ea3a53d3697118c63274245d7e1b6fd5abe456e824"
+          "canonical_hash": "sha256:5e5d2a6a00d1c77c1535afb38fb37f4eef0fb21992411ad10a670fefe69a233e"
         },
         "bucket_count_sum": 3,
         "global_distinct_count": 2
@@ -346,5 +356,5 @@
       }
     }
   ],
-  "canonical_hash": "sha256:b0d9e921c009a3b5f2f55c1da492f371fd6123db63728ffe82f085ba937c4fbf"
+  "canonical_hash": "sha256:85b8e936f6466d8be86abe24ca35be760b4ec39ab175db7bcd864458450d7275"
 }

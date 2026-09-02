@@ -30,6 +30,7 @@
               "label": "Food",
               "archived": false,
               "amount": "12.00",
+              "share_basis_points": 10000,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2024-02-29",
@@ -48,6 +49,7 @@
                 "bucket_id": "cat-food",
                 "label": "Food",
                 "amount": "12.00",
+                "share_basis_points": 10000,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2024-02-29",
@@ -115,7 +117,7 @@
             "refund_policy": "refund-policy-v1"
           },
           "canonicalization": "ledgerkit-canonical-json-v1",
-          "canonical_hash": "sha256:cee7f9373f0b73f51041ea4b07a5fc59e035e1992f7cb2c576531dac85dca3ca"
+          "canonical_hash": "sha256:61130932f4af558bed80d1134d5b5b390df55da991667c52b69848b15ff8537a"
         }
       }
     },
@@ -148,6 +150,7 @@
               "label": "Food",
               "archived": false,
               "amount": "20.00",
+              "share_basis_points": 10000,
               "distinct_event_count": 2,
               "drilldown_context": {
                 "start_date": "2026-01-31",
@@ -166,6 +169,7 @@
                 "bucket_id": "cat-food",
                 "label": "Food",
                 "amount": "20.00",
+                "share_basis_points": 10000,
                 "distinct_event_count": 2,
                 "drilldown_context": {
                   "start_date": "2026-01-31",
@@ -233,7 +237,7 @@
             "refund_policy": "refund-policy-v1"
           },
           "canonicalization": "ledgerkit-canonical-json-v1",
-          "canonical_hash": "sha256:f1aca3f89dd4aa162432dc32257de8bc11d8b0a58de705beda7cc744a065070d"
+          "canonical_hash": "sha256:69504de4a0363038eaf9a31d4468a6fa5f5adb7e1985a92999a9b0c8fee46078"
         }
       }
     },
@@ -246,5 +250,5 @@
       }
     }
   ],
-  "canonical_hash": "sha256:c7fca6965e3b5dd8aea9367f1e9d141998c71ff35495dcf33cef25e141ef1739"
+  "canonical_hash": "sha256:8bcf26ae91ef3f9153f44dc4f631d19b2cd1384279fbdb42fbfc60e35740600c"
 }

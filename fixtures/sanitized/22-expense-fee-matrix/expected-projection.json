@@ -30,6 +30,7 @@
               "label": "Food",
               "archived": false,
               "amount": "100.00",
+              "share_basis_points": 9524,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -47,6 +48,7 @@
               "label": "FX fees",
               "archived": false,
               "amount": "3.00",
+              "share_basis_points": 286,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -64,6 +66,7 @@
               "label": "Ordinary fees",
               "archived": false,
               "amount": "2.00",
+              "share_basis_points": 190,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -82,6 +85,7 @@
                 "bucket_id": "cat-food",
                 "label": "Food",
                 "amount": "100.00",
+                "share_basis_points": 9524,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -97,6 +101,7 @@
                 "bucket_id": "system:fx-fee",
                 "label": "FX fees",
                 "amount": "3.00",
+                "share_basis_points": 286,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -112,6 +117,7 @@
                 "bucket_id": "system:ordinary-fee",
                 "label": "Ordinary fees",
                 "amount": "2.00",
+                "share_basis_points": 190,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -179,7 +185,7 @@
             "refund_policy": "refund-policy-v1"
           },
           "canonicalization": "ledgerkit-canonical-json-v1",
-          "canonical_hash": "sha256:1aa1b2d62575294752aa26ea1bf93e03bc0b6bd3e7ac2748545888b26e169554"
+          "canonical_hash": "sha256:aac758c6df88c4f79dd1848b61562d40638b0024326f0db4128a1bbe43549ddb"
         },
         "excluded_investment_return_effect": "-4.00"
       }
@@ -210,6 +216,7 @@
               "label": "Uncategorized",
               "archived": false,
               "amount": "0.01",
+              "share_basis_points": 10000,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -228,6 +235,7 @@
                 "bucket_id": "system:uncategorized",
                 "label": "Uncategorized",
                 "amount": "0.01",
+                "share_basis_points": 10000,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -295,7 +303,7 @@
             "refund_policy": "refund-policy-v1"
           },
           "canonicalization": "ledgerkit-canonical-json-v1",
-          "canonical_hash": "sha256:6da3cbf9c86a53e8f1643855dd7529e4599d5876c9128ddbff0a09126acaa806"
+          "canonical_hash": "sha256:7fedff1db4607b969c2e44745fdd0e76f18549fe8fc646db7d3358d4a2c9b070"
         }
       }
     },
@@ -308,5 +316,5 @@
       }
     }
   ],
-  "canonical_hash": "sha256:5774bf8cd0a7549cb4b1ea3a0e7d82e0928b5d7ddf6cb01e2dd3933e2bb0a044"
+  "canonical_hash": "sha256:08474686e8c57eca5055d3b7e54808678fc920c3f3e27d18e656be7486c8d832"
 }

@@ -183,9 +183,17 @@ function validateExpenseResult(result, location) {
     }
   }
   const positive = result.buckets.filter((bucket) => compareDecimal(bucket.amount, "0") > 0);
+  for (const bucket of result.buckets) {
+    if (!Number.isSafeInteger(bucket.share_basis_points) || bucket.share_basis_points < 0) {
+      fail(location, "bucket share_basis_points must be a non-negative safe integer");
+    }
+  }
   const expectedTopIds = positive.slice(0, 10).map((bucket) => bucket.bucket_id);
   const actualTopIds = result.top10.items.map((bucket) => bucket.bucket_id);
   if (JSON.stringify(actualTopIds) !== JSON.stringify(expectedTopIds)) fail(location, "Top 10 is not derived from canonical bucket order");
+  result.top10.items.forEach((item, index) => {
+    if (item.share_basis_points !== positive[index].share_basis_points) fail(location, "Top 10 share basis points differ from the full bucket row");
+  });
   if (positive.length > 10) {
     if (result.top10.other === null) {
       fail(location, "Top 10 remainder is missing");

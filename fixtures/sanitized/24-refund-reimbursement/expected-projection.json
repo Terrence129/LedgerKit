@@ -30,6 +30,7 @@
               "label": "Food",
               "archived": false,
               "amount": "100.00",
+              "share_basis_points": 10000,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -48,6 +49,7 @@
                 "bucket_id": "cat-food",
                 "label": "Food",
                 "amount": "100.00",
+                "share_basis_points": 10000,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -115,7 +117,7 @@
             "refund_policy": "refund-policy-v1"
           },
           "canonicalization": "ledgerkit-canonical-json-v1",
-          "canonical_hash": "sha256:6dc65bf5307030ea3ed419b98c529b09c4cb7ec3288333f6be964dc3032de535"
+          "canonical_hash": "sha256:b7939a5c06fbb506a4de915524a6cbfba31363c9593cd721ad28647d5dbe39d2"
         },
         "original_category_gross_expense": "100.00"
       }
@@ -210,5 +212,5 @@
       }
     }
   ],
-  "canonical_hash": "sha256:7a52c7fcfba7593822883a59089da6bdf9675a7acd2f60ae01d5d9c063a367ed"
+  "canonical_hash": "sha256:bebac168470c41cc20a6cc41f7cb7deb0033af562daf5286c09a72ae8be959b8"
 }

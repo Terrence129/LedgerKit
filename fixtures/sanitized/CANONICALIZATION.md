@@ -20,6 +20,6 @@ Posting arrays are already ordered by `(effective_date, sequence, event_id, post
 
 ## Expense query payload
 
-`expense-analysis-query-result/v1` includes resolved dates, base currency, valued totals, global and per-bucket distinct counts, complete buckets, Top 10, refund/reimbursement summaries, unvalued counts, event/master-data watermarks, all policy/calculation versions and the canonical hash. Drilldown fields contain only bounded filter context; event ID arrays are forbidden.
+`expense-analysis-query-result/v1` includes resolved dates, base currency, valued totals, global and per-bucket distinct counts, Core-derived integer `share_basis_points`, complete buckets, Top 10, refund/reimbursement summaries, unvalued counts, event/master-data watermarks, all policy/calculation versions and the canonical hash. Drilldown fields contain only bounded filter context; event ID arrays are forbidden.
 
 Consumers must validate the JSON Schema first, then enforce the semantic checks in `tools/validate-m0-fixtures.mjs`. A candidate stack passes M0 compatibility only when it reproduces every expected value and hash; reformatting the checked-in files is not a substitute for calculation.

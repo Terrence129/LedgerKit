@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ledgerKitCommands } from "../command-client/client";
 import type {
+  DrilldownContext,
+  FixContext,
   LedgerStatus,
   ImportAnalysis,
   SaveCashAccountRequest,
@@ -15,6 +17,8 @@ import { ActivityPage } from "./ActivityPage";
 import { AssetsPage } from "./AssetsPage";
 import { HealthHome, type WorkspaceView } from "./HealthHome";
 import { ImportWizard } from "./ImportWizard";
+import { DataQualityPage } from "./DataQualityPage";
+import { OverviewPage } from "./OverviewPage";
 import { applyDocumentLocale, localeFromSystemHint, systemLocaleHint, type SupportedLocale } from "./i18n";
 import "./styles.css";
 
@@ -46,6 +50,7 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [activeView, setActiveView] = useState<WorkspaceView>("activity");
   const [importAnalysis, setImportAnalysis] = useState<ImportAnalysis | null>(null);
+  const [activityContext, setActivityContext] = useState<DrilldownContext | null>(null);
   const busyRef = useRef(false);
   const asOfDate = today();
 
@@ -98,6 +103,26 @@ export function App() {
 
   const save = <T,>(command: (request: T) => Promise<unknown>) => (request: T) => execute(() => command(request)).then(() => undefined);
 
+  function openActivity(context: DrilldownContext): void {
+    setActivityContext(context);
+    setActiveView("activity");
+  }
+
+  function openQualityFix(context: FixContext): void {
+    if (context.operation === "review_activity") {
+      setActivityContext(null);
+      setActiveView("activity");
+      return;
+    }
+    setActiveView("settings");
+    const target = context.operation === "save_fx_revision"
+      ? "rateToBase"
+      : context.operation === "save_price_revision"
+        ? "priceDate"
+        : "import-review";
+    requestAnimationFrame(() => document.getElementById(target)?.focus());
+  }
+
   return (
     <HealthHome
       locale={locale}
@@ -105,11 +130,23 @@ export function App() {
       failure={failure}
       busy={busy}
       activeView={activeView}
-      onNavigate={setActiveView}
+      onNavigate={(view) => {
+        if (view === "activity") setActivityContext(null);
+        setActiveView(view);
+      }}
+      overviewContent={status?.ledgerState === "open" ? <OverviewPage
+        locale={locale}
+        asOfDate={asOfDate}
+        onLoadOverview={(request) => ledgerKitCommands.getOverview(request)}
+        onLoadExpense={(request) => ledgerKitCommands.getExpenseAnalysis(request)}
+        onDrilldown={openActivity}
+        onOpenQuality={() => setActiveView("quality")}
+      /> : null}
       activityContent={status?.ledgerState === "open" && status.catalog ? <ActivityPage
         locale={locale}
         status={status}
         busy={busy}
+        initialContext={activityContext}
         onLoad={(request) => ledgerKitCommands.getActivity(request)}
         onPreview={(request) => execute(() => ledgerKitCommands.previewEvent(request), false)}
         onPost={(request) => execute(() => ledgerKitCommands.postEvent(request))}
@@ -119,6 +156,7 @@ export function App() {
         onPostInvestment={(request) => execute(() => ledgerKitCommands.postInvestmentEvent(request))}
       /> : null}
       assetsContent={status?.ledgerState === "open" ? <AssetsPage locale={locale} status={status} onLoad={(request) => ledgerKitCommands.getInvestmentWorkspace(request)} /> : null}
+      qualityContent={status?.ledgerState === "open" ? <DataQualityPage locale={locale} asOfDate={asOfDate} onLoad={(request) => ledgerKitCommands.getDataQuality(request)} onFix={openQualityFix} /> : null}
       importContent={<ImportWizard
         locale={locale}
         busy={busy}

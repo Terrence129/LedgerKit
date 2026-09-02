@@ -1,6 +1,6 @@
 # Agent Context
 
-> 状态：M5 全量迁移、估值与数据质量 Core 完成，Ready for M5 UI
+> 状态：M5 概览、支出分析与数据质量 UI 完成，Ready for M6 Safety
 >
 > M0 状态：完成
 >
@@ -62,7 +62,7 @@ LedgerKit 是单用户、本地优先、隐私友好的多币种现金、投资�
 ## 当前工作区
 
 - 已有完整开发计划书和 agent 工作区规范。
-- 已有 [`implementation-prompts/README.md`](implementation-prompts/README.md) 索引的 14 阶段串行实现提示词包，覆盖 M0 决策、M1 双栈门禁、M2–M6 实现和 Beta 候选审计；任务 01–11 已完成，任务 12–14 尚未执行。
+- 已有 [`implementation-prompts/README.md`](implementation-prompts/README.md) 索引的 14 阶段串行实现提示词包，覆盖 M0 决策、M1 双栈门禁、M2–M6 实现和 Beta 候选审计；任务 01–12 已完成，任务 13–14 尚未执行。
 - GitHub 公开仓库为 `Terrence129/LedgerKit`，默认分支为 `main`。
 - 已创建十四份 Accepted ADR、31 组正式合成黄金 fixture、JSON Schema、确定性生成器和 M0 检查命令；当前生产 [`Schema v5`](persistence-schema-v1.md) 已覆盖设置、主数据、typed event detail、OpeningPosition/OpeningPerformance、市场修订/FxResolution、posting/audit、带目标 schema/分析快照的 import staging、不可变估值快照、备份状态，以及现金、支出和持仓可重建投影。
 - 已建立 `app` 生产骨架、锁文件、固定 Node/Rust 工具链、严格 TypeScript/Clippy、最小 unsafe allowlist、两套键一致本地化资源、持久化即时语言切换，以及首次设置/设置与数据页面。当前共有二十五项已实现具名 IPC，现金与投资预览/过账/修订/冲正、概览、支出分析、数据质量、活动分页和一次性初始导入均通过同一 typed Facade；它们不接受任意数据库路径、SQL、posting、事件状态或前端伪造的财务派生字段。
@@ -73,12 +73,13 @@ LedgerKit 是单用户、本地优先、隐私友好的多币种现金、投资�
 - M3 已接入 ADR-0007 的 `calamine`/`rust_xlsxwriter` 隔离适配器和一次性 native 文件选择器。已知 8 表现金模板在 blocking worker 上只读解析到候选库 staging，逐行保存原始/规范化/公式缓存/hash 证据；dry-run 使用现有 Cash Core 生成 posting 和原币对账。用户确认后仅在无活库时单事务过账并重建投影，经完整性、对账和 SQLite backup 验证后同卷原子切换；同字节重跑幂等，修改文件禁止 merge。程序生成的三份 [`M3 合成 XLSX`](../fixtures/sanitized/m3/README.md) 覆盖正常、缺公式缓存、坏引用/日期、重复、方向错误、缺 FX 和修改文件。
 - M4 已实现 SecurityTrade、Dividend 和 InvestmentExpense 的 Core 权威纵切；买卖手续费、移动加权平均、精确清仓、重开仓、股息净额和两级独立费用遵循 Accepted 规则。SQLite 按 `(portfolio_id,instrument_id)` 和稳定日期/sequence 重放持仓，历史插入、修订与通用冲正原子重建现金、posting、收益和水位；资产页展示 as-of 价格/FX 证据、陈旧警告和明确未估值原因，流水页提供四类投资录入和 typed 详情。
 - M5 Core 已把全量迁移扩展到组合、标的、价格、投资流水、持仓基线、检查与支出证据；完整历史和日末显式 cut-over 均在隔离候选中通过同一 Core 原子处理现金/数量腿，并以账户、持仓、映射、事件、币种、净资产和支出差异矩阵阻断不可解释差异。`get_overview` 与 `get_data_quality` 使用明确估值日、非未来 as-of 价格/FX 和同一 SQLite snapshot；缺数据进入未估值集合，陈旧价格与稳定修复上下文可定位。已确认估值快照不可变，启动时现金/持仓投影版本或水位不匹配会先标记不可用并统一重建。
+- M5 UI 已在“概览”内完成资产概览与支出分析两个页内标签；已估值净资产、构成、MTD、未估值待办、KPI、最多 11 行 Top 10 + 其他横条和完整语义表格均消费同一 Core 结果。分类占比和条宽由 Core 以整数基点跨 IPC，非法日期清空旧结果，迟到请求被丢弃；KPI/分类下钻携带版本化 `DrilldownContext`，数据质量异常可跳转到活动、汇率、价格或导入修复位置。
 - 已建立统一 `tools/check.ps1`、`tools/test.ps1`、`tools/build.ps1` 和 Windows CI；生产依赖清单见 [`production-dependencies.md`](production-dependencies.md)。一次性 `spikes/` 源码已从当前树删除，仍保留在 Git 历史。
 
 ## 下一步建议
 
-1. 按串行协议执行任务 12，在现有资产、流水和 typed Facade 上完成总览、支出分析、质量修复下钻，不在 React 复制 Core 财务规则。
-2. 任务 13 实现密码加密便携备份、恢复、标准化导出与隐私诊断；25 项高层操作是硬上限，新增能力必须使用已预留的三个具名入口而不是通用文件/SQL 能力。
+1. 按串行协议执行任务 13，实现密码加密便携备份、恢复、标准化导出与隐私诊断；25 项高层操作是硬上限，新增能力必须使用已预留的三个具名入口而不是通用文件/SQL 能力。
+2. 任务 14 完成 Beta 发布门禁、安装/卸载/升级/恢复演练和隐私审计。
 3. 真实 v1.3.0 的最终转换、逐账户/组合策略确认、对账和 cut-over 只在仓库外副本/候选库执行；不得用真实数据替换 M5 合成自动测试。
 
 ## 更新规则

@@ -30,6 +30,7 @@
               "label": "A",
               "archived": false,
               "amount": "10.00",
+              "share_basis_points": 4762,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -47,6 +48,7 @@
               "label": "B",
               "archived": false,
               "amount": "10.00",
+              "share_basis_points": 4762,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -64,6 +66,7 @@
               "label": "Ordinary fees",
               "archived": false,
               "amount": "1.00",
+              "share_basis_points": 476,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -82,6 +85,7 @@
                 "bucket_id": "cat-a",
                 "label": "A",
                 "amount": "10.00",
+                "share_basis_points": 4762,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -97,6 +101,7 @@
                 "bucket_id": "cat-b",
                 "label": "B",
                 "amount": "10.00",
+                "share_basis_points": 4762,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -112,6 +117,7 @@
                 "bucket_id": "system:ordinary-fee",
                 "label": "Ordinary fees",
                 "amount": "1.00",
+                "share_basis_points": 476,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -179,7 +185,7 @@
             "refund_policy": "refund-policy-v1"
           },
           "canonicalization": "ledgerkit-canonical-json-v1",
-          "canonical_hash": "sha256:a044be04ea782e9a5dda9b1d110e8d412e7d8494ccedce6e94f99e451a8d6746"
+          "canonical_hash": "sha256:50610b2cf4ae22013a4078afbcbecc6f6ac17fafc3d5bd7f1a3b42a76555f985"
         },
         "result_from_order_b": {
           "contract": "expense-analysis-query-result/v1",
@@ -205,6 +211,7 @@
               "label": "A",
               "archived": false,
               "amount": "10.00",
+              "share_basis_points": 4762,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -222,6 +229,7 @@
               "label": "B",
               "archived": false,
               "amount": "10.00",
+              "share_basis_points": 4762,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -239,6 +247,7 @@
               "label": "Ordinary fees",
               "archived": false,
               "amount": "1.00",
+              "share_basis_points": 476,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -257,6 +266,7 @@
                 "bucket_id": "cat-a",
                 "label": "A",
                 "amount": "10.00",
+                "share_basis_points": 4762,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -272,6 +282,7 @@
                 "bucket_id": "cat-b",
                 "label": "B",
                 "amount": "10.00",
+                "share_basis_points": 4762,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -287,6 +298,7 @@
                 "bucket_id": "system:ordinary-fee",
                 "label": "Ordinary fees",
                 "amount": "1.00",
+                "share_basis_points": 476,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -354,7 +366,7 @@
             "refund_policy": "refund-policy-v1"
           },
           "canonicalization": "ledgerkit-canonical-json-v1",
-          "canonical_hash": "sha256:a044be04ea782e9a5dda9b1d110e8d412e7d8494ccedce6e94f99e451a8d6746"
+          "canonical_hash": "sha256:50610b2cf4ae22013a4078afbcbecc6f6ac17fafc3d5bd7f1a3b42a76555f985"
         },
         "hashes_equal": true
       }
@@ -388,6 +400,7 @@
               "label": "A",
               "archived": false,
               "amount": "10.00",
+              "share_basis_points": 4762,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -405,6 +418,7 @@
               "label": "B",
               "archived": false,
               "amount": "10.00",
+              "share_basis_points": 4762,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -422,6 +436,7 @@
               "label": "Ordinary fees",
               "archived": false,
               "amount": "1.00",
+              "share_basis_points": 476,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -440,6 +455,7 @@
                 "bucket_id": "cat-a",
                 "label": "A",
                 "amount": "10.00",
+                "share_basis_points": 4762,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -455,6 +471,7 @@
                 "bucket_id": "cat-b",
                 "label": "B",
                 "amount": "10.00",
+                "share_basis_points": 4762,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -470,6 +487,7 @@
                 "bucket_id": "system:ordinary-fee",
                 "label": "Ordinary fees",
                 "amount": "1.00",
+                "share_basis_points": 476,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -537,7 +555,7 @@
             "refund_policy": "refund-policy-v1"
           },
           "canonicalization": "ledgerkit-canonical-json-v1",
-          "canonical_hash": "sha256:a044be04ea782e9a5dda9b1d110e8d412e7d8494ccedce6e94f99e451a8d6746"
+          "canonical_hash": "sha256:50610b2cf4ae22013a4078afbcbecc6f6ac17fafc3d5bd7f1a3b42a76555f985"
         },
         "new_result": {
           "contract": "expense-analysis-query-result/v1",
@@ -563,6 +581,7 @@
               "label": "A",
               "archived": false,
               "amount": "11.00",
+              "share_basis_points": 5000,
               "distinct_event_count": 2,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -580,6 +599,7 @@
               "label": "B",
               "archived": false,
               "amount": "10.00",
+              "share_basis_points": 4545,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -597,6 +617,7 @@
               "label": "Ordinary fees",
               "archived": false,
               "amount": "1.00",
+              "share_basis_points": 455,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -615,6 +636,7 @@
                 "bucket_id": "cat-a",
                 "label": "A",
                 "amount": "11.00",
+                "share_basis_points": 5000,
                 "distinct_event_count": 2,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -630,6 +652,7 @@
                 "bucket_id": "cat-b",
                 "label": "B",
                 "amount": "10.00",
+                "share_basis_points": 4545,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -645,6 +668,7 @@
                 "bucket_id": "system:ordinary-fee",
                 "label": "Ordinary fees",
                 "amount": "1.00",
+                "share_basis_points": 455,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -712,7 +736,7 @@
             "refund_policy": "refund-policy-v1"
           },
           "canonicalization": "ledgerkit-canonical-json-v1",
-          "canonical_hash": "sha256:8d3e0ae46450c79abfc7418545c4dce2d5103a26352a1923874882ae219886bc"
+          "canonical_hash": "sha256:0f8ecca98fce5cd9e241d7369b9b319f61347d3f6e157eca801a42bf6c08861c"
         },
         "previous_export_metadata_preserved": true
       }
@@ -726,5 +750,5 @@
       }
     }
   ],
-  "canonical_hash": "sha256:5b8e0df1f1518d292c63862fcc6e116d292b8509a53ad80ead2595328f0b1f37"
+  "canonical_hash": "sha256:70da07d5ad942bce193b0e8d9b2ab258f8240077b1622b9f2ec4f7a58de99daa"
 }

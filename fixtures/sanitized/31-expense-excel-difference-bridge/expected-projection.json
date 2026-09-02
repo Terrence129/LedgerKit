@@ -30,6 +30,7 @@
               "label": "Visible category",
               "archived": false,
               "amount": "20.00",
+              "share_basis_points": 6667,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -47,6 +48,7 @@
               "label": "Archived category",
               "archived": true,
               "amount": "5.00",
+              "share_basis_points": 1667,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -64,6 +66,7 @@
               "label": "Uncategorized",
               "archived": false,
               "amount": "3.00",
+              "share_basis_points": 1000,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -81,6 +84,7 @@
               "label": "FX fees",
               "archived": false,
               "amount": "2.00",
+              "share_basis_points": 667,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -99,6 +103,7 @@
                 "bucket_id": "cat-visible",
                 "label": "Visible category",
                 "amount": "20.00",
+                "share_basis_points": 6667,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -114,6 +119,7 @@
                 "bucket_id": "cat-archived",
                 "label": "Archived category",
                 "amount": "5.00",
+                "share_basis_points": 1667,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -129,6 +135,7 @@
                 "bucket_id": "system:uncategorized",
                 "label": "Uncategorized",
                 "amount": "3.00",
+                "share_basis_points": 1000,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -144,6 +151,7 @@
                 "bucket_id": "system:fx-fee",
                 "label": "FX fees",
                 "amount": "2.00",
+                "share_basis_points": 667,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -211,7 +219,7 @@
             "refund_policy": "refund-policy-v1"
           },
           "canonicalization": "ledgerkit-canonical-json-v1",
-          "canonical_hash": "sha256:3583dc5d8f8aae1a62faac76c32515f95862fd861f66a1d66ddc10bb72f54c11"
+          "canonical_hash": "sha256:49695b03f9403d10503d837e98b9026fcbc9a34c42a3e78a8ae8c66267bdb3a4"
         },
         "difference_bridge": [
           {
@@ -342,5 +350,5 @@
       }
     }
   ],
-  "canonical_hash": "sha256:c89e3575832ae71300bbccb7a6f6b966f8ea147dc66ed9c9af704a28e668e7d0"
+  "canonical_hash": "sha256:609b77a048942d3e48b8ec9062a762cc71eeb6262fa9eef00927e47519e799d2"
 }

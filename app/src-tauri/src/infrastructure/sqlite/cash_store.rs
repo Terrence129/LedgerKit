@@ -1819,31 +1819,34 @@ fn build_aggregated_expense_result(
             .numeric_cmp(&left.1.amount)
             .then_with(|| left.0.cmp(&right.0))
     });
-    let make_bucket = |id: &str, value: &BucketAggregate| ExpenseBucket {
-        bucket_id: id.to_owned(),
-        bucket_kind: if id.starts_with("system:") {
-            "system"
-        } else {
-            "category"
-        },
-        label: value.label.clone(),
-        archived: value.archived,
-        amount: value.amount.as_str().to_owned(),
-        distinct_event_count: value.distinct_count(),
-        drilldown_context: context(
-            start,
-            end,
-            event_watermark,
-            Some(id.to_owned()),
-            None,
-            None,
-            "valued",
-        ),
+    let make_bucket = |id: &str, value: &BucketAggregate| -> ApplicationResult<ExpenseBucket> {
+        Ok(ExpenseBucket {
+            bucket_id: id.to_owned(),
+            bucket_kind: if id.starts_with("system:") {
+                "system"
+            } else {
+                "category"
+            },
+            label: value.label.clone(),
+            archived: value.archived,
+            amount: value.amount.as_str().to_owned(),
+            share_basis_points: expense_share_basis_points(&value.amount, &summary_amount)?,
+            distinct_event_count: value.distinct_count(),
+            drilldown_context: context(
+                start,
+                end,
+                event_watermark,
+                Some(id.to_owned()),
+                None,
+                None,
+                "valued",
+            ),
+        })
     };
     let bucket_rows: Vec<_> = buckets
         .iter()
         .map(|(id, value)| make_bucket(id, value))
-        .collect();
+        .collect::<ApplicationResult<_>>()?;
     let positive: Vec<_> = buckets
         .iter()
         .filter(|(_, value)| value.amount.is_positive())
@@ -1851,37 +1854,45 @@ fn build_aggregated_expense_result(
     let top_items = positive
         .iter()
         .take(10)
-        .map(|(id, value)| ExpenseTopItem {
-            bucket_id: (*id).clone(),
-            label: value.label.clone(),
-            amount: value.amount.as_str().to_owned(),
-            distinct_event_count: value.distinct_count(),
-            drilldown_context: context(
-                start,
-                end,
-                event_watermark,
-                Some((*id).clone()),
-                None,
-                None,
-                "valued",
-            ),
+        .map(|(id, value)| -> ApplicationResult<ExpenseTopItem> {
+            Ok(ExpenseTopItem {
+                bucket_id: (*id).clone(),
+                label: value.label.clone(),
+                amount: value.amount.as_str().to_owned(),
+                share_basis_points: expense_share_basis_points(&value.amount, &summary_amount)?,
+                distinct_event_count: value.distinct_count(),
+                drilldown_context: context(
+                    start,
+                    end,
+                    event_watermark,
+                    Some((*id).clone()),
+                    None,
+                    None,
+                    "valued",
+                ),
+            })
         })
-        .collect();
-    let other = other.map(|(amount, count)| ExpenseTopItem {
-        bucket_id: "system:top10-other".to_owned(),
-        label: "Other categories".to_owned(),
-        amount: amount.as_str().to_owned(),
-        distinct_event_count: count,
-        drilldown_context: context(
-            start,
-            end,
-            event_watermark,
-            Some("system:top10-other".to_owned()),
-            None,
-            Some(10),
-            "valued",
-        ),
-    });
+        .collect::<ApplicationResult<_>>()?;
+    let other = other
+        .map(|(amount, count)| -> ApplicationResult<ExpenseTopItem> {
+            Ok(ExpenseTopItem {
+                bucket_id: "system:top10-other".to_owned(),
+                label: "Other categories".to_owned(),
+                amount: amount.as_str().to_owned(),
+                share_basis_points: expense_share_basis_points(&amount, &summary_amount)?,
+                distinct_event_count: count,
+                drilldown_context: context(
+                    start,
+                    end,
+                    event_watermark,
+                    Some("system:top10-other".to_owned()),
+                    None,
+                    Some(10),
+                    "valued",
+                ),
+            })
+        })
+        .transpose()?;
     let largest_category = positive
         .iter()
         .find(|(id, _)| !id.starts_with("system:"))
@@ -2606,40 +2617,47 @@ fn build_expense_result(
             .numeric_cmp(&left.1.amount)
             .then_with(|| left.0.cmp(&right.0))
     });
-    let make_bucket = |id: &str, value: &BucketAggregate| ExpenseBucket {
-        bucket_id: id.to_owned(),
-        bucket_kind: if id.starts_with("system:") {
-            "system"
-        } else {
-            "category"
-        },
-        label: value.label.clone(),
-        amount: value.amount.as_str().to_owned(),
-        distinct_event_count: value.distinct_count(),
-        archived: value.archived,
-        drilldown_context: context(
-            start,
-            end,
-            event_watermark,
-            Some(id.to_owned()),
-            None,
-            None,
-            "valued",
-        ),
+    let make_bucket = |id: &str, value: &BucketAggregate| -> ApplicationResult<ExpenseBucket> {
+        Ok(ExpenseBucket {
+            bucket_id: id.to_owned(),
+            bucket_kind: if id.starts_with("system:") {
+                "system"
+            } else {
+                "category"
+            },
+            label: value.label.clone(),
+            amount: value.amount.as_str().to_owned(),
+            share_basis_points: expense_share_basis_points(&value.amount, &valued_subtotal)?,
+            distinct_event_count: value.distinct_count(),
+            archived: value.archived,
+            drilldown_context: context(
+                start,
+                end,
+                event_watermark,
+                Some(id.to_owned()),
+                None,
+                None,
+                "valued",
+            ),
+        })
     };
     let bucket_rows: Vec<_> = ordered
         .iter()
         .map(|(id, value)| make_bucket(id, value))
-        .collect();
+        .collect::<ApplicationResult<_>>()?;
     let positive: Vec<_> = ordered
         .iter()
         .filter(|(_, value)| value.amount.is_positive())
         .collect();
-    let make_top =
-        |id: &str, value: &BucketAggregate, member_rank_gt: Option<u32>| ExpenseTopItem {
+    let make_top = |id: &str,
+                    value: &BucketAggregate,
+                    member_rank_gt: Option<u32>|
+     -> ApplicationResult<ExpenseTopItem> {
+        Ok(ExpenseTopItem {
             bucket_id: id.to_owned(),
             label: value.label.clone(),
             amount: value.amount.as_str().to_owned(),
+            share_basis_points: expense_share_basis_points(&value.amount, &valued_subtotal)?,
             distinct_event_count: value.distinct_count(),
             drilldown_context: context(
                 start,
@@ -2650,12 +2668,13 @@ fn build_expense_result(
                 member_rank_gt,
                 "valued",
             ),
-        };
+        })
+    };
     let top_items: Vec<_> = positive
         .iter()
         .take(10)
         .map(|(id, value)| make_top(id, value, None))
-        .collect();
+        .collect::<ApplicationResult<_>>()?;
     let other = if positive.len() > 10 {
         let mut other = BucketAggregate {
             label: "Other categories".to_owned(),
@@ -2670,7 +2689,7 @@ fn build_expense_result(
                 .checked_add(&value.amount, DecimalUse::Internal)?;
             other.events.extend(value.events.iter().cloned());
         }
-        Some(make_top("system:top10-other", &other, Some(10)))
+        Some(make_top("system:top10-other", &other, Some(10))?)
     } else {
         None
     };
@@ -2760,6 +2779,20 @@ fn build_expense_result(
         return Err(ApplicationError::ResponseTooLarge);
     }
     Ok(result)
+}
+
+fn expense_share_basis_points(amount: &Decimal, total: &Decimal) -> ApplicationResult<u32> {
+    if !amount.is_positive() || !total.is_positive() {
+        return Ok(0);
+    }
+    let scale = Decimal::parse("10000", DecimalUse::Internal)?;
+    amount
+        .checked_div_internal(total)?
+        .checked_mul_internal(&scale)?
+        .round_half_up(0)?
+        .as_str()
+        .parse()
+        .map_err(|_| ApplicationError::TransactionFailed)
 }
 
 fn sequence_i64(value: u64) -> ApplicationResult<i64> {
@@ -3554,9 +3587,12 @@ mod tests {
         .unwrap();
         assert_eq!(result.summary.valued_subtotal, "11");
         assert_eq!(result.summary.global_distinct_event_count, 1);
+        assert_eq!(result.buckets[0].share_basis_points, 9_091);
+        assert_eq!(result.buckets[1].share_basis_points, 909);
+        assert_eq!(result.top10.items[0].share_basis_points, 9_091);
         assert_eq!(
             result.canonical_hash,
-            "sha256:2d61dc63cec7549ae621ed86bd0e0370e01e0d521e98d89ae5c0a3043979d3f0"
+            "sha256:2649c11f0354b442ca3b87ee91338e17cbde3d883b37c13f63bb305a4696617c"
         );
     }
 

@@ -30,6 +30,7 @@
               "label": "Category 01",
               "archived": false,
               "amount": "120",
+              "share_basis_points": 1538,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -47,6 +48,7 @@
               "label": "Category 02",
               "archived": false,
               "amount": "110",
+              "share_basis_points": 1410,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -64,6 +66,7 @@
               "label": "Category 03",
               "archived": false,
               "amount": "100",
+              "share_basis_points": 1282,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -81,6 +84,7 @@
               "label": "Category 04",
               "archived": false,
               "amount": "90",
+              "share_basis_points": 1154,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -98,6 +102,7 @@
               "label": "Category 05",
               "archived": false,
               "amount": "80",
+              "share_basis_points": 1026,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -115,6 +120,7 @@
               "label": "Category 06",
               "archived": false,
               "amount": "70",
+              "share_basis_points": 897,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -132,6 +138,7 @@
               "label": "Category 07",
               "archived": false,
               "amount": "60",
+              "share_basis_points": 769,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -149,6 +156,7 @@
               "label": "Category 08",
               "archived": false,
               "amount": "50",
+              "share_basis_points": 641,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -166,6 +174,7 @@
               "label": "Category 09",
               "archived": false,
               "amount": "40",
+              "share_basis_points": 513,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -183,6 +192,7 @@
               "label": "Category 10",
               "archived": false,
               "amount": "30",
+              "share_basis_points": 385,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -200,6 +210,7 @@
               "label": "Category 11",
               "archived": false,
               "amount": "20",
+              "share_basis_points": 256,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -217,6 +228,7 @@
               "label": "Category 12",
               "archived": false,
               "amount": "10",
+              "share_basis_points": 128,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -235,6 +247,7 @@
                 "bucket_id": "cat-01",
                 "label": "Category 01",
                 "amount": "120",
+                "share_basis_points": 1538,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -250,6 +263,7 @@
                 "bucket_id": "cat-02",
                 "label": "Category 02",
                 "amount": "110",
+                "share_basis_points": 1410,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -265,6 +279,7 @@
                 "bucket_id": "cat-03",
                 "label": "Category 03",
                 "amount": "100",
+                "share_basis_points": 1282,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -280,6 +295,7 @@
                 "bucket_id": "cat-04",
                 "label": "Category 04",
                 "amount": "90",
+                "share_basis_points": 1154,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -295,6 +311,7 @@
                 "bucket_id": "cat-05",
                 "label": "Category 05",
                 "amount": "80",
+                "share_basis_points": 1026,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -310,6 +327,7 @@
                 "bucket_id": "cat-06",
                 "label": "Category 06",
                 "amount": "70",
+                "share_basis_points": 897,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -325,6 +343,7 @@
                 "bucket_id": "cat-07",
                 "label": "Category 07",
                 "amount": "60",
+                "share_basis_points": 769,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -340,6 +359,7 @@
                 "bucket_id": "cat-08",
                 "label": "Category 08",
                 "amount": "50",
+                "share_basis_points": 641,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -355,6 +375,7 @@
                 "bucket_id": "cat-09",
                 "label": "Category 09",
                 "amount": "40",
+                "share_basis_points": 513,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -370,6 +391,7 @@
                 "bucket_id": "cat-10",
                 "label": "Category 10",
                 "amount": "30",
+                "share_basis_points": 385,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -396,7 +418,8 @@
                 "bucket_id": "system:top10-other",
                 "member_rank_gt": 10,
                 "valuation_state": "valued"
-              }
+              },
+              "share_basis_points": 385
             }
           },
           "refunds": {
@@ -452,7 +475,7 @@
             "refund_policy": "refund-policy-v1"
           },
           "canonicalization": "ledgerkit-canonical-json-v1",
-          "canonical_hash": "sha256:7cd365ef12db020eb178975704fd2388cad37b5a4f378c6debf5e3aef27a8beb"
+          "canonical_hash": "sha256:f9d959e79eb954ada457f5f2777f8f092aff7bad5bd3c0ef033f84bbaefed49e"
         },
         "top10_item_count": 10,
         "other_amount": "30"
@@ -487,6 +510,7 @@
               "label": "A",
               "archived": false,
               "amount": "10.00",
+              "share_basis_points": 5000,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -504,6 +528,7 @@
               "label": "B",
               "archived": false,
               "amount": "10.00",
+              "share_basis_points": 5000,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -522,6 +547,7 @@
                 "bucket_id": "cat-a",
                 "label": "A",
                 "amount": "10.00",
+                "share_basis_points": 5000,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -537,6 +563,7 @@
                 "bucket_id": "cat-b",
                 "label": "B",
                 "amount": "10.00",
+                "share_basis_points": 5000,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -604,7 +631,7 @@
             "refund_policy": "refund-policy-v1"
           },
           "canonicalization": "ledgerkit-canonical-json-v1",
-          "canonical_hash": "sha256:418732ecd4a5db51a989b8f5250613b24949268aedb5649b3578cc3a24125356"
+          "canonical_hash": "sha256:254a9dce65f758bd526fe5974d5333c7f805c02eda50ffaa08aef1d33b744fa1"
         },
         "stable_order": [
           "cat-a",
@@ -621,5 +648,5 @@
       }
     }
   ],
-  "canonical_hash": "sha256:0d6425fdb4ff42b7aa45e01a6d001c91ca8fb9382786e9f935c008ec096ae24d"
+  "canonical_hash": "sha256:14a72bc2e006b793778c5bae7b45276e4a5f58f279da7402bd93a14fc0ce79c7"
 }

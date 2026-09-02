@@ -30,6 +30,7 @@
               "label": "Renamed dining",
               "archived": true,
               "amount": "30.00",
+              "share_basis_points": 10000,
               "distinct_event_count": 2,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -48,6 +49,7 @@
                 "bucket_id": "cat-stable-1",
                 "label": "Renamed dining",
                 "amount": "30.00",
+                "share_basis_points": 10000,
                 "distinct_event_count": 2,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -115,7 +117,7 @@
             "refund_policy": "refund-policy-v1"
           },
           "canonicalization": "ledgerkit-canonical-json-v1",
-          "canonical_hash": "sha256:44640ab1718e7f046d2438057aafa0aa6e22ad46f55897ea01e3e850fea4e154"
+          "canonical_hash": "sha256:ac51ff73674ce6edeea79bb423fb4a47602f65713573eb60d9da4ce5754cac8f"
         },
         "drilldown_filter_bucket_id": "cat-stable-1"
       }
@@ -149,6 +151,7 @@
               "label": "Dining",
               "archived": false,
               "amount": "30.00",
+              "share_basis_points": 5000,
               "distinct_event_count": 2,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -166,6 +169,7 @@
               "label": "Travel",
               "archived": true,
               "amount": "30.00",
+              "share_basis_points": 5000,
               "distinct_event_count": 1,
               "drilldown_context": {
                 "start_date": "2026-02-01",
@@ -184,6 +188,7 @@
                 "bucket_id": "cat-stable-1",
                 "label": "Dining",
                 "amount": "30.00",
+                "share_basis_points": 5000,
                 "distinct_event_count": 2,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -199,6 +204,7 @@
                 "bucket_id": "cat-stable-2",
                 "label": "Travel",
                 "amount": "30.00",
+                "share_basis_points": 5000,
                 "distinct_event_count": 1,
                 "drilldown_context": {
                   "start_date": "2026-02-01",
@@ -266,7 +272,7 @@
             "refund_policy": "refund-policy-v1"
           },
           "canonicalization": "ledgerkit-canonical-json-v1",
-          "canonical_hash": "sha256:7cda3c0bbc024072e3abd498390edc41dbb780590eb403dcde945151cda664df"
+          "canonical_hash": "sha256:4b76e20d056eb68c6b74c73d679a44b88bf085dacab49864f9b445e0cfc079a9"
         },
         "tie_order": [
           "cat-stable-1",
@@ -283,5 +289,5 @@
       }
     }
   ],
-  "canonical_hash": "sha256:90b81cec2cdfe8789e70c805b8011ba5a89347b16b465ff93e6a98d85db90a8f"
+  "canonical_hash": "sha256:b9952215d1807e4b8ffa3ea66e506b09bb71f4fe3772a5b6e78b140779515ef2"
 }

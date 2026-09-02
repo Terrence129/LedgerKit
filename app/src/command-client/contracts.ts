@@ -102,8 +102,8 @@ export type PostingPreview = { accountId: string | null; quantityDelta: string; 
 export type EventPreview = { eventType: string; effectiveDate: string; sequence: number; categoryId: string | null; semanticRole: string; feeAccountId: string | null; feeAmount: string | null; postings: PostingPreview[]; fxResolutions: FxResolutionResult[]; qualityIssueCodes: string[] };
 export type PostedEvent = { eventId: string; eventWatermark: number; revision: number; preview: EventPreview };
 export type DrilldownContext = { start_date: string; end_date: string; event_watermark: number; calculation_version: string; expense_policy_version: string; bucket_id?: string; semantic_role?: string; member_rank_gt?: number; valuation_state: "valued" | "unvalued" | "all" };
-export type ExpenseBucket = { bucket_id: string; bucket_kind: "category" | "system"; label: string; archived: boolean; amount: string; distinct_event_count: number; drilldown_context: DrilldownContext };
-export type ExpenseTopItem = { bucket_id: string; label: string; amount: string; distinct_event_count: number; drilldown_context: DrilldownContext };
+export type ExpenseBucket = { bucket_id: string; bucket_kind: "category" | "system"; label: string; archived: boolean; amount: string; share_basis_points: number; distinct_event_count: number; drilldown_context: DrilldownContext };
+export type ExpenseTopItem = { bucket_id: string; label: string; amount: string; share_basis_points: number; distinct_event_count: number; drilldown_context: DrilldownContext };
 export type ExpenseMeasure = { amount: string; distinct_event_count: number; unvalued_count: number; drilldown_context: DrilldownContext };
 export type ExpenseAnalysis = {
   contract: "expense-analysis-query-result/v1";
@@ -241,9 +241,10 @@ export type Overview = {
   anomalyCodes: string[]; watermarks: { event: number; marketData: number };
   calculationVersion: string; snapshotVersion: string;
 };
+export type FixContext = { operation: string; field: string; entityType: string; entityId: string; asOfDate: string };
 export type DataQualityIssue = {
   issueId: string; code: string; severity: "blocker" | "warning"; status: "open";
-  context: { operation: string; field: string; entityType: string; entityId: string; asOfDate: string };
+  context: FixContext;
 };
 export type DataQualityReport = {
   contract: "ledgerkit-data-quality-v1"; asOfDate: string; blockerCount: number; warningCount: number;

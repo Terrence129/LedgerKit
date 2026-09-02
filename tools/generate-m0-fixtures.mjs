@@ -81,6 +81,24 @@ function sumDecimals(values) {
   return `${negative ? "-" : ""}${integer}${fraction ? `.${fraction}` : ""}`;
 }
 
+function shareBasisPoints(amount, total) {
+  if (compareDecimal(amount, "0") <= 0 || compareDecimal(total, "0") <= 0) return 0;
+  const numeratorValue = decimalParts(amount);
+  const denominatorValue = decimalParts(total);
+  const numerator = numeratorValue.coefficient
+    * 10n ** BigInt(denominatorValue.scale)
+    * 10000n;
+  const denominator = denominatorValue.coefficient
+    * 10n ** BigInt(numeratorValue.scale);
+  const quotient = numerator / denominator;
+  const rounded = quotient + ((numerator % denominator) * 2n >= denominator ? 1n : 0n);
+  const result = Number(rounded);
+  if (!Number.isSafeInteger(result) || result > 0xffff_ffff) {
+    throw new Error(`Share basis points overflow: ${amount}/${total}`);
+  }
+  return result;
+}
+
 const command = (commandType, data) => ({ commandType, data });
 
 function event(caseNumber, kind, index, eventType, effectiveDate, sequence, detail, extra = {}) {
@@ -149,6 +167,7 @@ function makeExpenseResult({
     calculation_version: CALCULATION_VERSION,
     expense_policy_version: "expense-policy-v1",
   };
+  const valuedSubtotal = sumDecimals(buckets.map((bucket) => bucket.amount));
   const orderedBuckets = buckets
     .map((bucket) => ({
       bucket_id: bucket.bucket_id,
@@ -156,6 +175,7 @@ function makeExpenseResult({
       label: bucket.label,
       archived: bucket.archived ?? false,
       amount: bucket.amount,
+      share_basis_points: shareBasisPoints(bucket.amount, valuedSubtotal),
       distinct_event_count: bucket.distinct_event_count,
       drilldown_context: {
         ...contextBase,
@@ -169,6 +189,7 @@ function makeExpenseResult({
     bucket_id: bucket.bucket_id,
     label: bucket.label,
     amount: bucket.amount,
+    share_basis_points: bucket.share_basis_points,
     distinct_event_count: bucket.distinct_event_count,
     drilldown_context: bucket.drilldown_context,
   }));
@@ -187,8 +208,8 @@ function makeExpenseResult({
         valuation_state: "valued",
       },
     };
+    other.share_basis_points = shareBasisPoints(other.amount, valuedSubtotal);
   }
-  const valuedSubtotal = sumDecimals(orderedBuckets.map((bucket) => bucket.amount));
   const largestCategory = positive.find((bucket) => bucket.bucket_kind === "category") ?? null;
   return withHash({
     contract: "expense-analysis-query-result/v1",

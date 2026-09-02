@@ -12,9 +12,11 @@ import type {
   InvestmentEventPreview,
   InvestmentEventRequest,
   PostedInvestmentEvent,
+  DrilldownContext,
 } from "../command-client/contracts";
 import { translate, type SupportedLocale } from "./i18n";
 import { InvestmentEditor } from "./InvestmentEditor";
+import { LatestRequestGate } from "./queryGate";
 
 type CashEventType = CashEventRequest["eventType"];
 type FxOverrideDraft = { currency: string; value: string; reason: string };
@@ -44,6 +46,7 @@ type ActivityPageProps = {
   locale: SupportedLocale;
   status: LedgerStatus;
   busy: boolean;
+  initialContext?: DrilldownContext | null;
   onLoad: (request: ActivityRequest) => Promise<ActivityPageResult>;
   onPreview: (request: CashEventRequest) => Promise<EventPreview>;
   onPost: (request: CashEventRequest) => Promise<PostedEvent>;
@@ -193,6 +196,7 @@ export function ActivityPage(props: ActivityPageProps) {
   const [accountId, setAccountId] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [search, setSearch] = useState("");
+  const [drilldownContext, setDrilldownContext] = useState<DrilldownContext | null>(props.initialContext ?? null);
   const [page, setPage] = useState<ActivityPageResult>({ items: [], nextCursor: null });
   const [loading, setLoading] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
@@ -201,14 +205,16 @@ export function ActivityPage(props: ActivityPageProps) {
   const [reverseReason, setReverseReason] = useState("");
   const [reverseDate, setReverseDate] = useState(today);
   const loadedKey = useRef("");
+  const queryGate = useRef(new LatestRequestGate());
 
   const accountOptions = catalog?.accounts.filter((item) => item.enabled) ?? [];
   const categoryOptions = catalog?.categories.filter((item) => item.enabled) ?? [];
 
-  function request(cursor?: number): ActivityRequest {
+  function request(cursor?: number, context = drilldownContext): ActivityRequest {
     return {
       startDate,
       endDate,
+      ...(context ? { context } : {}),
       ...(eventType ? { eventType } : {}),
       ...(accountId ? { accountId } : {}),
       ...(categoryId ? { categoryId } : {}),
@@ -218,19 +224,21 @@ export function ActivityPage(props: ActivityPageProps) {
     };
   }
 
-  async function load(reset: boolean): Promise<void> {
+  async function load(reset: boolean, context = drilldownContext): Promise<void> {
+    const generation = queryGate.current.begin();
     setLoading(true);
     setListError(null);
     try {
-      const next = await props.onLoad(request(reset ? undefined : page.nextCursor ?? undefined));
+      const next = await props.onLoad(request(reset ? undefined : page.nextCursor ?? undefined, context));
+      if (!queryGate.current.isLatest(generation)) return;
       setPage((current) => ({
         items: reset ? next.items : [...current.items, ...next.items],
         nextCursor: next.nextCursor,
       }));
     } catch (error: unknown) {
-      setListError(errorCode(error));
+      if (queryGate.current.isLatest(generation)) setListError(errorCode(error));
     } finally {
-      setLoading(false);
+      if (queryGate.current.isLatest(generation)) setLoading(false);
     }
   }
 
@@ -240,6 +248,38 @@ export function ActivityPage(props: ActivityPageProps) {
     loadedKey.current = key;
     void load(true);
   }, [status.ledgerId, status.eventWatermark]);
+
+  useEffect(() => {
+    const context = props.initialContext;
+    if (!context) {
+      setDrilldownContext(null);
+      return;
+    }
+    setStartDate(context.start_date);
+    setEndDate(context.end_date);
+    setEventType("");
+    setAccountId("");
+    setCategoryId("");
+    setSearch("");
+    setDrilldownContext(context);
+    const generation = queryGate.current.begin();
+    setLoading(true);
+    setListError(null);
+    void props.onLoad({ startDate: context.start_date, endDate: context.end_date, context, limit: 25 })
+      .then((next) => {
+        if (queryGate.current.isLatest(generation)) setPage(next);
+      })
+      .catch((error: unknown) => {
+        if (queryGate.current.isLatest(generation)) setListError(errorCode(error));
+      })
+      .finally(() => {
+        if (queryGate.current.isLatest(generation)) setLoading(false);
+      });
+  }, [props.initialContext]);
+
+  function clearDrilldown(): void {
+    setDrilldownContext(null);
+  }
 
   function updateDraft(patch: Partial<CashDraft>): void {
     setDraft((current) => ({ ...current, ...patch }));
@@ -362,11 +402,12 @@ export function ActivityPage(props: ActivityPageProps) {
       <section className="timeline-section" aria-labelledby="timeline-title">
         <div className="section-title"><div><p className="eyebrow">{t("activity.timelineEyebrow")}</p><h2 id="timeline-title">{t("activity.timelineTitle")}</h2></div></div>
         <form className="filter-grid" onSubmit={(event) => { event.preventDefault(); void load(true); }}>
-          <label htmlFor="dateRange">{t("activity.startDate")}<input id="dateRange" type="date" value={startDate} onChange={(event) => setStartDate(event.currentTarget.value)} /></label><label>{t("activity.endDate")}<input type="date" value={endDate} onChange={(event) => setEndDate(event.currentTarget.value)} /></label>
-          <label>{t("activity.eventType")}<select value={eventType} onChange={(event) => setEventType(event.currentTarget.value as ActivityRequest["eventType"] | "")}><option value="">{t("activity.all")}</option><option value="Income">{t("event.income")}</option><option value="Expense">{t("event.expense")}</option><option value="Adjustment">{t("event.adjustment")}</option><option value="Transfer">{t("event.transfer")}</option><option value="CurrencyExchange">{t("event.currencyExchange")}</option><option value="SecurityBuy">{t("event.securityBuy")}</option><option value="SecuritySell">{t("event.securitySell")}</option><option value="Dividend">{t("event.dividend")}</option><option value="InvestmentExpense">{t("event.investmentExpense")}</option><option value="Reversal">{t("event.reversal")}</option></select></label>
-          <AccountSelect id="activityAccount" label={t("activity.account")} value={accountId} options={accountOptions} optional onChange={setAccountId} />
-          <label>{t("activity.category")}<select value={categoryId} onChange={(event) => setCategoryId(event.currentTarget.value)}><option value="">{t("activity.all")}</option><option value="system:uncategorized">{t("activity.uncategorized")}</option><option value="system:ordinary-fee">{t("activity.ordinaryFees")}</option><option value="system:fx-fee">{t("activity.fxFees")}</option>{categoryOptions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-          <label className="wide-field">{t("activity.search")}<input id="search" type="search" maxLength={200} value={search} onChange={(event) => setSearch(event.currentTarget.value)} /></label><button type="submit" disabled={loading}>{t("activity.applyFilters")}</button>
+          {drilldownContext ? <p className="notice wide-field">{t("activity.drilldownActive")}</p> : null}
+          <label htmlFor="dateRange">{t("activity.startDate")}<input id="dateRange" type="date" value={startDate} onChange={(event) => { clearDrilldown(); setStartDate(event.currentTarget.value); }} /></label><label>{t("activity.endDate")}<input type="date" value={endDate} onChange={(event) => { clearDrilldown(); setEndDate(event.currentTarget.value); }} /></label>
+          <label>{t("activity.eventType")}<select value={eventType} onChange={(event) => { clearDrilldown(); setEventType(event.currentTarget.value as ActivityRequest["eventType"] | ""); }}><option value="">{t("activity.all")}</option><option value="Income">{t("event.income")}</option><option value="Expense">{t("event.expense")}</option><option value="Adjustment">{t("event.adjustment")}</option><option value="Transfer">{t("event.transfer")}</option><option value="CurrencyExchange">{t("event.currencyExchange")}</option><option value="SecurityBuy">{t("event.securityBuy")}</option><option value="SecuritySell">{t("event.securitySell")}</option><option value="Dividend">{t("event.dividend")}</option><option value="InvestmentExpense">{t("event.investmentExpense")}</option><option value="Reversal">{t("event.reversal")}</option></select></label>
+          <AccountSelect id="activityAccount" label={t("activity.account")} value={accountId} options={accountOptions} optional onChange={(value) => { clearDrilldown(); setAccountId(value); }} />
+          <label>{t("activity.category")}<select value={categoryId} onChange={(event) => { clearDrilldown(); setCategoryId(event.currentTarget.value); }}><option value="">{t("activity.all")}</option><option value="system:uncategorized">{t("activity.uncategorized")}</option><option value="system:ordinary-fee">{t("activity.ordinaryFees")}</option><option value="system:fx-fee">{t("activity.fxFees")}</option>{categoryOptions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+          <label className="wide-field">{t("activity.search")}<input id="search" type="search" maxLength={200} value={search} onChange={(event) => { clearDrilldown(); setSearch(event.currentTarget.value); }} /></label><button type="submit" disabled={loading}>{t("activity.applyFilters")}</button>
         </form>
         <div className="sr-status" role="status" aria-live="polite">{loading ? t("activity.loading") : t("activity.loaded")}</div>
         {listError ? <p className="inline-error" role="alert">{t("activity.loadFailed")}: <code>{listError}</code></p> : null}
