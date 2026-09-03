@@ -1975,10 +1975,14 @@ fn verify_balances(connection: &Connection, expected: &[ImportBalance]) -> Appli
             )
             .optional()
             .map_err(|_| ApplicationError::ImportReconciliationFailed)?;
-        if actual
-            .as_ref()
-            .map(|value| (value.0.as_str(), value.1.as_str()))
-            != Some((balance.proposed_balance.as_str(), balance.currency.as_str()))
+        let Some((actual_balance, actual_currency)) = actual else {
+            return Err(ApplicationError::ImportReconciliationFailed);
+        };
+        let actual_balance = Decimal::parse(&actual_balance, DecimalUse::Internal)?.normalized();
+        let expected_balance =
+            Decimal::parse(&balance.proposed_balance, DecimalUse::Internal)?.normalized();
+        if actual_currency != balance.currency
+            || actual_balance.as_str() != expected_balance.as_str()
         {
             return Err(ApplicationError::ImportReconciliationFailed);
         }
@@ -2557,6 +2561,26 @@ mod tests {
                     && resolution.final_rate == "7"
             })
         }));
+    }
+
+    #[test]
+    fn balance_verification_uses_decimal_value_instead_of_text_scale() {
+        let directory = tempdir().unwrap();
+        let mut manager = SqliteLedgerManager::new(directory.path()).unwrap();
+        let analysis = manager
+            .analyze_import(&m5_fixture("full-import-history.xlsx"))
+            .unwrap();
+        let candidate_path = manager.candidate_path(&analysis.batch_id).unwrap();
+        let connection = Connection::open(candidate_path).unwrap();
+        let mut expected = analysis.reconciliation.balances.clone();
+        let balance = expected.first_mut().expect("fixture has cash balances");
+        balance.proposed_balance = if balance.proposed_balance.contains('.') {
+            format!("{}0", balance.proposed_balance)
+        } else {
+            format!("{}.0", balance.proposed_balance)
+        };
+
+        verify_balances(&connection, &expected).unwrap();
     }
 
     #[test]
