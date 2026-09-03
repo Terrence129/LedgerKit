@@ -137,22 +137,25 @@ const acceptedImplementationAdrs = [
   "ADR-0013-automatic-backup-retention-rpo-and-recovery-secret.md",
   "ADR-0015-rebuildable-expense-daily-projection.md",
 ];
-const adrIndex = readFileSync(join(repositoryRoot, "docs/adr/README.md"), "utf8");
-for (const adrName of acceptedImplementationAdrs) {
-  const adrPath = join(repositoryRoot, "docs/adr", adrName);
-  const adrText = readFileSync(adrPath, "utf8");
-  if (!adrText.includes("> 状态：Accepted") || !adrText.includes("> 决策者：项目所有者") || !adrText.includes("> 授权：")) {
-    fail(`${adrName} is missing Accepted owner authorization metadata`);
+const docsRoot = join(repositoryRoot, "docs");
+if (existsSync(docsRoot)) {
+  const adrIndex = readFileSync(join(docsRoot, "adr/README.md"), "utf8");
+  for (const adrName of acceptedImplementationAdrs) {
+    const adrPath = join(docsRoot, "adr", adrName);
+    const adrText = readFileSync(adrPath, "utf8");
+    if (!adrText.includes("> 状态：Accepted") || !adrText.includes("> 决策者：项目所有者") || !adrText.includes("> 授权：")) {
+      fail(`${adrName} is missing Accepted owner authorization metadata`);
+    }
+    if (!adrIndex.includes(`](${adrName})`) || !adrIndex.match(new RegExp(`\\(${adrName.replaceAll(".", "\\.")}\\) \\|[^\\n]+\\| Accepted \\|`))) {
+      fail(`${adrName} is not linked as Accepted in the ADR index`);
+    }
   }
-  if (!adrIndex.includes(`](${adrName})`) || !adrIndex.match(new RegExp(`\\(${adrName.replaceAll(".", "\\.")}\\) \\|[^\\n]+\\| Accepted \\|`))) {
-    fail(`${adrName} is not linked as Accepted in the ADR index`);
+  const agentContext = readFileSync(join(docsRoot, "agent-context.md"), "utf8");
+  if (!agentContext.includes("> M1 状态：Tauri 2 + React/TypeScript + Rust Core 已选择并建立生产骨架") || !agentContext.includes("> M0 状态：完成")) {
+    fail("agent context does not retain the completed M0 and M1 milestones");
   }
+  if (!existsSync(join(docsRoot, "benchmarks/m1/selection.md"))) fail("M1 selection report is missing");
 }
-const agentContext = readFileSync(join(repositoryRoot, "docs/agent-context.md"), "utf8");
-if (!agentContext.includes("> M1 状态：Tauri 2 + React/TypeScript + Rust Core 已选择并建立生产骨架") || !agentContext.includes("> M0 状态：完成")) {
-  fail("agent context does not retain the completed M0 and M1 milestones");
-}
-if (!existsSync(join(repositoryRoot, "docs/benchmarks/m1/selection.md"))) fail("M1 selection report is missing");
 if (existsSync(join(repositoryRoot, "spikes/tauri/package.json")) || existsSync(join(repositoryRoot, "spikes/avalonia/global.json"))) {
   fail("disposable spike source remains in the current tree");
 }

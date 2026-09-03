@@ -89,7 +89,9 @@ const requiredDocs = [
   "docs/release/sbom.cdx.json",
   "docs/release/licenses.md",
 ];
-for (const path of requiredDocs) if (!existsSync(join(repositoryRoot, path))) fail(`release artifact missing: ${path}`);
+if (existsSync(join(repositoryRoot, "docs"))) {
+  for (const path of requiredDocs) if (!existsSync(join(repositoryRoot, path))) fail(`release artifact missing: ${path}`);
+}
 
 const distFiles = walk(join(appRoot, "dist")).filter((path) => /\.(?:html|css|js)$/.test(path));
 const firstLoadGzipBytes = distFiles.reduce((total, path) => total + gzipSync(readFileSync(path)).length, 0);

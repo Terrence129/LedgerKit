@@ -47,6 +47,16 @@ coverage/
 # measurement artifacts may remain for audit but can never enter new commits.
 spikes/
 
+# Keep project documentation local. The root README remains the only
+# documentation file published in the GitHub working tree.
+/docs/
+*.md
+*.mdx
+*.pdf
+*.docx
+*.pptx
+!/README.md
+
 # Editors and operating systems
 .idea/
 .vscode/

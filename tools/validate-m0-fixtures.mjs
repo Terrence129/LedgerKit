@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -292,8 +292,10 @@ for (let index = 0; index < fixtureDirectories.length; index += 1) {
   }
 }
 
-const financialRulesText = readFileSync(join(repositoryRoot, "docs", "financial-rules.md"), "utf8");
-const requiredRules = [...new Set([...financialRulesText.matchAll(/`([A-Z]+-[0-9]{3})`/g)].map((match) => match[1]))].sort(compareUnicodeScalar);
+const financialRulesPath = join(repositoryRoot, "docs", "financial-rules.md");
+const requiredRules = existsSync(financialRulesPath)
+  ? [...new Set([...readFileSync(financialRulesPath, "utf8").matchAll(/`([A-Z]+-[0-9]{3})`/g)].map((match) => match[1]))].sort(compareUnicodeScalar)
+  : [];
 const missingRules = requiredRules.filter((rule) => !coveredRules.has(rule));
 if (missingRules.length > 0) fail("docs/financial-rules.md", `rules without normal/boundary/failure fixture coverage: ${missingRules.join(", ")}`);
 

@@ -111,7 +111,7 @@ LedgerKit 会明确显示“未折算”或“未估值”，并提供数据质�
 公开导入器只接受版本化的规范化 `.xlsx`，不会猜测任意私人表格的结构。
 
 1. 保留原始工作簿不变，只对副本进行整理和重算。
-2. 按 [导入指南](docs/import-guide.md) 准备当前 `ledgerkit-workbook-v1.4` 的 15 表契约。
+2. 按当前 `ledgerkit-workbook-v1.4` 的 15 表契约准备规范化工作簿；不要直接选择结构未知的私人表格。
 3. 在尚无活跃账本时选择工作簿，先运行只读分析。
 4. 审阅文件哈希、映射、拟议事件、问题清单和全部对账差异。
 5. 只有 blocker 为零、同口径差异为零且跨口径差异逐项解释时，才确认提交。
@@ -126,8 +126,6 @@ LedgerKit 会明确显示“未折算”或“未估值”，并提供数据质�
 - Beta 不自动联网检查更新。升级前先创建并验证便携备份，退出应用后再安装新版本。
 - 卸载程序不等于删除账本；不要依赖卸载流程清理个人数据。
 
-完整流程见 [备份与恢复](docs/operations/backup-restore.md) 和 [升级与回滚](docs/operations/upgrade-rollback.md)。
-
 ## 隐私与安全边界
 
 - 核心功能可离线使用；P0 没有登录、同步服务、自动更新或后台守护进程。
@@ -135,8 +133,6 @@ LedgerKit 会明确显示“未折算”或“未估值”，并提供数据质�
 - WebView 只能调用受限的具名 IPC，不能获得任意 SQL、shell 或文件系统能力。
 - 真实工作簿、数据库、备份、导出和截图不得提交到仓库或公开 Issue。
 - 报告问题时，请提供稳定错误码、应用/schema 版本和脱敏 diagnostics，不要粘贴真实交易、余额、账号或私人路径。
-
-安全模型和已知限制见 [用户手册](docs/user-guide.md) 与 [Beta 已知问题](docs/release/known-issues-1.0.0-beta.1.md)。
 
 ## 开发与验证
 
@@ -153,17 +149,9 @@ pwsh -NoProfile -File tools/build.ps1
 
 架构采用模块化单体：React/TypeScript 负责表现层，Rust Application/Domain 是唯一财务规则权威，SQLite Infrastructure 负责事务、迁移、投影、导入和备份。生产运行时不需要 Node/Python sidecar、本地 HTTP 服务或数据库服务器。
 
-开始贡献前请阅读：
+项目设计、财务规则、ADR、实施提示词和运维手册只保存在维护者本地，不发布到 GitHub。公开贡献以本 README、源码接口、测试和 CI 结果为准。
 
-- [Agent 与贡献约束](AGENTS.md)
-- [文档导航](docs/README.md)
-- [开发计划书](docs/多币种个人账本-开发计划书.md)
-- [财务规则](docs/financial-rules.md)
-- [ADR 索引](docs/adr/README.md)
-- [生产依赖清单](docs/production-dependencies.md)
-- [Beta 发布说明](docs/release/1.0.0-beta.1.md)
-
-提交 Pull Request 前必须运行完整检查，并确保没有真实财务数据、私人路径、密钥、数据库、备份、日志或构建产物进入 Git 历史。
+提交 Pull Request 前必须运行完整检查，并确保没有真实财务数据、私人路径、密钥、数据库、备份、日志或构建产物进入 Git 历史。在维护者本地文档包可用时，`tools/check.ps1` 还会执行文档契约检查；普通 GitHub 克隆会跳过这些仅本地检查。
 
 ## 当前范围与限制
 
