@@ -1831,6 +1831,51 @@ mod tests {
     }
 
     #[test]
+    fn investment_activity_filters_buy_and_sell_separately() {
+        let (_directory, mut manager, account, portfolio, instrument) = setup();
+        let mut posted_ids = Vec::new();
+        for (sequence, side) in [
+            InvestmentEventType::SecurityBuy,
+            InvestmentEventType::SecuritySell,
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let posted = manager
+                .post_investment_event(&trade(
+                    account,
+                    portfolio,
+                    instrument,
+                    side,
+                    "2026-02-10",
+                    sequence as u64 + 1,
+                    "2",
+                    "10",
+                    "0",
+                ))
+                .unwrap();
+            posted_ids.push(posted.event_id);
+        }
+        for (index, filter) in ["SecurityBuy", "SecuritySell"].into_iter().enumerate() {
+            let page = manager
+                .get_activity(&ActivityQuery {
+                    start_date: LocalDate::parse("2026-02-10").unwrap(),
+                    end_date: LocalDate::parse("2026-02-10").unwrap(),
+                    context: None,
+                    event_type: Some(filter.to_owned()),
+                    account_id: Some(account),
+                    category_id: None,
+                    search: None,
+                    cursor: None,
+                    limit: 25,
+                })
+                .unwrap();
+            assert_eq!(page.items.len(), 1, "filter {filter}");
+            assert_eq!(page.items[0].event_id, posted_ids[index]);
+        }
+    }
+
+    #[test]
     fn investment_activity_exposes_typed_details_postings_and_override_audit() {
         let (_directory, mut manager, account, portfolio, instrument) = setup();
         let posted = manager

@@ -53,6 +53,7 @@ export function SafetyPanel(props: SafetyPanelProps) {
   }, [refreshStatus]);
 
   async function create(configureExternalTarget: boolean): Promise<void> {
+    if (props.busy || !props.ledgerOpen || password.length < 12) return;
     const secret = password;
     setPassword("");
     setMessage(null);
@@ -68,6 +69,7 @@ export function SafetyPanel(props: SafetyPanelProps) {
 
   async function restore(event: FormEvent): Promise<void> {
     event.preventDefault();
+    if (props.busy || !restoreConfirmed || password.length < 12) return;
     const secret = password;
     setPassword("");
     setMessage(null);
@@ -83,6 +85,7 @@ export function SafetyPanel(props: SafetyPanelProps) {
   }
 
   async function exportSelected(): Promise<void> {
+    if (props.busy || !props.ledgerOpen || !privacyConfirmed) return;
     setMessage(null);
     setLocalError(null);
     try {

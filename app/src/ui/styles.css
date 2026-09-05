@@ -68,7 +68,7 @@ h2 { margin-bottom: 0.35rem; font-size: 1.35rem; }
 .mapping-list li { display: grid; gap: 0.2rem; }
 .mapping-list code { overflow-wrap: anywhere; }
 .confirmation { display: flex; gap: 0.55rem; align-items: flex-start; }
-.confirmation input { margin-top: 0.2rem; }
+.confirmation input { flex: 0 0 1.25rem; width: 1.25rem; min-height: 1.25rem; margin-top: 0.2rem; }
 .notice { padding: 0.75rem; border-radius: 0.65rem; background: var(--color-accent-soft); }
 .compact-form { display: grid; grid-template-columns: minmax(10rem, 18rem) auto; gap: 0.55rem 0.8rem; align-items: end; margin-block: 2rem; }
 .compact-form label, .compact-form small { grid-column: 1; }
@@ -110,6 +110,14 @@ button:disabled { cursor: wait; opacity: 0.6; }
 .workspace-nav button { border-color: transparent; color: var(--color-muted); background: transparent; }
 .workspace-nav button.active { border-color: var(--color-accent); color: var(--color-accent); background: var(--color-accent-soft); }
 .workspace-placeholder { min-height: 25rem; }
+.disclosure { margin-bottom: 1rem; border: 1px solid var(--color-line); border-radius: var(--radius-small); background: var(--color-surface); }
+.disclosure > summary { padding: 0.85rem 1rem; color: var(--color-accent); cursor: pointer; font-weight: 750; }
+.disclosure > summary:focus-visible { outline: 0.2rem solid var(--color-focus); outline-offset: 0.15rem; }
+.disclosure > .cash-editor { margin: 0; border: 0; box-shadow: none; }
+.disclosure > .import-wizard, .disclosure > .safety-panel { margin: 0; }
+.onboarding, .page-heading { padding-top: 1.25rem; }
+.onboarding h1, .page-heading h1 { max-width: none; font-size: clamp(1.75rem, 3.5vw, 2.5rem); line-height: 1.2; letter-spacing: -0.025em; }
+.masthead { padding-bottom: 1rem; }
 [hidden] { display: none !important; }
 .overview-page, .quality-page { padding-bottom: 2rem; }
 .dashboard-heading { display: flex; justify-content: space-between; gap: 1.5rem; align-items: end; margin: 1rem 0 1.2rem; border-radius: var(--radius-large); padding: clamp(1.1rem, 4vw, 2rem); color: white; background: var(--color-navy); box-shadow: var(--shadow-card); }

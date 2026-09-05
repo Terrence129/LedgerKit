@@ -6,6 +6,7 @@ import { LatestRequestGate } from "./queryGate";
 type DataQualityPageProps = {
   locale: SupportedLocale;
   asOfDate: string;
+  refreshVersion?: number;
   onLoad: (request: { asOfDate: string }) => Promise<DataQualityReport>;
   onFix: (context: FixContext) => void;
 };
@@ -40,7 +41,10 @@ export function DataQualityPage(props: DataQualityPageProps) {
     }
   }
 
-  useEffect(() => { void load(); }, [props.asOfDate]);
+  useEffect(() => {
+    void load();
+    return () => gate.current.invalidate();
+  }, [props.asOfDate, props.refreshVersion]);
 
   function submit(event: FormEvent): void {
     event.preventDefault();

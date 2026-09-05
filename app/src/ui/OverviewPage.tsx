@@ -15,6 +15,7 @@ export type ExpenseUiState = "invalid" | "incomplete" | "unvalued-only" | "no-va
 type OverviewPageProps = {
   locale: SupportedLocale;
   asOfDate: string;
+  refreshVersion?: number;
   onLoadOverview: (request: { asOfDate: string }) => Promise<Overview>;
   onLoadExpense: (request: { startDate: string; endDate: string; eventWatermark?: number }) => Promise<ExpenseAnalysis>;
   onDrilldown: (context: DrilldownContext) => void;
@@ -159,7 +160,11 @@ export function OverviewPage(props: OverviewPageProps) {
     }
   }
 
-  useEffect(() => { void loadOverview(props.asOfDate); }, [props.asOfDate]);
+  useEffect(() => {
+    if (validLocalDate(valuationDate)) void loadOverview(valuationDate);
+    if (expenseLoaded.current || tab === "expenses") void loadExpense();
+    return () => { overviewGate.current.invalidate(); expenseGate.current.invalidate(); };
+  }, [props.asOfDate, props.refreshVersion]);
 
   function chooseTab(next: OverviewTab): void {
     setTab(next);
@@ -169,6 +174,8 @@ export function OverviewPage(props: OverviewPageProps) {
   function submitOverview(event: FormEvent): void {
     event.preventDefault();
     if (!validLocalDate(valuationDate)) {
+      overviewGate.current.invalidate();
+      setOverviewLoading(false);
       setOverview(null);
       setOverviewError("LOCAL_DATE_INVALID");
       document.getElementById("overviewValuationDate")?.focus();

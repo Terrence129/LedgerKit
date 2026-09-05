@@ -22,6 +22,7 @@ import { OverviewPage } from "./OverviewPage";
 import { SafetyPanel } from "./SafetyPanel";
 import { applyDocumentLocale, localeFromSystemHint, systemLocaleHint, type SupportedLocale } from "./i18n";
 import "./styles.css";
+import { focusField } from "./focusField";
 
 type UiFailure = { code: string; field: string | null } | null;
 
@@ -49,6 +50,7 @@ export function App() {
   const [status, setStatus] = useState<LedgerStatus | null>(null);
   const [failure, setFailure] = useState<UiFailure>(null);
   const [busy, setBusy] = useState(false);
+  const [refreshVersion, setRefreshVersion] = useState(0);
   const [activeView, setActiveView] = useState<WorkspaceView>("activity");
   const [importAnalysis, setImportAnalysis] = useState<ImportAnalysis | null>(null);
   const [activityContext, setActivityContext] = useState<DrilldownContext | null>(null);
@@ -60,6 +62,7 @@ export function App() {
     setLocale(nextStatus.uiLocale);
     applyDocumentLocale(nextStatus.uiLocale);
     setStatus(nextStatus);
+    setRefreshVersion((version) => version + 1);
   }
 
   useEffect(() => {
@@ -107,6 +110,7 @@ export function App() {
   function openActivity(context: DrilldownContext): void {
     setActivityContext(context);
     setActiveView("activity");
+    focusField("timeline-title");
   }
 
   function openQualityFix(context: FixContext): void {
@@ -121,7 +125,7 @@ export function App() {
       : context.operation === "save_price_revision"
         ? "priceDate"
         : "import-review";
-    requestAnimationFrame(() => document.getElementById(target)?.focus());
+    focusField(target);
   }
 
   return (
@@ -134,8 +138,11 @@ export function App() {
       onNavigate={(view) => {
         if (view === "activity") setActivityContext(null);
         setActiveView(view);
+        requestAnimationFrame(() => window.scrollTo({ top: 0 }));
       }}
       overviewContent={status?.ledgerState === "open" ? <OverviewPage
+        key={status.ledgerId}
+        refreshVersion={refreshVersion}
         locale={locale}
         asOfDate={asOfDate}
         onLoadOverview={(request) => ledgerKitCommands.getOverview(request)}
@@ -144,6 +151,7 @@ export function App() {
         onOpenQuality={() => setActiveView("quality")}
       /> : null}
       activityContent={status?.ledgerState === "open" && status.catalog ? <ActivityPage
+        key={status.ledgerId}
         locale={locale}
         status={status}
         busy={busy}
@@ -156,8 +164,8 @@ export function App() {
         onPreviewInvestment={(request) => execute(() => ledgerKitCommands.previewInvestmentEvent(request), false)}
         onPostInvestment={(request) => execute(() => ledgerKitCommands.postInvestmentEvent(request))}
       /> : null}
-      assetsContent={status?.ledgerState === "open" ? <AssetsPage locale={locale} status={status} onLoad={(request) => ledgerKitCommands.getInvestmentWorkspace(request)} /> : null}
-      qualityContent={status?.ledgerState === "open" ? <DataQualityPage locale={locale} asOfDate={asOfDate} onLoad={(request) => ledgerKitCommands.getDataQuality(request)} onFix={openQualityFix} /> : null}
+      assetsContent={status?.ledgerState === "open" ? <AssetsPage key={status.ledgerId} refreshVersion={refreshVersion} locale={locale} status={status} onLoad={(request) => ledgerKitCommands.getInvestmentWorkspace(request)} /> : null}
+      qualityContent={status?.ledgerState === "open" ? <DataQualityPage key={status.ledgerId} refreshVersion={refreshVersion} locale={locale} asOfDate={asOfDate} onLoad={(request) => ledgerKitCommands.getDataQuality(request)} onFix={openQualityFix} /> : null}
       safetyContent={status && status.ledgerState !== "blocked" ? <SafetyPanel
         locale={locale}
         busy={busy}

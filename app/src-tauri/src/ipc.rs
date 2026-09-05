@@ -926,12 +926,7 @@ pub fn get_activity(
             if value == "Reversal" {
                 Ok(value)
             } else if let Ok(investment) = InvestmentEventType::parse(&value) {
-                Ok(match investment {
-                    InvestmentEventType::SecurityBuy | InvestmentEventType::SecuritySell => {
-                        "SecurityTrade".to_owned()
-                    }
-                    _ => investment.as_str().to_owned(),
-                })
+                Ok(investment.as_str().to_owned())
             } else {
                 Ok(EventInputType::parse(&value)?.as_str().to_owned())
             }

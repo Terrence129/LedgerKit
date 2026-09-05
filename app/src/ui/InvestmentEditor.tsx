@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import type {
   InvestmentEventPreview,
   InvestmentEventRequest,
@@ -6,6 +6,7 @@ import type {
   PostedInvestmentEvent,
 } from "../command-client/contracts";
 import { translate, type SupportedLocale } from "./i18n";
+import { LatestRequestGate } from "./queryGate";
 
 type Draft = {
   effectiveDate: string; sequence: number; eventType: InvestmentEventRequest["eventType"];
@@ -75,17 +76,29 @@ export function InvestmentEditor({ locale, status, busy, onPreview, onPost }: Pr
   const [preview, setPreview] = useState<InvestmentEventPreview | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [failure, setFailure] = useState<string | null>(null);
+  const previewGate = useRef(new LatestRequestGate());
+  useEffect(() => {
+    setDraft((current) => ({ ...current, sequence: status.eventWatermark + 1 }));
+    previewGate.current.invalidate();
+    setPreview(null);
+  }, [status.eventWatermark]);
   const catalog = status.catalog;
   if (!catalog) return null;
-  const patch = (value: Partial<Draft>) => { setDraft((current) => ({ ...current, ...value })); setPreview(null); setFailure(null); };
+  const patch = (value: Partial<Draft>) => { previewGate.current.invalidate(); setDraft((current) => ({ ...current, ...value })); setPreview(null); setFailure(null); };
 
   async function previewEvent(event: FormEvent): Promise<void> {
     event.preventDefault();
     const nextErrors = validateInvestmentDraft(draft);
     setErrors(nextErrors);
     if (nextErrors.length > 0) { document.getElementById(nextErrors[0] ?? "investmentDate")?.focus(); return; }
-    try { setPreview(await onPreview(toInvestmentRequest(draft))); }
-    catch (error: unknown) { setFailure(typeof error === "object" && error !== null && "code" in error ? String(error.code) : "UNEXPECTED_ERROR"); }
+    const generation = previewGate.current.begin();
+    try {
+      const next = await onPreview(toInvestmentRequest(draft));
+      if (previewGate.current.isLatest(generation)) setPreview(next);
+    }
+    catch (error: unknown) {
+      if (previewGate.current.isLatest(generation)) setFailure(typeof error === "object" && error !== null && "code" in error ? String(error.code) : "UNEXPECTED_ERROR");
+    }
   }
 
   async function postEvent(): Promise<void> {

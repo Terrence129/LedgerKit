@@ -16,6 +16,7 @@ import type {
 } from "../command-client/contracts";
 import { translate, type SupportedLocale } from "./i18n";
 import { InvestmentEditor } from "./InvestmentEditor";
+import { focusField } from "./focusField";
 import { LatestRequestGate } from "./queryGate";
 
 const ACTIVITY_PAGE_SIZE = 10;
@@ -172,10 +173,6 @@ function errorCode(error: unknown): string {
   return "UNEXPECTED_ERROR";
 }
 
-function focusField(field: string): void {
-  requestAnimationFrame(() => document.getElementById(field)?.focus());
-}
-
 function displayEventType(value: string, t: (key: Parameters<typeof translate>[1]) => string): string {
   const key = value === "BalanceAdjustment" ? "event.adjustment" : `event.${value.charAt(0).toLowerCase()}${value.slice(1)}`;
   return t(key as Parameters<typeof translate>[1]);
@@ -208,6 +205,13 @@ export function ActivityPage(props: ActivityPageProps) {
   const [reverseDate, setReverseDate] = useState(today);
   const loadedKey = useRef("");
   const queryGate = useRef(new LatestRequestGate());
+  const previewGate = useRef(new LatestRequestGate());
+
+  useEffect(() => {
+    setDraft((current) => ({ ...current, sequence: status.eventWatermark + 1 }));
+    previewGate.current.invalidate();
+    setPreview(null);
+  }, [status.eventWatermark]);
 
   const accountOptions = catalog?.accounts.filter((item) => item.enabled) ?? [];
   const categoryOptions = catalog?.categories.filter((item) => item.enabled) ?? [];
@@ -255,6 +259,7 @@ export function ActivityPage(props: ActivityPageProps) {
     const context = props.initialContext;
     if (!context) {
       setDrilldownContext(null);
+      if (drilldownContext) void load(true, null);
       return;
     }
     setStartDate(context.start_date);
@@ -284,6 +289,7 @@ export function ActivityPage(props: ActivityPageProps) {
   }
 
   function updateDraft(patch: Partial<CashDraft>): void {
+    previewGate.current.invalidate();
     setDraft((current) => ({ ...current, ...patch }));
     setPreview(null);
     setEditorError(null);
@@ -299,10 +305,12 @@ export function ActivityPage(props: ActivityPageProps) {
       return;
     }
     setEditorError(null);
+    const generation = previewGate.current.begin();
     try {
-      setPreview(await props.onPreview(toCashEventRequest(draft)));
+      const next = await props.onPreview(toCashEventRequest(draft));
+      if (previewGate.current.isLatest(generation)) setPreview(next);
     } catch (error: unknown) {
-      setEditorError(errorCode(error));
+      if (previewGate.current.isLatest(generation)) setEditorError(errorCode(error));
     }
   }
 
@@ -331,7 +339,7 @@ export function ActivityPage(props: ActivityPageProps) {
   function beginRevision(item: ActivityItem): void {
     const replacement = draftFromActivity(item);
     if (!replacement) return;
-    setDraft(replacement);
+    setDraft({ ...replacement, sequence: status.eventWatermark + 1 });
     setEditingTarget(item);
     setRevisionReason("");
     setPreview(null);
@@ -387,28 +395,28 @@ export function ActivityPage(props: ActivityPageProps) {
           {twoAccounts ? <><AccountSelect id="fromAccountId" label={t("activity.fromAccount")} value={draft.fromAccountId} options={accountOptions} invalid={formErrors.includes("fromAccountId")} onChange={(value) => updateDraft({ fromAccountId: value })} /><AccountSelect id="toAccountId" label={t("activity.toAccount")} value={draft.toAccountId} options={accountOptions} invalid={formErrors.includes("toAccountId")} onChange={(value) => updateDraft({ toAccountId: value })} /></> : null}
           <label htmlFor="amount">{draft.eventType === "Adjustment" ? t("activity.delta") : draft.eventType === "CurrencyExchange" ? t("activity.fromAmount") : t("activity.amount")}<input id="amount" inputMode="decimal" value={draft.amount} aria-invalid={formErrors.includes("amount")} onChange={(event) => updateDraft({ amount: event.currentTarget.value })} /></label>
           {draft.eventType === "CurrencyExchange" ? <label htmlFor="toAmount">{t("activity.toAmount")}<input id="toAmount" inputMode="decimal" value={draft.toAmount} aria-invalid={formErrors.includes("toAmount")} onChange={(event) => updateDraft({ toAmount: event.currentTarget.value })} /></label> : null}
-          {["Income", "Expense", "Adjustment"].includes(draft.eventType) ? <><label htmlFor="categoryId">{t("activity.category")}<select id="categoryId" value={draft.categoryId} onChange={(event) => updateDraft({ categoryId: event.currentTarget.value })}><option value="">{t("activity.uncategorized")}</option>{categoryOptions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label htmlFor="semanticRole">{t("field.semanticRole")}<select id="semanticRole" value={draft.semanticRole} onChange={(event) => updateDraft({ semanticRole: event.currentTarget.value as CashDraft["semanticRole"] })}><option value="normal">{t("value.normal")}</option><option value="refund">{t("value.refund")}</option><option value="reimbursement">{t("value.reimbursement")}</option></select></label><label htmlFor="merchant">{t("activity.merchant")}<input id="merchant" value={draft.merchant} onChange={(event) => updateDraft({ merchant: event.currentTarget.value })} /></label><label htmlFor="note">{t("activity.note")}<input id="note" value={draft.note} onChange={(event) => updateDraft({ note: event.currentTarget.value })} /></label></> : null}
+          {["Income", "Expense", "Adjustment"].includes(draft.eventType) ? <><label htmlFor="categoryId">{t("activity.category")}<select id="categoryId" value={draft.categoryId} onChange={(event) => updateDraft({ categoryId: event.currentTarget.value })}><option value="">{t("activity.uncategorized")}</option>{categoryOptions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label htmlFor="cashSemanticRole">{t("field.semanticRole")}<select id="cashSemanticRole" value={draft.semanticRole} onChange={(event) => updateDraft({ semanticRole: event.currentTarget.value as CashDraft["semanticRole"] })}><option value="normal">{t("value.normal")}</option><option value="refund">{t("value.refund")}</option><option value="reimbursement">{t("value.reimbursement")}</option></select></label><label htmlFor="merchant">{t("activity.merchant")}<input id="merchant" value={draft.merchant} onChange={(event) => updateDraft({ merchant: event.currentTarget.value })} /></label><label htmlFor="note">{t("activity.note")}<input id="note" value={draft.note} onChange={(event) => updateDraft({ note: event.currentTarget.value })} /></label></> : null}
           {draft.eventType !== "OpeningBalance" && draft.eventType !== "Transfer" ? <><AccountSelect id="feeAccountId" label={t("activity.feeAccount")} value={draft.feeAccountId} options={accountOptions} invalid={formErrors.includes("feeAccountId")} optional onChange={(value) => updateDraft({ feeAccountId: value })} /><label htmlFor="feeAmount">{t("activity.feeAmount")}<input id="feeAmount" inputMode="decimal" value={draft.feeAmount} aria-invalid={formErrors.includes("feeAmount")} onChange={(event) => updateDraft({ feeAmount: event.currentTarget.value })} /></label></> : null}
           {draft.eventType === "OpeningBalance" ? <><label htmlFor="cutoverDate">{t("activity.cutoverDate")}<input id="cutoverDate" type="date" value={draft.cutoverDate} onChange={(event) => updateDraft({ cutoverDate: event.currentTarget.value })} /></label><label htmlFor="migrationPolicy">{t("activity.migrationPolicy")}<select id="migrationPolicy" value={draft.migrationPolicy} onChange={(event) => updateDraft({ migrationPolicy: event.currentTarget.value as CashDraft["migrationPolicy"] })}><option value="full_history">{t("activity.fullHistory")}</option><option value="explicit_cutover">{t("activity.explicitCutover")}</option></select></label></> : null}
-          {editingTarget ? <label htmlFor="reason" className="wide-field">{t("activity.revisionReason")}<textarea id="reason" value={revisionReason} aria-invalid={formErrors.includes("reason")} onChange={(event) => { setRevisionReason(event.currentTarget.value); setPreview(null); }} /></label> : null}
+          {editingTarget ? <label htmlFor="reason" className="wide-field">{t("activity.revisionReason")}<textarea id="reason" value={revisionReason} aria-invalid={formErrors.includes("reason")} onChange={(event) => { previewGate.current.invalidate(); setRevisionReason(event.currentTarget.value); setPreview(null); }} /></label> : null}
         </div>
-        <fieldset className="fx-overrides"><legend>{t("activity.fxOverrides")}</legend><p>{t("activity.fxOverrideHelp")}</p>{draft.fxOverrides.map((override, index) => <div className="override-row" key={`${index}-${override.currency}`}><label htmlFor={`fxOverride-${index}`}>{t("field.currency")}<input id={`fxOverride-${index}`} value={override.currency} maxLength={3} onChange={(event) => updateDraft({ fxOverrides: draft.fxOverrides.map((item, itemIndex) => itemIndex === index ? { ...item, currency: event.currentTarget.value.toUpperCase() } : item) })} /></label><label>{t("activity.rate")}<input inputMode="decimal" value={override.value} onChange={(event) => updateDraft({ fxOverrides: draft.fxOverrides.map((item, itemIndex) => itemIndex === index ? { ...item, value: event.currentTarget.value } : item) })} /></label><label>{t("activity.overrideReason")}<input value={override.reason} onChange={(event) => updateDraft({ fxOverrides: draft.fxOverrides.map((item, itemIndex) => itemIndex === index ? { ...item, reason: event.currentTarget.value } : item) })} /></label><button type="button" className="secondary" onClick={() => updateDraft({ fxOverrides: draft.fxOverrides.filter((_, itemIndex) => itemIndex !== index) })}>{t("activity.removeOverride")}</button></div>)}<button type="button" className="secondary" onClick={() => updateDraft({ fxOverrides: [...draft.fxOverrides, { currency: "", value: "", reason: "" }] })}>{t("activity.addOverride")}</button></fieldset>
+        <details className="disclosure"><summary>{t("activity.fxOverrides")}</summary><fieldset className="fx-overrides"><legend>{t("activity.fxOverrides")}</legend><p>{t("activity.fxOverrideHelp")}</p>{draft.fxOverrides.map((override, index) => <div className="override-row" key={index}><label htmlFor={`fxOverride-${index}`}>{t("field.currency")}<input id={`fxOverride-${index}`} value={override.currency} maxLength={3} onChange={(event) => updateDraft({ fxOverrides: draft.fxOverrides.map((item, itemIndex) => itemIndex === index ? { ...item, currency: event.currentTarget.value.toUpperCase() } : item) })} /></label><label>{t("activity.rate")}<input inputMode="decimal" value={override.value} onChange={(event) => updateDraft({ fxOverrides: draft.fxOverrides.map((item, itemIndex) => itemIndex === index ? { ...item, value: event.currentTarget.value } : item) })} /></label><label>{t("activity.overrideReason")}<input value={override.reason} onChange={(event) => updateDraft({ fxOverrides: draft.fxOverrides.map((item, itemIndex) => itemIndex === index ? { ...item, reason: event.currentTarget.value } : item) })} /></label><button type="button" className="secondary" onClick={() => updateDraft({ fxOverrides: draft.fxOverrides.filter((_, itemIndex) => itemIndex !== index) })}>{t("activity.removeOverride")}</button></div>)}<button type="button" className="secondary" onClick={() => updateDraft({ fxOverrides: [...draft.fxOverrides, { currency: "", value: "", reason: "" }] })}>{t("activity.addOverride")}</button></fieldset></details>
         <label className="checkbox-field precision-confirmation"><input type="checkbox" checked={draft.currencyPrecisionConfirmed} onChange={(event) => updateDraft({ currencyPrecisionConfirmed: event.currentTarget.checked })} />{t("activity.precisionConfirmed")}</label>
         <div className="form-actions"><button type="submit" disabled={busy}>{t("activity.preview")}</button>{preview ? <button type="button" disabled={busy} onClick={() => void savePreviewed()}>{editingTarget ? t("activity.confirmRevision") : t("activity.confirmPost")}</button> : null}</div>
       </form>
 
       {preview ? <PreviewPanel preview={preview} categoryLabel={preview.categoryId ? categoryOptions.find((item) => item.id === preview.categoryId)?.name ?? preview.categoryId : t("activity.uncategorized")} t={t} /> : null}
 
-      {props.onPreviewInvestment && props.onPostInvestment ? <InvestmentEditor locale={locale} status={status} busy={busy} onPreview={props.onPreviewInvestment} onPost={props.onPostInvestment} /> : null}
+      {props.onPreviewInvestment && props.onPostInvestment ? <details className="disclosure investment-disclosure"><summary>{t("investment.editorTitle")}</summary><InvestmentEditor locale={locale} status={status} busy={busy} onPreview={props.onPreviewInvestment} onPost={props.onPostInvestment} /></details> : null}
 
       <section className="timeline-section" aria-labelledby="timeline-title">
-        <div className="section-title"><div><p className="eyebrow">{t("activity.timelineEyebrow")}</p><h2 id="timeline-title">{t("activity.timelineTitle")}</h2></div></div>
+        <div className="section-title"><div><p className="eyebrow">{t("activity.timelineEyebrow")}</p><h2 id="timeline-title" tabIndex={-1}>{t("activity.timelineTitle")}</h2></div></div>
         <form className="filter-grid" onSubmit={(event) => { event.preventDefault(); void load(true); }}>
           {drilldownContext ? <p className="notice wide-field">{t("activity.drilldownActive")}</p> : null}
           <label htmlFor="dateRange">{t("activity.startDate")}<input id="dateRange" type="date" value={startDate} onChange={(event) => { clearDrilldown(); setStartDate(event.currentTarget.value); }} /></label><label>{t("activity.endDate")}<input type="date" value={endDate} onChange={(event) => { clearDrilldown(); setEndDate(event.currentTarget.value); }} /></label>
           <label>{t("activity.eventType")}<select value={eventType} onChange={(event) => { clearDrilldown(); setEventType(event.currentTarget.value as ActivityRequest["eventType"] | ""); }}><option value="">{t("activity.all")}</option><option value="Income">{t("event.income")}</option><option value="Expense">{t("event.expense")}</option><option value="Adjustment">{t("event.adjustment")}</option><option value="Transfer">{t("event.transfer")}</option><option value="CurrencyExchange">{t("event.currencyExchange")}</option><option value="SecurityBuy">{t("event.securityBuy")}</option><option value="SecuritySell">{t("event.securitySell")}</option><option value="Dividend">{t("event.dividend")}</option><option value="InvestmentExpense">{t("event.investmentExpense")}</option><option value="Reversal">{t("event.reversal")}</option></select></label>
-          <AccountSelect id="activityAccount" label={t("activity.account")} value={accountId} options={accountOptions} optional onChange={(value) => { clearDrilldown(); setAccountId(value); }} />
-          <label>{t("activity.category")}<select value={categoryId} onChange={(event) => { clearDrilldown(); setCategoryId(event.currentTarget.value); }}><option value="">{t("activity.all")}</option><option value="system:uncategorized">{t("activity.uncategorized")}</option><option value="system:ordinary-fee">{t("activity.ordinaryFees")}</option><option value="system:fx-fee">{t("activity.fxFees")}</option>{categoryOptions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+          <AccountSelect id="activityAccount" label={t("activity.account")} value={accountId} options={catalog.accounts} optional onChange={(value) => { clearDrilldown(); setAccountId(value); }} />
+          <label>{t("activity.category")}<select value={categoryId} onChange={(event) => { clearDrilldown(); setCategoryId(event.currentTarget.value); }}><option value="">{t("activity.all")}</option><option value="system:uncategorized">{t("activity.uncategorized")}</option><option value="system:ordinary-fee">{t("activity.ordinaryFees")}</option><option value="system:fx-fee">{t("activity.fxFees")}</option>{catalog.categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
           <label className="wide-field">{t("activity.search")}<input id="search" type="search" maxLength={200} value={search} onChange={(event) => { clearDrilldown(); setSearch(event.currentTarget.value); }} /></label><button type="submit" disabled={loading}>{t("activity.applyFilters")}</button>
         </form>
         <div className="sr-status" role="status" aria-live="polite">{loading ? t("activity.loading") : t("activity.loaded")}</div>

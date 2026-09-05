@@ -5,10 +5,11 @@ import { translate, type SupportedLocale } from "./i18n";
 type Props = {
   locale: SupportedLocale;
   status: LedgerStatus;
+  refreshVersion?: number;
   onLoad: (request: { asOfDate: string }) => Promise<InvestmentWorkspace>;
 };
 
-export function AssetsPage({ locale, status, onLoad }: Props) {
+export function AssetsPage({ locale, status, onLoad, refreshVersion }: Props) {
   const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
   const [asOfDate, setAsOfDate] = useState(status.catalog?.asOfDate ?? new Date().toISOString().slice(0, 10));
   const [workspace, setWorkspace] = useState<InvestmentWorkspace | null>(null);
@@ -23,11 +24,18 @@ export function AssetsPage({ locale, status, onLoad }: Props) {
       const result = await onLoad({ asOfDate });
       if (current === requestId.current) setWorkspace(result);
     } catch (error: unknown) {
-      if (current === requestId.current) setFailure(typeof error === "object" && error !== null && "code" in error ? String(error.code) : "UNEXPECTED_ERROR");
+      if (current === requestId.current) {
+        setWorkspace(null);
+        setSelected(null);
+        setFailure(typeof error === "object" && error !== null && "code" in error ? String(error.code) : "UNEXPECTED_ERROR");
+      }
     }
   }
 
-  useEffect(() => { void load(); }, [status.eventWatermark]);
+  useEffect(() => {
+    void load();
+    return () => { requestId.current += 1; };
+  }, [status.ledgerId, status.eventWatermark, refreshVersion]);
   const holding = workspace?.holdings.find((item) => `${item.portfolioId}:${item.instrumentId}` === selected) ?? null;
   const catalog = status.catalog;
   if (!catalog) return null;

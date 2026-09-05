@@ -2382,7 +2382,13 @@ fn load_general_activity_ids(
              FROM business_events e NOT INDEXED
              WHERE e.effective_date BETWEEN ?1 AND ?2
                AND e.event_order<=?3 AND e.event_order<?4 AND e.status='posted'
-               AND (?5 IS NULL OR e.event_type=?5)
+               AND (?5 IS NULL OR e.event_type=?5 OR (
+                     e.event_type='SecurityTrade' AND EXISTS(
+                       SELECT 1 FROM security_trade_details st WHERE st.event_id=e.event_id
+                         AND ((?5='SecurityBuy' AND st.trade_type='BUY')
+                           OR (?5='SecuritySell' AND st.trade_type='SELL'))
+                     )
+                   ))
                AND (?6 IS NULL OR EXISTS(
                      SELECT 1 FROM ledger_postings p
                      WHERE p.event_id=e.event_id AND p.account_id=?6
@@ -2731,7 +2737,7 @@ fn load_contributions(
                     ?6='system:top10-other'
                     AND bucket_id IN (SELECT value FROM json_each(?9))
                   ))
-             AND (?7 IS NULL OR semantic_role=?7)
+             AND (?7 IS NULL OR semantic_role=?7 OR (?7='expense' AND bucket_id IS NOT NULL))
              AND (?8='all'
                   OR (?8='valued' AND base_value IS NOT NULL)
                   OR (?8='unvalued' AND base_value IS NULL))
@@ -3677,6 +3683,99 @@ mod tests {
                 && row.archived
                 && row.amount == "9"
         }));
+    }
+
+    #[test]
+    fn expense_kpi_drilldown_matches_distinct_contributions_not_refunds() {
+        let (_dir, mut manager, cny, usd, category) = setup();
+        let refund_category = UuidV7::new().unwrap();
+        manager
+            .save_category(&Category {
+                category_id: refund_category,
+                name: CatalogText::parse("Synthetic refund").unwrap(),
+                kind: CategoryKind::Income,
+                semantic_role: SemanticRole::Refund,
+                sort_order: SortOrder::new(2).unwrap(),
+                enabled: true,
+            })
+            .unwrap();
+        let mut expense = input(EventInputType::Expense, cny, "10");
+        expense.category_id = Some(category);
+        expense.fee_account_id = Some(cny);
+        expense.fee_amount = Some(Decimal::parse("1", DecimalUse::Amount).unwrap());
+        let posted = manager.post_event(&expense).unwrap();
+        let mut income = input(EventInputType::Income, cny, "100");
+        income.sequence = crate::domain::types::Sequence::new(2).unwrap();
+        income.fee_account_id = Some(cny);
+        income.fee_amount = Some(Decimal::parse("2", DecimalUse::Amount).unwrap());
+        let fee_event = manager.post_event(&income).unwrap();
+        let mut refund = input(EventInputType::Income, cny, "5");
+        refund.sequence = crate::domain::types::Sequence::new(3).unwrap();
+        refund.semantic_role = SemanticRole::Refund;
+        refund.category_id = Some(refund_category);
+        manager.post_event(&refund).unwrap();
+        let mut missing = input(EventInputType::Expense, usd, "3");
+        missing.sequence = crate::domain::types::Sequence::new(4).unwrap();
+        let unvalued = manager.post_event(&missing).unwrap();
+        let mut missing_refund = input(EventInputType::Income, usd, "4");
+        missing_refund.sequence = crate::domain::types::Sequence::new(5).unwrap();
+        missing_refund.semantic_role = SemanticRole::Refund;
+        missing_refund.category_id = Some(refund_category);
+        manager.post_event(&missing_refund).unwrap();
+        let start = LocalDate::parse("2026-02-01").unwrap();
+        let end = LocalDate::parse("2026-02-28").unwrap();
+        let report = manager.get_expense_analysis(&start, &end, None).unwrap();
+        assert_eq!(report.summary.valued_subtotal, "13");
+        assert_eq!(report.summary.global_distinct_event_count, 2);
+        assert_eq!(report.unvalued.expense_count, 1);
+        assert_eq!(report.refunds.refund.unvalued_count, 1);
+        let mut context = report.unvalued.drilldown_context.clone();
+        context.valuation_state = "valued".to_owned();
+        let query = ActivityQuery {
+            start_date: start,
+            end_date: end,
+            context: Some(context),
+            event_type: None,
+            account_id: None,
+            category_id: None,
+            search: None,
+            cursor: None,
+            limit: 1,
+        };
+        let first = manager.get_activity(&query).unwrap();
+        assert_eq!(first.items.len(), 1);
+        assert_eq!(first.items[0].event_id, fee_event.event_id);
+        let second = manager
+            .get_activity(&ActivityQuery {
+                cursor: first.next_cursor,
+                ..query.clone()
+            })
+            .unwrap();
+        assert_eq!(second.items.len(), 1);
+        assert_eq!(second.items[0].event_id, posted.event_id);
+        assert_eq!(second.next_cursor, None);
+        let missing_page = manager
+            .get_activity(&ActivityQuery {
+                context: Some(report.unvalued.drilldown_context),
+                limit: 10,
+                ..query.clone()
+            })
+            .unwrap();
+        assert_eq!(missing_page.items.len(), 1);
+        assert_eq!(missing_page.items[0].event_id, unvalued.event_id);
+        manager
+            .reverse_event(&ReversalInput {
+                target_event_id: UuidV7::parse(&posted.event_id).unwrap(),
+                reason: "synthetic regression".to_owned(),
+                effective_date: LocalDate::parse("2026-02-04").unwrap(),
+                sequence: crate::domain::types::Sequence::new(6).unwrap(),
+            })
+            .unwrap();
+        // A pinned KPI continues to resolve against its original event watermark.
+        let historical = manager
+            .get_activity(&ActivityQuery { limit: 10, ..query })
+            .unwrap();
+        assert_eq!(historical.items.len(), 2);
     }
 
     #[test]

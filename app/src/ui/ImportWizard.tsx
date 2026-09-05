@@ -12,14 +12,15 @@ type ImportWizardProps = {
 
 export function ImportWizard(props: ImportWizardProps) {
   const t = (key: Parameters<typeof translate>[1]) => translate(props.locale, key);
-  const [confirmed, setConfirmed] = useState(false);
+  const [confirmedBatchId, setConfirmedBatchId] = useState<string | null>(null);
   const analysis = props.analysis;
+  const confirmed = analysis !== null && confirmedBatchId === analysis.batchId;
   return (
     <section className="import-wizard" aria-labelledby="import-title">
       <p className="eyebrow">{t("import.eyebrow")}</p>
       <h2 id="import-title">{t("import.title")}</h2>
       <p>{t("import.description")}</p>
-      <button type="button" disabled={props.busy} onClick={() => void props.onAnalyze().catch(() => undefined)}>
+      <button type="button" disabled={props.busy} onClick={() => { setConfirmedBatchId(null); void props.onAnalyze().catch(() => undefined); }}>
         {props.busy ? t("import.working") : t("import.choose")}
       </button>
       {analysis ? (
@@ -53,7 +54,7 @@ export function ImportWizard(props: ImportWizardProps) {
               <tbody>{analysis.reconciliation.balances.map((balance) => <tr key={balance.accountId}><td><code>{balance.accountId}</code></td><td>{balance.currency}</td><td>{balance.sourceBalance}</td><td>{balance.proposedBalance}</td><td>{balance.difference}</td></tr>)}</tbody>
             </table></div>
           </details>
-          <label className="confirmation"><input type="checkbox" checked={confirmed} disabled={!analysis.canCommit || props.busy} onChange={(event) => setConfirmed(event.currentTarget.checked)} />{t("import.confirm")}</label>
+          <label className="confirmation"><input type="checkbox" checked={confirmed} disabled={!analysis.canCommit || props.busy} onChange={(event) => setConfirmedBatchId(event.currentTarget.checked ? analysis.batchId : null)} />{t("import.confirm")}</label>
           <button type="button" disabled={!analysis.canCommit || !confirmed || props.busy} onClick={() => void props.onCommit(analysis.batchId).catch(() => undefined)}>{t("import.commit")}</button>
           {!analysis.canCommit ? <p role="alert">{t("import.blocked")}</p> : null}
         </div>
