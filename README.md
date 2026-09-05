@@ -13,12 +13,12 @@
 <p align="center">
   <a href="https://github.com/Terrence129/LedgerKit/actions/workflows/ci.yml"><img src="https://github.com/Terrence129/LedgerKit/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
   <img src="https://img.shields.io/badge/platform-Windows%20x64-0078D4" alt="Windows x64">
-  <img src="https://img.shields.io/badge/status-Beta%20Candidate-F59E0B" alt="Beta Candidate">
+  <a href="https://github.com/Terrence129/LedgerKit/releases/tag/v1.0.0-beta.2"><img src="https://img.shields.io/badge/release-v1.0.0--beta.2-F59E0B" alt="v1.0.0-beta.2 prerelease"></a>
 </p>
 
 LedgerKit 将账本数据保存在用户电脑上的 SQLite 数据库中，不需要账号、后端服务器或强制云服务。金额、证券数量、价格、汇率、成本和盈亏全部由 Rust Core 使用精确十进制规则处理；UI 不能直接执行 SQL 或伪造财务 posting。
 
-> 当前状态：P0 功能及 14 个实施阶段均已完成，代码达到 Beta Candidate。仓库目前尚未发布可下载的 GitHub Release，现阶段请从源码构建。`v1.0.0-beta.1` 标签保持不可变；`main` 已包含更新的 v1.4 规范化导入契约。
+> 当前版本：[v1.0.0-beta.2 预发布版](https://github.com/Terrence129/LedgerKit/releases/tag/v1.0.0-beta.2)，提供 Windows x64 安装包，包含 v1.4 规范化导入及桌面交互修复。这是供试用和反馈的 Beta，不是正式稳定版；`v1.0.0-beta.1` 历史标签保持不变。
 
 ## 功能
 
@@ -36,9 +36,19 @@ LedgerKit 将账本数据保存在用户电脑上的 SQLite 数据库中，不�
 
 ### GitHub Release
 
-正式发布二进制包后，请只从项目的 [Releases](https://github.com/Terrence129/LedgerKit/releases) 页面下载 Windows x64 `setup.exe`，并根据发布说明核对 SHA-256。
+从 [v1.0.0-beta.2 发布页](https://github.com/Terrence129/LedgerKit/releases/tag/v1.0.0-beta.2) 下载 `LedgerKit_1.0.0-beta.2_x64-setup.exe` 和 `SHA256SUMS.txt`。安装包不含任何私人账本；新用户首次启动创建自己的空账本。
+
+在 PowerShell 中校验下载文件，将结果与 `SHA256SUMS.txt` 比较：
+
+```powershell
+Get-FileHash .\LedgerKit_1.0.0-beta.2_x64-setup.exe -Algorithm SHA256
+```
+
+已有账本的用户请先创建并验证加密备份，再关闭应用安装更新。不要删除本地账本目录；此版本不执行真实 Excel 的自动迁移或正式切换。
 
 当前 Beta 安装包尚未签名，Windows 可能显示“未知发布者”。标准轻量安装包使用系统 Evergreen WebView2；少量缺少该运行时的 Windows 设备需要先通过 Microsoft 官方渠道安装 WebView2。
+
+已知限制：投资修订的桌面编辑入口尚未提供，全部 UI 流程及长期双轨对账仍需完成验收。请保留原始资料和独立备份，不要仅依赖 Beta 保存唯一有效账目。完整说明见发布页。
 
 ### 从源码构建
 

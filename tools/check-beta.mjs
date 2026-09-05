@@ -6,7 +6,7 @@ import { gzipSync } from "node:zlib";
 const repositoryRoot = resolve(import.meta.dirname, "..");
 const appRoot = join(repositoryRoot, "app");
 const failures = [];
-const expectedVersion = "1.0.0-beta.1";
+const expectedVersion = "1.0.0-beta.2";
 
 function fail(message) { failures.push(message); }
 function read(path) { return readFileSync(path, "utf8"); }
@@ -84,8 +84,8 @@ const requiredDocs = [
   "docs/operations/upgrade-rollback.md",
   "docs/release/beta-audit-1.0.0-beta.1.md",
   "docs/release/performance-and-size-1.0.0-beta.1.md",
-  "docs/release/known-issues-1.0.0-beta.1.md",
-  "docs/release/1.0.0-beta.1.md",
+  `docs/release/known-issues-${expectedVersion}.md`,
+  `docs/release/${expectedVersion}.md`,
   "docs/release/sbom.cdx.json",
   "docs/release/licenses.md",
 ];

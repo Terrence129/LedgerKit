@@ -2028,7 +2028,7 @@ dependencies = [
 
 [[package]]
 name = "ledgerkit-desktop"
-version = "1.0.0-beta.1"
+version = "1.0.0-beta.2"
 dependencies = [
  "aes-gcm",
  "argon2",
